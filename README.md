@@ -10,7 +10,7 @@ Notice:  This webpage will be updated frequently (daily or weekly) as the class 
 |:------------------------|:------------|:-------|:-----------|:-----------|:-------------|:-------------|:-------------|
 | An Overview of Data Mining    | [Slides](slides/intro.html)             | [Implicit Programming](notes/implicit_explicit_programming.pdf)      |        |             |       |
 | Overfitting and Model Tuning  | [Slides](slides/overfitting.pdf)              | [Notes](slides/overfitting_note.pdf )     |        |            |       |
-| Model Evaluation              | [Slides](slides/measuring_performance.pdf)            |     |        |            |       |
+| Model Evaluation              | [Slides](slides/measuring_performance.pdf)            | [Notes](slides/measuring_performance_note.pdf)     |        |            |       |
 | Classification Trees          |              |     |        |            |       |
 | Random Forest                 |              |     |        |            |       |
 | Ensemble Method and Boosting  |              |     |        |            |       |
