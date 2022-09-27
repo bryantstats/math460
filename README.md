@@ -8,10 +8,10 @@ Notice:  This webpage will be updated frequently (daily or weekly) as the class 
 
 |             Topic             | Original Slides |Notes  |SAS | Python | Assignments/Extra Credits | Exams |
 |:------------------------|:------------|:-------|:-----------|:-----------|:-------------|:-------------|:-------------|
-| An Overview of Data Mining    | [Slides](slides/intro.html)             | [Implicit Programming](notes/implicit_explicit_programming.pdf)      |        |             |       |
+| An Overview of Data Mining    | [Slides](slides/intro.html)             | [Notes](notes/implicit_explicit_programming.pdf)      |        |             |       |
 | Overfitting and Model Tuning  | [Slides](slides/overfitting.pdf)              | [Notes](slides/overfitting_note.pdf )     |        |            |       |
 | Model Evaluation              | [Slides](slides/measuring_performance.pdf)            | [Notes](slides/measuring_performance_note.pdf)     |        |            |   [Assignment 1](assignments/Math460_Assignment1.html)    |
-| Classification Trees          | [Slides](slides/fa21_classification_tree2_original.pdf)              |[Notes](slides/fa21_classification_tree2_note.pdf)     |   [SAS Video]() <br> [SAS Practice 1]()     |     [Codes]() <br> [Practice 1]()        |  [Extra Credit 1](assignments/Extra_Credit_1.pdf)     |
+| Classification Trees          | [Slides](slides/fa21_classification_tree2_original.pdf)              |[Notes](slides/fa21_classification_tree2_note.pdf)     |   [Video]() <br> [Practice 1]()     |     [Codes]() <br> [Practice 1]()        |  [Extra Credit 1](assignments/Extra_Credit_1.pdf)     |
 | Random Forest                 |              |     |        |            |       |
 | Ensemble Method and Boosting  |              |     |        |            |       |
 | Adaboost                      |              |     |        |            |       |
