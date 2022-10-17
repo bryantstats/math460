@@ -2,10 +2,10 @@
 ---
 title: "Classification Trees"
 output:
-  slidy_presentation: default
   beamer_presentation:
     keep_tex: yes
   ioslides_presentation: default
+  slidy_presentation: default
 header-includes:
 - \usepackage{graphicx}
 - \usepackage{tikzpagenodes}

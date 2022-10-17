@@ -305,7 +305,7 @@ For Split 1:  $N = 5, N_{left} =1, N_{right} = 4$
 
 - Node *child left,* L:  $p_0 = \frac{0}{1} = 0, p_1 = \frac{1}{1} = 1$.  Thus, $I_{L} = 0$
 
-- Node *child right,* R:  $p_0 = \frac{3}{4}, p_1 = \frac{1}{4}$.  Thus, $$I_{R} = -log_2(\frac{3}{4})-log_2(\frac{1}{4}) = 0.811$$
+- Node *child right,* R:  $p_0 = \frac{3}{4}, p_1 = \frac{1}{4}$.  Thus, $$I_{R} = -\frac{3}{4} \cdot log_2(\frac{3}{4})-\frac{1}{4} \cdot log_2(\frac{1}{4}) = 0.811$$
 
 - Impurity Gain of Split 1: 
 
@@ -322,7 +322,7 @@ For Split 2:  $N = 5, N_{left} =2, N_{right} = 3$
 
 - Node *child left,* L:  $p_0 = \frac{1}{2}, p_1 = \frac{1}{2}$.  Thus, $I_{L} = - log_1(\frac{1}{2})-log_2(\frac{1}{2})=1$
 
-- Node *child right,* R:  $p_0 = \frac{2}{3}, p_1 = \frac{1}{3}$.  Thus, $I_{R} = -log_2(\frac{2}{3}) -log_2(\frac{1}{3}) = 0.918$
+- Node *child right,* R:  $p_0 = \frac{2}{3}, p_1 = \frac{1}{3}$.  Thus, $I_{R} = -\frac{2}{3} \cdot log_2(\frac{2}{3}) -\frac{1}{3} \cdot log_2(\frac{1}{3}) = 0.918$
 
 - Impurity Gain of Split 2: 
 
