@@ -28,7 +28,7 @@ _**What to do:**_  Train a random forest to recognize three handwritten letters 
 Submit the video or the link of the video to Canvas.
 
 
-_**Instruction**_:  [Video Instruction]()
+_**Instruction**_:  [Video Instruction](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=91c7ceb4-7949-48ee-adb3-af33010fc736)
 
 
 _**Note**_: To improve the accuracy of the model:
