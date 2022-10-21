@@ -15,7 +15,7 @@ Notice:  This webpage will be updated frequently (daily or weekly) as the class 
 | Random Forest                 | [Slides](slides/rf.pdf)             | [Notes](slides/rf_note.pdf)    |  [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=f5e68183-8bc9-4538-8f86-af2c01067eeb)      |  [html,](python/rf.html)     [ipynb](python/rf.ipynb)     |       ||
 |Handwritten Recognition|  | | |[html](python/digits/fa22/image_recognition_rf.html), [ipynb](python/digits/fa22/image_recognition_rf.ipynb) | [Assignment 3](assignments/Math460_Assignment3.html)| |  |
 | Ensemble Method and Boosting  |[Slide](gganimate/boosting3.html)                |     |        |            |       ||
-| Adaboost                      |[Calculation Example](gganimate/adaboost.html)              |     |        |            |       ||
+| Adaboost                      |[Example](gganimate/adaboost.html)              |     |        |            |       ||
 | Gradient Boosting             |              |     |        |            |       ||
 | Linear Models and LASSO       |              |     |        |            |       ||
 | KNN                           |              |     |        |            |       ||
