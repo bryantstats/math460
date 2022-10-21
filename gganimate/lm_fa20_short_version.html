@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title> Linear Model</title>
+    <meta charset="utf-8" />
+    <meta name="author" content=" Son Nguyen" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# <img src="figures/bat-cartoon.png" /> Linear Model
+### <font size="5"> Son Nguyen </font>
+
+---
+
+
+&lt;style&gt;
+
+.remark-slide-content {
+  background-color: #FFFFFF;
+  border-top: 80px solid #F9C389;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 1em 2em 1em 2em
+}
+
+.inverse {
+  background-color: #696767;
+  border-top: 80px solid #696767;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 50% 75%;
+  background-size: 150px;
+}
+
+.your-turn{
+  background-color: #8C7E95;
+  border-top: 80px solid #F9C389;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 95% 90%;
+  background-size: 75px;
+}
+
+.title-slide {
+  background-color: #F9C389;
+  border-top: 80px solid #F9C389;
+  background-image: none;
+}
+
+.title-slide &gt; h1  {
+  color: #111111;
+  font-size: 40px;
+  text-shadow: none;
+  font-weight: 400;
+  text-align: left;
+  margin-left: 15px;
+  padding-top: 80px;
+}
+.title-slide &gt; h2  {
+  margin-top: -25px;
+  padding-bottom: -20px;
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 35px;
+  text-align: left;
+  margin-left: 15px;
+}
+.title-slide &gt; h3  {
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 25px;
+  text-align: left;
+  margin-left: 15px;
+  margin-bottom: -30px;
+}
+
+&lt;/style&gt;
+
+&lt;style type="text/css"&gt;
+.left-code {
+  color: #777;
+  width: 50%;
+  height: 92%;
+  float: left;
+}
+.right-plot {
+  width: 49%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+# A review of Linear Model for Regression
+
+- Given the data
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | -2   |
+| 2   | 1   | 0  |
+| 3   | -2   | -1   |
+| 4   | 3   | 1   |
+
+- How are `\(y\)` and `\(x\)` related?
+
+---
+# A review of Linear Model for Regression
+
+- Given the data
+
+
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | -2   |
+| 2   | 1   | 0  |
+| 3   | -2   | -1   |
+| 4   | 3   | 1   |
+
+
+- Linear model predicts `\(y\)` is a linear combination of `\(x_1\)`, `\(x_2\)`
+
+$$
+\hat{y} = w_0 + w_1 x_1 + w_2x_2
+$$
+
+
+
+
+---
+# A review of Linear Model for Regression
+
+- Given the data
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | -2   |
+| 2   | 1   | 0  |
+| 3   | -2   | -1   |
+| 4   | 3   | 1   |
+
+
+- Linear model predicts `\(y\)` is a linear combination of `\(x_1\)`, `\(x_2\)`
+
+$$
+\hat{y} = w_0 + w_1 x_1 + w_2x_2
+$$
+
+- The goal of linear model is to solve for `\(w_0\)`, `\(w_1\)` and `\(w_2\)`
+- To **train** a linear model is to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)`
+
+---
+# How to find the coefficients?
+
+
+---
+# How to find the coefficients?
+
+- **Step 1**: Define the loss function `\(l(y, \hat{y})\)`
+
+
+---
+# How to find the coefficients?
+
+- **Step 1**: Define the loss function `\(l(y, \hat{y})\)`
+- **Step 2**: Find `\(w\)` that minimizes the total loss function. 
+
+---
+# How to find the coefficients?
+
+- Least Squared Method uses the **square loss**
+
+`$$l(\hat{y},y) = (\hat{y}-y)^2$$`
+
+
+
+---
+# How to find the coefficients?
+
+- Least Squared Method uses the **square loss**
+
+`$$l(\hat{y},y) = (\hat{y}-y)^2$$`
+
+-  We want to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)` that minimizes a **loss function**. 
+
+![](images/l5.png)
+
+---
+# How to find the coefficients?
+
+- Least Squared Method uses the **square loss**
+
+`$$l(\hat{y},y) = (\hat{y}-y)^2$$`
+
+-  We want to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)` that minimizes a **loss function**. 
+
+![](images/l5.png)
+
+- The total loss function: 
+
+$$
+`\begin{aligned}
+L = L(w_0, w_1, w_2) &amp;= (w_0 + w_1 + 2 )^2+(w_0 + 2w_1 +w_2)^2 \\
+&amp;+(w_0 + 3w_1  -2w_2  +1)^2+(w_0 + 4w_1  + 3w_2 -1)^2
+\end{aligned}`
+$$
+
+
+
+---
+# How to find the coefficients?
+
+- Least Squared Method uses the **square loss**
+
+`$$l(\hat{y},y) = (\hat{y}-y)^2$$`
+
+-  We want to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)` that minimizes a **loss function**. 
+
+- The total loss function: 
+
+$$
+`\begin{aligned}
+L = L(w_0, w_1, w_2) &amp;= (w_0 + w_1 + 2 )^2+(w_0 + 2w_1 +w_2)^2 \\
+&amp;+(w_0 + 3w_1  -2w_2  +1)^2+(w_0 + 4w_1  + 3w_2 -1)^2
+\end{aligned}`
+$$
+- Solve for the partial derivatives equaling 0 to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)`. 
+
+
+
+---
+# How about other loss functions?
+
+- Absolute loss: `$$L(\hat{y},y) = |\hat{y}-y|$$`
+
+- The total loss function: 
+
+$$
+`\begin{aligned}
+L = L(w_0, w_1, w_2) &amp;= |w_0 + w_1 + 2|+|w_0 + 2w_1 +w_2| \\
+&amp;+|w_0 + 3w_1  -2w_2  +1|+|w_0 + 4w_1  + 3w_2 -1|
+\end{aligned}`
+$$
+
+- Use Linear Programming to find `\(w_0\)`, `\(w_1\)` and `\(w_2\)` that minimizes the total loss. 
+
+- [Least absolute deviations regression](https://en.wikipedia.org/wiki/Least_absolute_deviations)
+
+---
+# Linear Models
+
+&lt;img src="images/l3.png" width="757" /&gt;
+
+
+---
+# How about other loss functions?
+
+
+
+| Ordinary least squares regression | Least absolute deviations regression |
+|-----------------------------------|--------------------------------------|
+| Not very robust                   | Robust                               |
+| Stable solution                   | Unstable solution                    |
+| Always one solution               | Possibly multiple solutions          |
+
+
+---
+# A general framework
+
+- **Problem**:  Given the data of `\(x_1, x_2,..., x_d, y\)`, establish the *best* relation between `\(y\)` and `\(x = [x_1, x_2, ..., x_d]\)`. 
+
+- A solution framework:
+    - Step 1: Assume the model function `\(\hat{y} = f(x, w)\)`, where `\(w\)` is a parameter vector. 
+    - Step 2: Define the loss function `\(l(y, \hat{y})\)`
+    - Step 3: Find `\(w\)` that minimizes the loss function using gradient descent
+
+---
+# LASSO
+
+- Consider a linear model
+
+`$$y = 100x_1+0.01x_2+50x_3-0.002x_4$$`
+
+- `\(x_2\)` and `\(x_4\)` are not important because the coefficients are too small.  
+
+- We want to get rid of `\(x_2\)` and `\(x_4\)`
+
+---
+# LASSO - Principle
+
+- LASSO forces the sum of the absolute value of the coefficients to be less than a fixed value.
+
+- which forces certain coefficients (slopes) to be set to zero
+
+- effectively making the model simpler
+
+---
+# Linear Model vs. LASSO - Principle
+
+- Linear Model minimizes
+
+$$
+L(w_0, w_1, w_2)
+$$
+
+- LASSO minimizes
+
+`$$L(w_0, w_1, w_2) + \alpha \bigg( |w_1|+|w_2| \bigg)$$`
+
+- The greater `\(\alpha\)`, the easier `\(w_1\)` and `\(w_2\)` will be zeros.
+
+- When `\(\alpha = 0\)`, LASSO is the linear model.
+---
+# LASSO for Linear Model
+
+![](lasso0.png)
+
+---
+# LASSO for Linear Model
+
+![](lasso10.png)
+
+---
+# LASSO for Linear Model
+
+![](lasso20.png)
+
+---
+# LASSO for Linear Model
+
+![](lasso30.png)
+
+---
+# LASSO for Linear Model
+
+![](lasso40.png)
+
+---
+# LASSO for Variables Selection
+
+- Data
+
+| `\(x_1\)` | `\(x_2\)` | `\(x_3\)` | `\(x_4\)` | `\(x_5\)` | `\(x_6\)` | `\(y\)` |
+|-------|-------|-------|-------|-------|-------|-----|
+| ...   | ...   | ...   | ...   | ...   | ...   | ... |
+| ...   | ...   | ...   | ...   | ...   | ...   | ... |
+| ...   | ...   | ...   | ...   | ...   | ...   | ... |
+| ...   | ...   | ...   | ...   | ...   | ...   | ... |
+
+- Assume that the truth relation between the input `\(x_1, x_2, x_3, x_4, x_5, x_6\)` and the output `\(y\)` is
+
+$$
+y = 4x_2 + 3x_4 + 7x_6
+$$
+- We see that only `\(x_2\)`, `\(x_4\)` and `\(x_6\)` impact `\(y\)`
+
+- LASSO can help to identify variables that have effect on `\(y\)`
+
+---
+# LASSO for Variables Selection
+
+- The result when training the linear model and the LASSO
+
+|              |        `\(w_1\)` |      `\(w_2\)` |       `\(w_3\)` |      `\(w_4\)` |        `\(w_5\)` |      `\(w_6\)` |
+|--------------|-----------|---------|----------|---------|-----------|---------|
+| Truth        |  0        | 4       | 0        | 3       | 0         | 7       |
+| Linear Model | -0.244061 | 3.54013 | 0.221939 | 2.6042  | 0.0982158 | 6.83617 |
+| LASSO        | -0        | 2.65623 | 0        | 1.84839 | 0         | 5.80624 |
+
+
+- In Linear Model,  `\(x_1\)`, `\(x_3\)` and `\(x_5\)` have effect on `\(y\)` (which is WRONG!)
+
+- In LASSO, `\(x_1\)`, `\(x_3\)` and `\(x_5\)` have no effect on `\(y\)` (CORRECT!)
+
+- LASSO can also be applied before another model. 
+
+---
+# Logistic Regression
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | 1   |
+| 2   | 1   | 0  |
+| 3   | -2   | 0   |
+| 4   | 3   | 1   |
+
+
+- How are `\(y\)` and `\(x\)` related?
+
+---
+# Logistic Regression
+
+
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | 1   |
+| 2   | 1   | 0  |
+| 3   | -2   | 0   |
+| 4   | 3   | 1   |
+
+
+- Logistic Regression models `\(P(y=1|x) = \hat{y}\)` as: 
+
+$$
+\hat{y} = \frac{1}{1+e^{-(w_0+ w_1\cdot x_1 + w_2\cdot x_2)}}
+$$
+
+- OR,
+
+
+$$
+\log{\bigg(\frac{\hat{y}}{1-\hat{y}}}\bigg) = w_0 +w_1\cdot x_1+w_2\cdot x_2
+$$
+
+where `\(\hat{y}\)` is the predicted value of the probability of `\(y=1\)` given `\(x_1\)` and `\(x_2\)`.
+
+
+---
+# Logistic Regression
+
+
+
+| `\(x_1\)` | `\(x_2\)`| `\(y\)` |
+|-----|-----|-----|
+| 1   | 0   | 1   |
+| 2   | 1   | 0  |
+| 3   | -2   | 0   |
+| 4   | 3   | 1   |
+
+
+- Logistic Regression models `\(P(y=1|x) = \hat{y}\)` as: 
+
+$$
+\hat{y} = \frac{1}{1+e^{-(w_0+ w_1\cdot x_1 + w_2\cdot x_2)}}
+$$
+
+- OR,
+
+
+$$
+\log{\bigg(\frac{\hat{y}}{1-\hat{y}}}\bigg) = w_0 +w_1\cdot x_1+w_2\cdot x_2
+$$
+
+where `\(\hat{y}\)` is the predicted value of the probability of `\(y=1\)` given `\(x_1\)` and `\(x_2\)`.
+
+
+---
+# Logistic Regression
+
+
+$$
+\log{\bigg(\frac{\hat{y}}{1-\hat{y}}}\bigg) = w_0 +w_1\cdot x_1+w_2\cdot x_2
+$$
+
+
+- `\({\bigg(\frac{\hat{y}}{1-\hat{y}}}\bigg)\)` is also called odd-ratio. 
+
+- Logistic Regression assumes that the log of the odd ratio is linear. 
+
+---
+# How to find `\(w_0, w_1, w_2\)`?
+
+- **Step 1**: Define the loss function `\(l(\hat{y},y)\)`
+- **Step 2**: Find `\(w\)` that minimizes the total loss function
+
+
+---
+# Logistic Regression
+
+- Define the loss function: We use the log-loss or cross-entropy loss function
+$$
+l(\hat{y},y) = -y \log(\hat{y})-(1-y)\log(1-\hat{y})
+$$
+
+- Total Loss:
+
+`$$\begin{aligned}
+L(w_0, w_1, w_2) = &amp; -\log\bigg(\frac{1}{1+e^{-w_0-w_1}} \bigg) \\
+&amp;-\log\bigg(1- \frac{1}{1+e^{-w_0-2w_1-w_2}} \bigg) \\
+&amp;-\log\bigg(1- \frac{1}{1+e^{-w_0-3w_1+w_2}} \bigg) \\
+&amp;-\log\bigg(\frac{1}{1+e^{-w_0-4w_1-3w_2}} \bigg) \end{aligned}$$`
+
+- We need to find `\(w_0, w_1, w_2\)` that minimizes the total loss
+
+---
+# Logistic Regression
+
+![](lr.png)
+
+---
+# Logistic Regression
+
+![](lr2.png)
+
+---
+# Logistic Regression
+
+![](lr3.png)
+
+---
+# LASSO for Logistic Regression
+
+- The idea is the same as for linear model
+
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.01.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.02.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.03.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.04.png)
+---
+# LASSO for Logistic Regression
+
+![](lr0.05.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.06.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.07.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.08.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr0.09.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.01.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.02.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.03.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.04.png)
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.05.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.06.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.07.png)
+
+---
+# LASSO for Logistic Regression
+
+![](lr_prob0.08.png)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"slideNumberFormat": "<div class=\"progress-bar-container\">   <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">   </div> </div>`"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title> Adaboost</title>
+    <meta charset="utf-8" />
+    <meta name="author" content=" Son Nguyen " />
+    <script src="libs/header-attrs-2.10/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# <img src="figures/bat-cartoon.png" /> Adaboost
+### <font size="5"> Son Nguyen </font>
+
+---
+
+
+&lt;style&gt;
+
+.remark-slide-content {
+  background-color: #FFFFFF;
+  border-top: 80px solid #F9C389;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 1em 2em 1em 2em
+}
+
+.inverse {
+  background-color: #696767;
+  border-top: 80px solid #696767;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 50% 75%;
+  background-size: 150px;
+}
+
+.your-turn{
+  background-color: #8C7E95;
+  border-top: 80px solid #F9C389;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 95% 90%;
+  background-size: 75px;
+}
+
+.title-slide {
+  background-color: #F9C389;
+  border-top: 80px solid #F9C389;
+  background-image: none;
+}
+
+.title-slide &gt; h1  {
+  color: #111111;
+  font-size: 40px;
+  text-shadow: none;
+  font-weight: 400;
+  text-align: left;
+  margin-left: 15px;
+  padding-top: 80px;
+}
+.title-slide &gt; h2  {
+  margin-top: -25px;
+  padding-bottom: -20px;
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 35px;
+  text-align: left;
+  margin-left: 15px;
+}
+.title-slide &gt; h3  {
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 25px;
+  text-align: left;
+  margin-left: 15px;
+  margin-bottom: -30px;
+}
+
+&lt;/style&gt;
+
+&lt;style type="text/css"&gt;
+.left-code {
+  color: #777;
+  width: 40%;
+  height: 92%;
+  float: left;
+}
+.right-plot {
+  width: 59%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+# Adaboost
+
+![](images/bo4.png)
+
+---
+# Adaboost
+
+![](images/bo5.png)
+
+---
+# Adaboost, Clearly Explained
+
+
+- Demonstration by StatQuest
+- [Link](https://www.youtube.com/watch?v=LsK-xG1cLYA)
+
+---
+# Calculation Example
+
+Data
+
+
+.pull-left[
+
+| `\(x_1\)` | `\(x_2\)` | y  |
+|----|----|----|
+| 1  | 1  | 1  |
+| 1  | 3  | 1  |
+| 2  | 2  | -1 |
+| 2  | 4  | 1  |
+| 3  | 1  | -1 |
+| 3  | 2  | -1 |
+| 3  | 5  | 1  |
+| 4  | 4  | 1  |
+| 5  | 2  | -1 |
+| 5  | 5  | -1 |
+
+]
+
+.pull-right[
+
+]
+
+---
+# Calculation Example
+
+Data
+
+
+.pull-left[
+
+| `\(x_1\)` | `\(x_2\)` | y  |
+|----|----|----|
+| 1  | 1  | 1  |
+| 1  | 3  | 1  |
+| 2  | 2  | -1 |
+| 2  | 4  | 1  |
+| 3  | 1  | -1 |
+| 3  | 2  | -1 |
+| 3  | 5  | 1  |
+| 4  | 4  | 1  |
+| 5  | 2  | -1 |
+| 5  | 5  | -1 |
+
+]
+
+.pull-right[
+![](data.png)&lt;!-- --&gt;
+]
+
+
+
+---
+# Adaboost in a nutshell
+
+---
+# Make Stump 1
+
+![](db_stumps1.png)&lt;!-- --&gt;
+
+---
+# Make Stump 2
+
+![](db_stumps2.png)&lt;!-- --&gt;
+
+---
+# Make Stump 3
+
+![](db_stumps.png)&lt;!-- --&gt;
+
+---
+# Combine the Stumps
+
+![](final_model.png)&lt;!-- --&gt;
+
+---
+class: inverse, center, middle
+
+# Detail Calculation
+
+
+---
+# Make the first stump
+
+.pull-left[
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  
+|----|------|------|-----|
+|  0 |    1 |    1 |   1 |        
+|  1 |    1 |    3 |   1 |        
+|  2 |    2 |    2 |  -1 |        
+|  3 |    2 |    4 |   1 |        
+|  4 |    3 |    1 |  -1 |        
+|  5 |    3 |    2 |  -1 |        
+|  6 |    3 |    5 |   1 |        
+|  7 |    4 |    4 |   1 |        
+|  8 |    5 |    2 |  -1 |        
+|  9 |    5 |    5 |  -1 |        
+ 
+]
+
+
+
+---
+# Make the first stump
+
+.pull-left[
+
+- Assign weights for each row
+- Every row has the same weight in the first step
+
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  
+|----|------|------|-----|
+|  0 |    1 |    1 |   1 |        
+|  1 |    1 |    3 |   1 |        
+|  2 |    2 |    2 |  -1 |        
+|  3 |    2 |    4 |   1 |        
+|  4 |    3 |    1 |  -1 |        
+|  5 |    3 |    2 |  -1 |        
+|  6 |    3 |    5 |   1 |        
+|  7 |    4 |    4 |   1 |        
+|  8 |    5 |    2 |  -1 |        
+|  9 |    5 |    5 |  -1 |        
+ 
+]
+
+
+
+---
+# Make the first stump
+
+
+.pull-left[
+
+- Assign weights for each row
+
+- Every row has the same weight in the first step
+
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  Weight 1  |
+|----|------|------|-----|------------|
+|  0 |    1 |    1 |   1 |        0.1 |
+|  1 |    1 |    3 |   1 |        0.1 |
+|  2 |    2 |    2 |  -1 |        0.1 |
+|  3 |    2 |    4 |   1 |        0.1 |
+|  4 |    3 |    1 |  -1 |        0.1 |
+|  5 |    3 |    2 |  -1 |        0.1 |
+|  6 |    3 |    5 |   1 |        0.1 |
+|  7 |    4 |    4 |   1 |        0.1 |
+|  8 |    5 |    2 |  -1 |        0.1 |
+|  9 |    5 |    5 |  -1 |        0.1 |
+ 
+]
+
+
+---
+# Make the first stump
+
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  Weight 1  |
+|----|------|------|-----|------------|
+|  0 |    1 |    1 |   1 |        0.1 |
+|  1 |    1 |    3 |   1 |        0.1 |
+|  2 |    2 |    2 |  -1 |        0.1 |
+|  3 |    2 |    4 |   1 |        0.1 |
+|  4 |    3 |    1 |  -1 |        0.1 |
+|  5 |    3 |    2 |  -1 |        0.1 |
+|  6 |    3 |    5 |   1 |        0.1 |
+|  7 |    4 |    4 |   1 |        0.1 |
+|  8 |    5 |    2 |  -1 |        0.1 |
+|  9 |    5 |    5 |  -1 |        0.1 |
+ 
+]
+
+
+---
+# Make the first stump
+
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  Weight 1  |
+|----|------|------|-----|------------|
+|  0 |    1 |    1 |   1 |        0.1 |
+|  1 |    1 |    3 |   1 |        0.1 |
+|  2 |    2 |    2 |  -1 |        0.1 |
+|  3 |    2 |    4 |   1 |        0.1 |
+|  4 |    3 |    1 |  -1 |        0.1 |
+|  5 |    3 |    2 |  -1 |        0.1 |
+|  6 |    3 |    5 |   1 |        0.1 |
+|  7 |    4 |    4 |   1 |        0.1 |
+|  8 |    5 |    2 |  -1 |        0.1 |
+|  9 |    5 |    5 |  -1 |        0.1 |
+ 
+]
+
+---
+# Make the first stump
+
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+
+- **NOTE**: You are not required to make the stump. So the stump will be given to you!
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |  Weight 1  |
+|----|------|------|-----|------------|
+|  0 |    1 |    1 |   1 |        0.1 |
+|  1 |    1 |    3 |   1 |        0.1 |
+|  2 |    2 |    2 |  -1 |        0.1 |
+|  3 |    2 |    4 |   1 |        0.1 |
+|  4 |    3 |    1 |  -1 |        0.1 |
+|  5 |    3 |    2 |  -1 |        0.1 |
+|  6 |    3 |    5 |   1 |        0.1 |
+|  7 |    4 |    4 |   1 |        0.1 |
+|  8 |    5 |    2 |  -1 |        0.1 |
+|  9 |    5 |    5 |  -1 |        0.1 |
+ 
+]
+
+
+
+---
+# Make the first stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+
+- **NOTE**: You are not required to make the stump. So the stump will be given to you!
+
+- Here is the first stump
+]
+
+.pull-right[
+![](stump1.png)&lt;!-- --&gt;
+]
+
+---
+# Make the first stump
+
+.pull-left[
+
+- **Stump 1**: `\(I(x_2&gt;2.5)\)`
+
+]
+
+.pull-right[
+![](stump1.png)&lt;!-- --&gt;
+]
+
+---
+# Prediction of Stump 1
+
+.pull-left[
+
+- **Stump 1**: `$$I(x_2&gt;2.5)$$`
+
+- If `\(x_2 &gt; 2.5\)`, predicts `\(y=1\)`. 
+
+- Otherwise, predicts `\(y=-1\)`
+
+]
+
+.pull-right[
+| Row | x1 | x2 | y  | Stump 1 Predicts |
+|-----|----|----|----|------------------|
+| 0   | 1  | 1  | 1  | -1               |
+| 1   | 1  | 3  | 1  | 1                |
+| 2   | 2  | 2  | -1 | -1               |
+| 3   | 2  | 4  | 1  | 1                |
+| 4   | 3  | 1  | -1 | -1               |
+| 5   | 3  | 2  | -1 | -1               |
+| 6   | 3  | 5  | 1  | 1                |
+| 7   | 4  | 4  | 1  | 1                |
+| 8   | 5  | 2  | -1 | -1               |
+| 9   | 5  | 5  | -1 | 1                |
+]
+
+---
+# Error of the first stump
+
+|Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | -1                      | 0.1             |&lt;-
+| 1 | 1  | 3  | 1  | 1                       | 0.1             |
+| 2 | 2  | 2  | -1 | -1                      | 0.1             |
+| 3 | 2  | 4  | 1  | 1                       | 0.1             |
+| 4 | 3  | 1  | -1 | -1                      | 0.1             |
+| 5 | 3  | 2  | -1 | -1                      | 0.1             |
+| 6 | 3  | 5  | 1  | 1                       | 0.1             |
+| 7 | 4  | 4  | 1  | 1                       | 0.1             |
+| 8 | 5  | 2  | -1 | -1                      | 0.1             |
+| 9 | 5  | 5  | -1 | 1                       | 0.1             |&lt;-
+
+---
+# Error of the first stump
+
+.pull-left[
+
+- Stump 1 has 2 misclassifications at row 0 and 9 (The predictions are NOT the same as the `\(y\)` values). The total weights of these rows are: `$$\epsilon_1 = 0.1 + 0.1 = 0.2$$` 
+]
+
+.pull-right[
+|Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | -1                      | 0.1             |&lt;-
+| 1 | 1  | 3  | 1  | 1                       | 0.1             |
+| 2 | 2  | 2  | -1 | -1                      | 0.1             |
+| 3 | 2  | 4  | 1  | 1                       | 0.1             |
+| 4 | 3  | 1  | -1 | -1                      | 0.1             |
+| 5 | 3  | 2  | -1 | -1                      | 0.1             |
+| 6 | 3  | 5  | 1  | 1                       | 0.1             |
+| 7 | 4  | 4  | 1  | 1                       | 0.1             |
+| 8 | 5  | 2  | -1 | -1                      | 0.1             |
+| 9 | 5  | 5  | -1 | 1                       | 0.1             |&lt;-
+]
+
+---
+# Voting Power of the first Stump
+
+.pull-left[
+
+- Stump 1 has 2 misclassifications at row 0 and 9 (The predictions are NOT the same as the `\(y\)` values). The total weights of these rows are: `$$\epsilon_1 = 0.1 + 0.1 = 0.2$$` 
+
+- Voting Power: (L is the learning rate. `\(L = 1\)` in this example 1)
+
+`$$\alpha_{1} = L \cdot \frac{1}{2} \cdot \ln(\frac{1-\epsilon_{1}}{\epsilon_{1}}) = 0.693$$`
+]
+
+.pull-right[
+|Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | -1                      | 0.1             |&lt;-
+| 1 | 1  | 3  | 1  | 1                       | 0.1             |
+| 2 | 2  | 2  | -1 | -1                      | 0.1             |
+| 3 | 2  | 4  | 1  | 1                       | 0.1             |
+| 4 | 3  | 1  | -1 | -1                      | 0.1             |
+| 5 | 3  | 2  | -1 | -1                      | 0.1             |
+| 6 | 3  | 5  | 1  | 1                       | 0.1             |
+| 7 | 4  | 4  | 1  | 1                       | 0.1             |
+| 8 | 5  | 2  | -1 | -1                      | 0.1             |
+| 9 | 5  | 5  | -1 | 1                       | 0.1             |&lt;-
+]
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- For misclassified rows 0 and 9: 
+
+`$$w_{new} =   w_{old} \cdot e^{\alpha}  = 0.1\cdot e^{0.693}= 0.2$$`
+- For the correctly classified rows:  
+
+`$$w_{new} =  w_{old} \cdot e^{-\alpha} = 0.1\cdot e^{-0.693} = .05$$`
+]
+
+.pull-right[
+
+|Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | -1                      | 0.1             |&lt;-
+| 1 | 1  | 3  | 1  | 1                       | 0.1             |
+| 2 | 2  | 2  | -1 | -1                      | 0.1             |
+| 3 | 2  | 4  | 1  | 1                       | 0.1             |
+| 4 | 3  | 1  | -1 | -1                      | 0.1             |
+| 5 | 3  | 2  | -1 | -1                      | 0.1             |
+| 6 | 3  | 5  | 1  | 1                       | 0.1             |
+| 7 | 4  | 4  | 1  | 1                       | 0.1             |
+| 8 | 5  | 2  | -1 | -1                      | 0.1             |
+| 9 | 5  | 5  | -1 | 1                       | 0.1             |&lt;-
+
+]
+
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- For misclassified rows 0 and 9: 
+
+`$$w_{new} =   w_{old} \cdot e^{\alpha}  = 0.1\cdot e^{0.693}= 0.2$$`
+- For the correctly classified rows:  
+
+`$$w_{new} =  w_{old} \cdot e^{-\alpha} = 0.1\cdot e^{-0.693} = .05$$`
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 | Weight 2 |
+|-----|----|----|----|------------------|----------|----------|
+| 0   | 1  | 1  | 1  | -1               | 0.1      | 0.2      |
+| 1   | 1  | 3  | 1  | 1                | 0.1      | 0.05     |
+| 2   | 2  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 3   | 2  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 4   | 3  | 1  | -1 | -1               | 0.1      | 0.05     |
+| 5   | 3  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 6   | 3  | 5  | 1  | 1                | 0.1      | 0.05     |
+| 7   | 4  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 8   | 5  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 9   | 5  | 5  | -1 | 1                | 0.1      | 0.2      |
+
+]
+
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- For misclassified rows 0 and 9: 
+
+`$$w_{new} =   w_{old} \cdot e^{\alpha}  = 0.1\cdot e^{0.693}= 0.2$$`
+- For the correctly classified rows:  
+
+`$$w_{new} =  w_{old} \cdot e^{-\alpha} = 0.1\cdot e^{-0.693} = .05$$`
+- Notice how the weights increase for misclassified rows and decrease otherwise. 
+
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 | Weight 2 |
+|-----|----|----|----|------------------|----------|----------|
+| 0   | 1  | 1  | 1  | -1               | 0.1      | 0.2      |
+| 1   | 1  | 3  | 1  | 1                | 0.1      | 0.05     |
+| 2   | 2  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 3   | 2  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 4   | 3  | 1  | -1 | -1               | 0.1      | 0.05     |
+| 5   | 3  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 6   | 3  | 5  | 1  | 1                | 0.1      | 0.05     |
+| 7   | 4  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 8   | 5  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 9   | 5  | 5  | -1 | 1                | 0.1      | 0.2      |
+
+]
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- The total weights has to be 1. We divide the weights by the total `\((.2*2+.05*8 = .8)\)` to achieve this. 
+
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 | Weight 2 |
+|-----|----|----|----|------------------|----------|----------|
+| 0   | 1  | 1  | 1  | -1               | 0.1      | 0.2      |
+| 1   | 1  | 3  | 1  | 1                | 0.1      | 0.05     |
+| 2   | 2  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 3   | 2  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 4   | 3  | 1  | -1 | -1               | 0.1      | 0.05     |
+| 5   | 3  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 6   | 3  | 5  | 1  | 1                | 0.1      | 0.05     |
+| 7   | 4  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 8   | 5  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 9   | 5  | 5  | -1 | 1                | 0.1      | 0.2      |
+
+]
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- The total weights has to be 1. We divide the weights by the total `\((.2*2+.05*8 = .8)\)` to achieve this. 
+
+- Divide Weight 2 by 0.8
+
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Stump 1 Predicts | Weight 1 | Weight 2 |
+|-----|----|----|----|------------------|----------|----------|
+| 0   | 1  | 1  | 1  | -1               | 0.1      | 0.2      |
+| 1   | 1  | 3  | 1  | 1                | 0.1      | 0.05     |
+| 2   | 2  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 3   | 2  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 4   | 3  | 1  | -1 | -1               | 0.1      | 0.05     |
+| 5   | 3  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 6   | 3  | 5  | 1  | 1                | 0.1      | 0.05     |
+| 7   | 4  | 4  | 1  | 1                | 0.1      | 0.05     |
+| 8   | 5  | 2  | -1 | -1               | 0.1      | 0.05     |
+| 9   | 5  | 5  | -1 | 1                | 0.1      | 0.2      |
+
+]
+
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- The total weights has to be 1. We divide the weights by the total `\((.2*2+.05*8 = .8)\)` to achieve this. 
+
+- Divide Weight 2 by 0.8
+
+]
+
+.pull-right[
+
+|Row |   x1 |   x2 |   y |   Stump 1 Predicts  |   Weight 1 |   Weight 2  |
+|----|------|------|-----|-----------|------------|------------|
+|  0 |    1 |    1 |   1 |        -1 |        0.1 |     0.25   |
+|  1 |    1 |    3 |   1 |         1 |        0.1 |     0.0625 |
+|  2 |    2 |    2 |  -1 |        -1 |        0.1 |     0.0625 |
+|  3 |    2 |    4 |   1 |         1 |        0.1 |     0.0625 |
+|  4 |    3 |    1 |  -1 |        -1 |        0.1 |     0.0625 |
+|  5 |    3 |    2 |  -1 |        -1 |        0.1 |     0.0625 |
+|  6 |    3 |    5 |   1 |         1 |        0.1 |     0.0625 |
+|  7 |    4 |    4 |   1 |         1 |        0.1 |     0.0625 |
+|  8 |    5 |    2 |  -1 |        -1 |        0.1 |     0.0625 |
+|  9 |    5 |    5 |  -1 |         1 |        0.1 |     0.25   |
+
+]
+
+---
+class: center, inverse, middle
+
+# Repeat the process to make the second Stump
+
+---
+# Data to make the second Stump
+
+.pull-left[
+
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Weight 2 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.25     |
+| 1   | 1  | 3  | 1  | 0.0625   |
+| 2   | 2  | 2  | -1 | 0.0625   |
+| 3   | 2  | 4  | 1  | 0.0625   |
+| 4   | 3  | 1  | -1 | 0.0625   |
+| 5   | 3  | 2  | -1 | 0.0625   |
+| 6   | 3  | 5  | 1  | 0.0625   |
+| 7   | 4  | 4  | 1  | 0.0625   |
+| 8   | 5  | 2  | -1 | 0.0625   |
+| 9   | 5  | 5  | -1 | 0.25     |
+
+]
+
+---
+# Make the second stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Weight 2 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.25     |
+| 1   | 1  | 3  | 1  | 0.0625   |
+| 2   | 2  | 2  | -1 | 0.0625   |
+| 3   | 2  | 4  | 1  | 0.0625   |
+| 4   | 3  | 1  | -1 | 0.0625   |
+| 5   | 3  | 2  | -1 | 0.0625   |
+| 6   | 3  | 5  | 1  | 0.0625   |
+| 7   | 4  | 4  | 1  | 0.0625   |
+| 8   | 5  | 2  | -1 | 0.0625   |
+| 9   | 5  | 5  | -1 | 0.25     |
+
+]
+
+---
+# Make the second stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+
+]
+
+.pull-right[
+
+| Row | x1 | x2 | y  | Weight 2 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.25     |
+| 1   | 1  | 3  | 1  | 0.0625   |
+| 2   | 2  | 2  | -1 | 0.0625   |
+| 3   | 2  | 4  | 1  | 0.0625   |
+| 4   | 3  | 1  | -1 | 0.0625   |
+| 5   | 3  | 2  | -1 | 0.0625   |
+| 6   | 3  | 5  | 1  | 0.0625   |
+| 7   | 4  | 4  | 1  | 0.0625   |
+| 8   | 5  | 2  | -1 | 0.0625   |
+| 9   | 5  | 5  | -1 | 0.25     |
+
+
+]
+
+---
+# Make the second stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+]
+
+.pull-right[
+![](stump2.png)&lt;!-- --&gt;
+]
+
+---
+# Error of the second stump
+
+|Row | x1 | x2 | y  | Stump 2 Predicts | Weight 2|
+|---|----|----|----|-------------------------|----------------|
+| 0 | 1  | 1  | 1  | 1                       | 0.25           |
+| 1 | 1  | 3  | 1  | 1                       | 0.0625         |
+| 2 | 2  | 2  | -1 | -1                      | 0.0625         |
+| 3 | 2  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 4 | 3  | 1  | -1 | -1                      | 0.0625         |
+| 5 | 3  | 2  | -1 | -1                      | 0.0625         |
+| 6 | 3  | 5  | 1  | -1                      | 0.0625         |&lt;-
+| 7 | 4  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 8 | 5  | 2  | -1 | -1                      | 0.0625         |
+| 9 | 5  | 5  | -1 | -1                      | 0.25           |
+
+---
+# Error of the second stump
+
+.pull-left[
+
+- Stump 2 has misclassifications at row 3, 6, and 7 (The predictions are NOT the same as the `\(y\)` values). The total weights of these rows are: 0.0625 + 0.0625 + 0.0625 = 0.1875
+
+- Error of Stump 2: `$$\epsilon_2 = 0.1875$$`
+
+- Voting Power: 
+
+`$$\alpha_{2} = L \cdot \frac{1}{2} \cdot \ln(\frac{1-\epsilon_{2}}{\epsilon_{2}}) = 0.733$$`
+]
+
+.pull-right[
+|Row | x1 | x2 | y  | Stump 2 Predicts | Weight 2|
+|---|----|----|----|-------------------------|----------------|
+| 0 | 1  | 1  | 1  | 1                       | 0.25           |
+| 1 | 1  | 3  | 1  | 1                       | 0.0625         |
+| 2 | 2  | 2  | -1 | -1                      | 0.0625         |
+| 3 | 2  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 4 | 3  | 1  | -1 | -1                      | 0.0625         |
+| 5 | 3  | 2  | -1 | -1                      | 0.0625         |
+| 6 | 3  | 5  | 1  | -1                      | 0.0625         |&lt;-
+| 7 | 4  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 8 | 5  | 2  | -1 | -1                      | 0.0625         |
+| 9 | 5  | 5  | -1 | -1                      | 0.25           |
+
+]
+
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- For misclassified rows 3, 6 and 7: 
+
+`$$w_{new} =   w_{old} \cdot e^{\alpha}$$`
+- For the correctly classified rows:  
+
+`$$w_{new} =  w_{old} \cdot e^{-\alpha}$$`
+]
+
+.pull-right[
+
+|Row | x1 | x2 | y  | Stump 2 Predicts | Weight 2|
+|---|----|----|----|-------------------------|----------------|
+| 0 | 1  | 1  | 1  | 1                       | 0.25           |
+| 1 | 1  | 3  | 1  | 1                       | 0.0625         |
+| 2 | 2  | 2  | -1 | -1                      | 0.0625         |
+| 3 | 2  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 4 | 3  | 1  | -1 | -1                      | 0.0625         |
+| 5 | 3  | 2  | -1 | -1                      | 0.0625         |
+| 6 | 3  | 5  | 1  | -1                      | 0.0625         |&lt;-
+| 7 | 4  | 4  | 1  | -1                      | 0.0625         |&lt;-
+| 8 | 5  | 2  | -1 | -1                      | 0.0625         |
+| 9 | 5  | 5  | -1 | -1                      | 0.25           |
+
+]
+
+
+---
+# Calculating the new weights
+
+.pull-left[
+
+- For misclassified rows 3, 6 and 7: 
+
+`$$w_{new} =   w_{old} \cdot e^{\alpha}$$`
+- For the correctly classified rows:  
+
+`$$w_{new} =  w_{old} \cdot e^{-\alpha}$$`
+]
+
+.pull-right[
+
+|Row | x1 | x2 | y  | Weight 2 | Stump 2 Predicts  | Weight 3         |
+|---|----|----|----|----------------|-------------------------|---------|
+| 0 | 1  | 1  | 1  | 0.25           | 1                       | 0.12012 |
+| 1 | 1  | 3  | 1  | 0.0625         | 1                       | 0.03003 |
+| 2 | 2  | 2  | -1 | 0.0625         | -1                      | 0.03003 |
+| 3 | 2  | 4  | 1  | 0.0625         | -1                      | 0.13008 |
+| 4 | 3  | 1  | -1 | 0.0625         | -1                      | 0.03003 |
+| 5 | 3  | 2  | -1 | 0.0625         | -1                      | 0.03003 |
+| 6 | 3  | 5  | 1  | 0.0625         | -1                      | 0.13008 |
+| 7 | 4  | 4  | 1  | 0.0625         | -1                      | 0.13008 |
+| 8 | 5  | 2  | -1 | 0.0625         | -1                      | 0.03003 |
+| 9 | 5  | 5  | -1 | 0.25           | -1                      | 0.12012 |
+
+]
+
+
+---
+# Normalize the new weights
+
+- The total weights has to be 1. We divide Weight 3 by the total of current Weight 3, which is 0.780624761
+ to achieve this. 
+
+|Row | x1 | x2 | y  | Weight 2 | Stump 2 Predicts  | Weight 3         |
+|---|----|----|----|----------------|-------------------------|---------|
+| 0 | 1  | 1  | 1  | 0.25           | 1                       | 0.15387 |
+| 1 | 1  | 3  | 1  | 0.0625         | 1                       | 0.03847 |
+| 2 | 2  | 2  | -1 | 0.0625         | -1                      | 0.03847 |
+| 3 | 2  | 4  | 1  | 0.0625         | -1                      | 0.16664 |
+| 4 | 3  | 1  | -1 | 0.0625         | -1                      | 0.03847 |
+| 5 | 3  | 2  | -1 | 0.0625         | -1                      | 0.03847 |
+| 6 | 3  | 5  | 1  | 0.0625         | -1                      | 0.16664 |
+| 7 | 4  | 4  | 1  | 0.0625         | -1                      | 0.16664 |
+| 8 | 5  | 2  | -1 | 0.0625         | -1                      | 0.03847 |
+| 9 | 5  | 5  | -1 | 0.25           | -1                      | 0.15387 |
+
+
+---
+class: center, inverse, middle
+
+# Repeat the process to make the third Stump
+
+---
+# Data to Make the third stump
+
+.pull-left[
+
+
+]
+
+.pull-right[
+| Row | x1 | x2 | y  | Weight 3 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.15387  |
+| 1   | 1  | 3  | 1  | 0.03847  |
+| 2   | 2  | 2  | -1 | 0.03847  |
+| 3   | 2  | 4  | 1  | 0.16664  |
+| 4   | 3  | 1  | -1 | 0.03847  |
+| 5   | 3  | 2  | -1 | 0.03847  |
+| 6   | 3  | 5  | 1  | 0.16664  |
+| 7   | 4  | 4  | 1  | 0.16664  |
+| 8   | 5  | 2  | -1 | 0.03847  |
+| 9   | 5  | 5  | -1 | 0.15387  |
+]
+
+---
+# Make the third stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+]
+
+.pull-right[
+| Row | x1 | x2 | y  | Weight 3 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.15387  |
+| 1   | 1  | 3  | 1  | 0.03847  |
+| 2   | 2  | 2  | -1 | 0.03847  |
+| 3   | 2  | 4  | 1  | 0.16664  |
+| 4   | 3  | 1  | -1 | 0.03847  |
+| 5   | 3  | 2  | -1 | 0.03847  |
+| 6   | 3  | 5  | 1  | 0.16664  |
+| 7   | 4  | 4  | 1  | 0.16664  |
+| 8   | 5  | 2  | -1 | 0.03847  |
+| 9   | 5  | 5  | -1 | 0.15387  |
+]
+
+---
+# Make the third stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+]
+
+.pull-right[
+| Row | x1 | x2 | y  | Weight 3 |
+|-----|----|----|----|----------|
+| 0   | 1  | 1  | 1  | 0.15387  |
+| 1   | 1  | 3  | 1  | 0.03847  |
+| 2   | 2  | 2  | -1 | 0.03847  |
+| 3   | 2  | 4  | 1  | 0.16664  |
+| 4   | 3  | 1  | -1 | 0.03847  |
+| 5   | 3  | 2  | -1 | 0.03847  |
+| 6   | 3  | 5  | 1  | 0.16664  |
+| 7   | 4  | 4  | 1  | 0.16664  |
+| 8   | 5  | 2  | -1 | 0.03847  |
+| 9   | 5  | 5  | -1 | 0.15387  |
+
+]
+
+---
+# Make the third stump
+
+.pull-left[
+
+- Use Weighted Gini-Index to calculate the children entropy of all candidate splits
+
+- The split with the lowest children impurity is the best split
+]
+
+.pull-right[
+![](stump3.png)&lt;!-- --&gt;
+]
+
+---
+# Error of the third stump
+
+|Row | x1 | x2 | y  | Stump 3 Predicts | Weight 3 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | 1                       | 0.15385         |
+| 1 | 1  | 3  | 1  | 1                       | 0.03846         |
+| 2 | 2  | 2  | -1 | 1                       | 0.03846         |&lt;-
+| 3 | 2  | 4  | 1  | 1                       | 0.16667         |
+| 4 | 3  | 1  | -1 | 1                       | 0.03846         |&lt;-
+| 5 | 3  | 2  | -1 | 1                       | 0.03846         |&lt;-
+| 6 | 3  | 5  | 1  | 1                       | 0.16667         |
+| 7 | 4  | 4  | 1  | 1                       | 0.16667         |
+| 8 | 5  | 2  | -1 | -1                      | 0.03846         |
+| 9 | 5  | 5  | -1 | -1                      | 0.15385         |
+
+---
+# Error of the third stump
+
+.pull-left[
+
+- Stump 3 has misclassifications at row 2, 4, and 5 (The predictions are NOT the same as the `\(y\)` values). The total weights of these rows are: `$$\epsilon_3 = 0.03846 \cdot 3 = 0.11538$$`
+
+- Voting Power: 
+
+`$$\alpha_{3} = L \cdot \frac{1}{2} \cdot \ln(\frac{1-\epsilon_{3}}{\epsilon_{3}}) = 1.018$$`
+]
+
+.pull-right[
+|Row | x1 | x2 | y  | Stump 3 Predicts | Weight 3 |
+|---|----|----|----|-------------------------|-----------------|
+| 0 | 1  | 1  | 1  | 1                       | 0.15385         |
+| 1 | 1  | 3  | 1  | 1                       | 0.03846         |
+| 2 | 2  | 2  | -1 | 1                       | 0.03846         |&lt;-
+| 3 | 2  | 4  | 1  | 1                       | 0.16667         |
+| 4 | 3  | 1  | -1 | 1                       | 0.03846         |&lt;-
+| 5 | 3  | 2  | -1 | 1                       | 0.03846         |&lt;-
+| 6 | 3  | 5  | 1  | 1                       | 0.16667         |
+| 7 | 4  | 4  | 1  | 1                       | 0.16667         |
+| 8 | 5  | 2  | -1 | -1                      | 0.03846         |
+| 9 | 5  | 5  | -1 | -1                      | 0.15385         |
+]
+
+---
+# Summarise the results
+
+|  Row  |   x1 |   x2 |   y |   Stump 1 Predicts |   Weight 1|   Weight 2|   Stump 2 Predicts  |   Weight 3 |   Stump 3 Predicts |
+|----|------|------|-----|-----------|------------|------------|-----------|------------|-----------|
+|  0 |    1 |    1 |   1 |        -1 |        0.1 |     0.25   |         1 |  0.153846  |         1 |
+|  1 |    1 |    3 |   1 |         1 |        0.1 |     0.0625 |         1 |  0.0384615 |         1 |
+|  2 |    2 |    2 |  -1 |        -1 |        0.1 |     0.0625 |        -1 |  0.0384615 |         1 |
+|  3 |    2 |    4 |   1 |         1 |        0.1 |     0.0625 |        -1 |  0.166667  |         1 |
+|  4 |    3 |    1 |  -1 |        -1 |        0.1 |     0.0625 |        -1 |  0.0384615 |         1 |
+|  5 |    3 |    2 |  -1 |        -1 |        0.1 |     0.0625 |        -1 |  0.0384615 |         1 |
+|  6 |    3 |    5 |   1 |         1 |        0.1 |     0.0625 |        -1 |  0.166667  |         1 |
+|  7 |    4 |    4 |   1 |         1 |        0.1 |     0.0625 |        -1 |  0.166667  |         1 |
+|  8 |    5 |    2 |  -1 |        -1 |        0.1 |     0.0625 |        -1 |  0.0384615 |        -1 |
+|  9 |    5 |    5 |  -1 |         1 |        0.1 |     0.25   |        -1 |  0.153846  |        -1 |
+
+
+---
+# Combining three Stumps
+
+- Let say we stop making new stumps here. 
+
+- We will combine the three stumps to make the final model
+
+![](db_stumps.png)
+
+---
+# Combining three Stumps
+
+
+![](final_model.png)&lt;!-- --&gt;
+
+
+---
+# Learning rate
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"slideNumberFormat": "<div class=\"progress-bar-container\">\n  <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">\n  </div>\n</div>`"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
