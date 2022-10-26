@@ -16,7 +16,7 @@ Notice:  This webpage will be updated frequently (daily or weekly) as the class 
 |Handwritten Recognition|  |  |[html](python/digits/fa22/image_recognition_rf.html), [ipynb](python/digits/fa22/image_recognition_rf.ipynb) | [Assignment 3](assignments/Math460_Assignment3.html)| |  |
 | Ensemble Method and Boosting  |[Slide](gganimate/boosting3.html)                     |        |    [Classification](python/adaboost_classification.html), [ipynb](python/adaboost_classification.ipynb)  <br> [Learning rate](python/adaboost_demonstrate_fa22.html), [ipynb](python/adaboost_demonstrate_fa22.ipynb)       |       ||
 | Adaboost                      |[Example](gganimate/adaboost.html)                   |        |            |       ||
-| Gradient Boosting             |              |     |        |            |       ||[Exam 2](exams/Exam2/Exam2.html)|
+| Gradient Boosting             |              |     |        |            |       |[Exam 2](exams/Exam2/Exam2.html)|
 | Linear Models and LASSO       |              |     |        |            |       ||
 | KNN                           |              |     |        |            |       ||
 | Recommendation System         |              |     |        |            |       ||
