@@ -16,7 +16,7 @@ Notice:  This webpage will be updated frequently (daily or weekly) as the class 
 |Handwritten Recognition|  |  |[Forest](python/digits/fa22/image_recognition_rf.html), [ipynb](python/digits/fa22/image_recognition_rf.ipynb) <br> [Adaboost](python/digits/fa22/image_recognition_ada.html), [ipynb](python/digits/fa22/image_recognition_ada.ipynb) | [Assignment 3](assignments/Math460_Assignment3.html)| |  |
 | Ensemble Method  |[Slide](gganimate/boosting3.html)                     |        |        |       ||
 | Adaboost                      |[Example](gganimate/adaboost.html)                   |        |  [Classification](python/adaboost_classification.html), [ipynb](python/adaboost_classification.ipynb)  <br> [Learning rate](python/adaboost_demonstrate_fa22.html), [ipynb](python/adaboost_demonstrate_fa22.ipynb)             |       ||
-| Gradient Boosting             |              |[Video]()     |[Classification](python/gb_classification.html), [ipynb](python/gb_classification.ipynb), <br> [Regression](python/gb_regression.html),[ipynb](python/gb_regression.ipynb)|            |       |[Exam 2](exams/Exam2/Exam2.html)|
+| Gradient Boosting             |              |[Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=1f5b6ef1-aec1-4501-a425-af3f01069124)     |[Classification](python/gb_classification.html), [ipynb](python/gb_classification.ipynb), <br> [Regression](python/gb_regression.html),[ipynb](python/gb_regression.ipynb)|            |       |[Exam 2](exams/Exam2/Exam2.html)|
 | Linear Models and LASSO       |              |     |        |            |       ||
 | KNN                           |              |     |        |            |       ||
 | Recommendation System         |              |     |        |            |       ||
