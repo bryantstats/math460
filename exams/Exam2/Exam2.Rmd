@@ -15,7 +15,7 @@ Notice:  This exam is has not been officially assigned yet.  This means there st
 
 -------
 
-Sample calculations can be found here: [Link]()
+Sample calculations can be found here: [Link](Exam2_sol.html)
 
 #### Problem 1: 
 Given the data.
