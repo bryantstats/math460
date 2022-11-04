@@ -47,6 +47,8 @@ Suppose we use this data to train an adaboost model with the learning rate $L=1$
   
   e. Draw the decision boundary of the adaboost. This video shows how to make decision boundary of the adaboost: [link](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=e0a751e8-d6c8-4a7d-98f7-adcc01064682)
   
+        Class note for drawing decision boundary of Adaboost can be found here: [Link](adaboost_db.pdf)
+  
   f. Compute the error (misclassification) of the adataboost. 
 
 <br>
