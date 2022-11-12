@@ -12,9 +12,9 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 ```
 
 
-Follow this below video and this notebook to implement a tree based model (Gradient Boosting, Adaboost or Random Forest) for image recognition. *Make sure you have similar amount of images for each categories*.  Record a presentation of your final model and upload the link to Canvas. 
+Follow this below video and this notebook to implement a tree based model (Gradient Boosting, Adaboost or Random Forest) for image recognition. **Make sure you have similar amount of images for each categories**.  Record a presentation of your final model and upload the link to Canvas. 
 
-- Link to the video: [link]()
+- Link to the video: [link](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cc0acb3e-295b-40d3-a813-af4b00168c19)
 
 In your presentation you should
 
