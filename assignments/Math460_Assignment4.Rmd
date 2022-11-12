@@ -1,0 +1,40 @@
+---
+title: "Assignment 3: Image Recognition with Gradient Boosting"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+
+Follow this below video and this notebook to implement Gradient Boosting model for image recognition. Record a presentation of your final model and upload the link to Canvas. 
+
+- Link to the video: [link](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=c9e908ee-bb87-4fc1-a3f8-add501071ce4)
+
+- Link to the notebook: [link](https://bryantstats.github.io/math460/python/image_recognition/image_recognition3.html)
+
+- Download the notebook at: [link](https://bryantstats.github.io/math460/python/image_recognition/spring21/image_recognition3.ipynb)
+
+In your presentation you should
+
+- Show your training data, testing data
+
+- Present the performance of your model.  
+
+- Try different values of number of trees, learning rate, and dimension (dim) then comment on the changes (if any) in the model prediction with these different values.  
+
+- What are your final values selection for the number of trees, learning rate, and dimension?
+
+- Are you happy with the model? If not, how would you do if you have time to improve the model. 
+
+- Discuss any issue you run into training the model. 
+
+
+-------
+
+
