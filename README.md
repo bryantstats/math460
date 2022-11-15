@@ -2,8 +2,6 @@
 
 [Syllabus](Syllabus_460.pdf)
 
-Notice:  This webpage will be updated frequently (daily or weekly) as the class progresses.  
-
 ---
 
 |Topics| Slides/Notes |SAS | Python | Assignments|Extra <br> Credits | Exams |
