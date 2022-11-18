@@ -17,7 +17,7 @@
 | Gradient Boosting             | [Note](slides/GradientBoosting.pdf)             |[Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=1f5b6ef1-aec1-4501-a425-af3f01069124)     |[Classification](python/gb_classification.html), [ipynb](python/gb_classification.ipynb), <br> [Regression](python/gb_regression.html),[ipynb](python/gb_regression.ipynb)|            | [EC3](assignments/Extra_Credit_3.html)      |[Exam 2](exams/Exam2/Exam2.html)|
 |             **Image Recognition**           |  |  | [Tree Based](python/images_recognition/image_recognition_gb.html) <br> [Deep Network]() | [Assignment 4](assignments/Math460_Assignment4.html) |  |
 | Linear Models and LASSO       |[Note](gganimate/lm_fa22.pdf)              |  [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=e02f2b51-b8e2-41de-8978-af4801169175)   | [Regression](python/lasso_regression_practice.html), [ipynb](python/lasso_regression_practice.ipynb) <br> [Classification](python/lasso_classification_fa21.html), [ipynb](python/lasso_classification_fa21.ipynb)|    |    [EC4](assignments/Extra_Credit_4.html)   |            |       |
-| KNN                           | [1](slides/knn.html), [2](slides/knn_note.pdf)             |     |        |            |       |
+| KNN                           | [1](slides/knn.html), [2](slides/knn_note.pdf)             | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=86dce16e-c337-4124-beac-af510115d1d3)    |        |            |       |
 | Recommendation System         |              |     |        |            |       |
 | Principal Conponents Analysis |              |     |        |            |       |
 | Variable Selection            |              |     |        |            |       |
