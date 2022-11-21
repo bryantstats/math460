@@ -38,7 +38,7 @@ You are asked to complete a RESEARCH PAPER.  Your paper should have a **title**;
 
 #### 2. Predictive Modeling Explained. 
 
-- Describe the process of building a predictive model: Data partition, training model and validating/testing model. Explain the issue of overfitting. Explain model tuning. 
+- Describe the process of building a predictive model: Data partition, training model and validating/testing model. Explain the issue of overfitting. What is model tuning and why one should do it? 
 
 - Introduce and Explain the following models. For each model explain the given hyparameters in the parentheses and how the hyperparameters could affect model's performance. Discuss pros and cons of the models. 
 

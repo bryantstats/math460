@@ -23,7 +23,7 @@
 | Variable Selection            |              |     |        |            |       |
 | Neural Network                |              |     |        |            |       |
 | Deep Learning                 |              |     |        |            |       |
-| Final Project                 |              |     |        |            |       |
+| Final Project                 |   [Final Project](final/Math460_Final.html)           |     |        |            |       |
 
 ---
 
