@@ -6,41 +6,41 @@
 </style>
 
 Recommendation Systems
-========================================================
+---
 author: Son Nguyen
 date: September 9, 2019
 font-family: Garamond
 
 
 Examples - Amazon
-=======================================================
+---
 ![](images/rs1.png)
 
 Examples - In e-commerce
-=======================================================
+---
 ![](images/rs2.png)
 
 Examples - In Social Media
-=======================================================
+---
 ![](images/rs3.png)
 
 Examples - Mobile Apps
-=======================================================
+---
 ![](images/rs4.png)
 
 Definition - Problem domain
-=======================================================
+---
 - Recommendation systems (RS) help to match **users** with
 **items**
 
 Definition - Problem domain
-=======================================================
+---
 
 - RS are one of the **most successful and widespread applications** of machine learning technologies in business.
 
 
 Two types of systems
-=======================================================
+---
 
 <center>
 ![](images/rs8.png)
@@ -48,7 +48,7 @@ Two types of systems
 </center>
 
 Two types of systems
-=======================================================
+---
 
 - **Content- Based Filtering**: Recommeding to user A based on his/her existing profiles. 
 
@@ -56,14 +56,14 @@ Two types of systems
 
 
 Content- Based Filtering
-=======================================================
+---
 <center>
 ![](images/rs5.png)
 
 </center>
 
 Content- Based Filtering
-=======================================================
+---
 - Assume there are four categories of news A) Politics B) Sports C) Entertainment D) Technology 
 
 - User A who has read 10 articles related to Technology 
@@ -71,7 +71,7 @@ Content- Based Filtering
 - Recommend a new article in Technology for him to read. 
 
 Collaborative Filtering
-=======================================================
+---
 
 <center>
 ![](images/rs6.png)
@@ -79,7 +79,7 @@ Collaborative Filtering
 </center>
 
 Collaborative Filtering
-=======================================================
+---
 
 - Assume there are four categories of news A) Politics B) Sports C) Entertainment D) Technology 
 
@@ -90,7 +90,7 @@ Collaborative Filtering
 - Recommend the article X to user A. 
 
 Collaborative Filtering: Two approaches
-=======================================================
+---
 
 <center>
 ![](images/rs7.png)
@@ -98,7 +98,7 @@ Collaborative Filtering: Two approaches
 </center>
 
 Utility Matrix
-=======================================================
+---
 
 - Utility Matrix contains ratings of users on items
 
@@ -121,7 +121,7 @@ Utility Matrix
 
 
 Nearest-neighbors (kNN)
-=======================================================
+---
 
 - A "pure" CF approach and traditional baseline
 - Using the utility as inputs
@@ -129,7 +129,7 @@ Nearest-neighbors (kNN)
 
 
 Nearest-neighbors (kNN)
-=======================================================
+---
 
 - **Assumptions**
   - If users had similar tastes in the past they will have similar tastes in the
@@ -138,7 +138,7 @@ future
 
 
 User-based KNN
-=======================================================
+---
 
 <center>
 
@@ -155,7 +155,7 @@ User-based KNN
 - User the average rating of the nearest neighbors on Item 5 as a prediction of Alice on Item 5.
 
 User-based KNN
-=======================================================
+---
 
 <center>
 
@@ -183,7 +183,7 @@ $$
 - We will **recommend** item 5 to Alice. 
 
 Item-based KNN
-=======================================================
+---
 
 <center>
 
@@ -200,7 +200,7 @@ Item-based KNN
 - The predicted rating of Alice on item 5 is the average rating of Alice on the nearest neighbors. 
 
 Item-based KNN
-=======================================================
+---
 
 <center>
 
@@ -228,7 +228,7 @@ $$
 - We **recommend** her to buy Item 5! 
 
 Similarity Measure 
-=======================================================
+---
 - Neighborhood can be decided by **similarity** measures
 - Similarity can be measured as the inverse of the Distance
 - The possible similarity values are between 0 and 1, where values near to 1 indicate a strong similarity.
@@ -236,14 +236,14 @@ Similarity Measure
 - There are many similarity measure
 
 Similarity Measure 
-=======================================================
+---
 <center>
 ![](images/rs9.png)
 
 </center>
 
 Manhattan Distance 
-=======================================================
+---
 <center>
 ![](images/rs10.png)
 
@@ -262,7 +262,7 @@ Manhattan Distance
 $$A1  = |5-3| + |3-1|+|4-2|+|4-3| = 7$$
 
 Manhattan vs. Euclidean
-=======================================================
+---
 <center>
 ![](images/rs11.png)
 
@@ -270,14 +270,14 @@ Manhattan vs. Euclidean
 
 
 Cosine Similarity
-=======================================================
+---
 <center>
 ![](images/rs12.png)
 
 - **Cosine similarity** is established as the standard in Recommendation System. 
 
 Cosine Similarity Measure 
-=======================================================
+---
 - Cosine similarity between Alice and User 1 ($S1$). 
 
 <center>
@@ -293,6 +293,6 @@ $$S1  = \frac{5 \cdot 3 + 3 \cdot 1 + 4 \cdot 2 + 4 \cdot 3}{\sqrt{5^2+3^2+4^2+4
 
 
 The Netflix Challenge
-=======================================================
+---
 
 [Link](Netflix_Prize.pptx)
