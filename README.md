@@ -19,7 +19,7 @@
 | Linear Models and LASSO       |[Note](gganimate/lm_fa22.pdf)              |  [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=e02f2b51-b8e2-41de-8978-af4801169175)   | [Regression](python/lasso_regression_practice.html), [ipynb](python/lasso_regression_practice.ipynb) <br> [Classification](python/lasso_classification_fa21.html), [ipynb](python/lasso_classification_fa21.ipynb)|    |    [EC4](assignments/Extra_Credit_4.html)   |            |       |
 | KNN                           | [1](slides/knn.html), [2](slides/knn_note.pdf)             | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=86dce16e-c337-4124-beac-af510115d1d3)    | [html](python/knn.html)       |            |       |
 | Recommendation System         | [1](slides/rs2.html), [2](slides/Netflix_Prize.pdf)             |     |        | [Assignment 5](assignments/Math460_Assignment5.html)           |     |[Exam 3](exams/Exam3/Exam3.html)  |
-| Principal Conponents Analysis | [Note](slides/pca.pdf)             |     |        |            |       |
+| Principal Conponents Analysis | [Note](slides/pca.pdf)             | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=67e0ae09-96d2-45eb-98f0-af5d01115bbe)    |        |            |       |
 | Variable Selection            |              |     |        |            |       |
 | Neural Network                |              |     |        |            |       |
 | Deep Learning                 |              |     |        |            |       |
