@@ -2,8 +2,6 @@
 
 [Syllabus](Syllabus_460.pdf)
 
----
-
 |Topics| Slides/Notes |SAS | Python | Assignments|Extra <br> Credits | Exams |
 |:------------------------|:-------|:---------|:--------------|:--------------|:-------------|:-------------|:-------------|:-------------|
 | An Overview of Data Mining    | [Slides](slides/intro.html), [Notes](notes/implicit_explicit_programming.pdf)      |        |             |       ||
