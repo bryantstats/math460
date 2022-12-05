@@ -20,6 +20,6 @@
 | Principal Conponents Analysis | [Note](slides/pca.pdf)             | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=67e0ae09-96d2-45eb-98f0-af5d01115bbe)    |        |            |       |
 | Variable Selection            |              |     |        |            |       |
 | Neural Network                |              |     |        |            |       |
-| Deep Learning                 |              |     |        |            |       |
+| Deep Learning                 | [Slides](gganimate/cnn.html)              |     |[Codes](https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing)        |            |       |
 | Final Project                 |   [Final Project](final/Math460_Final.html)           |[Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=7261ef1e-d130-40e9-a62a-af5f011b0fcf)     |        |            |       |
 
