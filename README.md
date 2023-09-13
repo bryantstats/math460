@@ -6,6 +6,6 @@
 |:------------------------|:-------|:---------|:--------------|:--------------|:-------------|:-------------|:-------------|:-------------|
 | An Overview of Data Mining    | [Slides](slides/intro.html), [Notes]()      |        |             |       ||
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf), [Notes](slides/overfitting_note.pdf )     |        |            |       ||
-| Model Evaluation              | [Slides](slides/measuring_performance.pdf), [Notes]()     |        |            |   [Assignment 1]()    |
+| Model Evaluation              | [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_note.pdf)     |        |            |   [Assignment 1]()    |
 
 
