@@ -13,7 +13,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 
 
 
-_**Submission Guideline:**_  Organize your answer in a word document and submit to Canvas
+_**Submission Guideline:**_  Organize your answer in a word document and submit to Canvas. You can also take photos or scan your written answers and submit to Canvas. 
 
 Follows are the output of a binary classification model. 1 = Positive; 0 = Negative.
 
