@@ -7,4 +7,4 @@
 | An Overview of Data Mining    | [Slides](slides/intro.html), [Notes]()      |        |             |       ||
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf), [Notes](slides/overfitting_note.pdf )     |        |            |       ||
 | Model Evaluation              | [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_note.pdf)     |        |            |   [Assignment 1](assignments/Math460_Assignment1.html)    |
-| Classification Trees          | [Slides](slides/fa21_classification_tree2_original.pdf), [Notes](slides/fa23_classification_tree2_note.pdf)     |    |            |  [Assignment 2](assignments/Math460_Assignment2.html)     |   |[Exam 1]()|
+| Classification Trees          | [Slides](slides/fa21_classification_tree2_original.pdf), [Notes](slides/fa23_classification_tree2_note.pdf)     |    |            |  [Assignment 2](assignments/Math460_Assignment2.html)     |   |[Exam 1](exams/Exam1/Exam1_fa22.html)|
