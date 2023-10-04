@@ -1,0 +1,18 @@
+---
+title: "Out of Bag Errors"
+format: beamer
+editor: visual
+---
+
+# 
+
+![](images/oob.jpg)
+Source: Wikipedia
+
+# 
+
+- Find all models (or trees, in the case of a random forest) that are not trained by the OOB instance.
+- Take the majority vote of these models' result for the OOB instance, compared to the true value of the OOB instance.
+- Compile the OOB error for all instances in the OOB dataset.
+
+# Example
