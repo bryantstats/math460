@@ -17,7 +17,7 @@ _**Instruction**_:  You can scan your answers and submit it to Canvas.  You can 
 
 #### Problem 1
 
-Decide the best vertical first split of decision tree for the following dataset.  Impurity can be measured by entropy or Gini-Index. A similar problem can be found at the example at the class slides ([Link](fa21_classification_tree2_original.pdf)).
+Calculate the impurity of all possible splits to decide the best vertical first split for the following dataset.  Impurity can be measured by entropy or Gini-Index. A similar problem can be found at the example at the class slides ([Link](fa21_classification_tree2_original.pdf)).
 
 <center>
 ![](images/s15.png)
