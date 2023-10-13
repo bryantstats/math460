@@ -12,7 +12,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 
 ## Problem 1
 
-Decide the best vertical first split by impurity gain for the following dataset.  Impurity can be measured by entropy or Gini-Index.
+Calculate the impurity of all possible splits to decide the best vertical first split for the following dataset.  Impurity can be measured by entropy or Gini-Index.
 
 <center>
 ![](images/s15.png)
