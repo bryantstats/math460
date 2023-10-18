@@ -1,0 +1,35 @@
+---
+title: "Assignment 4: SAS - Practice with Ensenble Models"
+format: html
+editor: visual
+---
+
+-------
+
+Make a presentation of you doing the follows. Using Zoom to record a video of the presentation and the link of the video or the video to Canvas. 
+
+-------
+
+[SAS - Videos]()
+
+1. Download and Import to SAS Miner the `Breast Cancer Wisconsin (Diagnostic) Data Set` at [this link](../data/breast_cancer.csv). 
+
+2. Reject all the `text` variables.  Set `diagnosis` as the binary target. 
+
+3. Split the data 70:30:0 for Training: Validation: Test. Train the following models.  
+
+    - a decision tree used `Gini Index` for splitting (Nominal Target Criterion)
+  
+    - a decision tree used `Entropy` for splitting (Nominal Target Criterion)
+  
+    - a decision tree used Chi-squared test for splitting (Nominal Target Criterion)
+  
+    - a decision tree with 4 leaves. 
+
+4. Compare the trees in terms of misclassification rate and ROC-Index. 
+
+5. Show the confusion matrix (classification table) of the `Entropy` tree.
+
+6. What is the best tree in term of misclassification.  In that tree, what is the most important variables? 
+
+7. How many leaves that tree in 6. have? Explain why the tree ended up with that number of leaves. (i.e., explain the `Subtree Assessment Plot`).
