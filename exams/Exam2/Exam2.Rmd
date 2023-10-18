@@ -15,7 +15,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 
 Sample calculations can be found here: [Link](Exam2_sol.html)
 
-#### Problem 1: 
+#### Problem 1. Adaboost.  
 Given the data.
 
 <center>
@@ -51,7 +51,7 @@ Suppose we use this data to train an adaboost model with the learning rate $L=1$
 
 <br>
 
-#### Problem 2.
+#### Problem 2. Gradient Boosting
 
 Given the data.
 
