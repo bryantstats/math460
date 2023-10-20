@@ -28,7 +28,7 @@ a. Using the Residual Sum Squares (RSS) to decide the better split between
 
 b. Suppose that your regression tree contain only one split which is the best split in the previous question. Calculate the $R^2$ of this regression tree on the training data. 
 
-c. Use your regression tree to predict the $y$ for the below testing data.  Calculate the $R^2$ of the tree on the testing data.
+c. Use your regression tree to predict the $y$ for the below testing data.  Calculate the $R^2$ of the tree on the below testing data.
 
 |Points| $x_1$    | $x_2$ | $y$|
 |:----------------|:-------------|:----------------|:----------------|
