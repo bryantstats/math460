@@ -122,21 +122,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>We will go over the above steps to train decision tree with the <code>titanic</code> dataset. Notice that these codes can be reused for other dataset. The codes for Step 1, 4, 5, 6, and 7 should be the same or at least similar when applied to other data. Only Step 2 and Step 3 will be different from data to data.</p>
 <section id="step-1-import-and-clean-data" class="level3">
 <h3 class="anchored" data-anchor-id="step-1-import-and-clean-data">Step 1: Import and Clean Data</h3>
-<div class="cell" data-execution_count="67">
+<div class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># import some packages</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn <span class="im">import</span> tree</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn <span class="im">import</span> metrics</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="68">
+<div class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">'titanic.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-tags="[]" data-execution_count="69">
+<div class="cell" data-tags="[]" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check the variables</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="69">
+<div class="cell-output cell-output-display" data-execution_count="3">
 <pre><code>Index(['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 'Age', 'SibSp',
        'Parch', 'Ticket', 'Fare', 'Cabin', 'Embarked'],
       dtype='object')</code></pre>
@@ -144,9 +144,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="check-and-fix-variable-types" class="level4">
 <h4 class="anchored" data-anchor-id="check-and-fix-variable-types">Check and fix variable types</h4>
-<div class="cell" data-execution_count="70">
+<div class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df.dtypes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="70">
+<div class="cell-output cell-output-display" data-execution_count="4">
 <pre><code>PassengerId      int64
 Survived         int64
 Pclass           int64
@@ -162,7 +162,7 @@ Embarked        object
 dtype: object</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="71">
+<div class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Change Pclass and Survived to categorical variables</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'Pclass'</span>] <span class="op">=</span> df[<span class="st">'Pclass'</span>].astype(<span class="bu">object</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'Survived'</span>] <span class="op">=</span> df[<span class="st">'Survived'</span>].astype(<span class="bu">object</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -171,9 +171,9 @@ dtype: object</code></pre>
 </section>
 <section id="step-2-check-and-handle-missing-values" class="level3">
 <h3 class="anchored" data-anchor-id="step-2-check-and-handle-missing-values">Step 2: Check and handle missing values</h3>
-<div class="cell" data-execution_count="72">
+<div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df.isna().<span class="bu">sum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="72">
+<div class="cell-output cell-output-display" data-execution_count="6">
 <pre><code>PassengerId      0
 Survived         0
 Pclass           0
@@ -189,19 +189,19 @@ Embarked         2
 dtype: int64</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="73">
+<div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop all rows with missing values in Age</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># df[df['Age'].notna()]</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.dropna(subset<span class="op">=</span>[<span class="st">"Age"</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="74">
+<div class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Impute the Embarked variable</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>df[<span class="st">"Embarked"</span>] <span class="op">=</span> df[<span class="st">"Embarked"</span>].fillna(<span class="st">"S"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="assign-the-input-and-output-variable" class="level4">
 <h4 class="anchored" data-anchor-id="assign-the-input-and-output-variable">Assign the input and output variable</h4>
-<div class="cell" data-tags="[]" data-execution_count="75">
+<div class="cell" data-tags="[]" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Assign input variables</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> df.loc[:,[<span class="st">'Pclass'</span>,<span class="st">'Sex'</span>,<span class="st">'Survived'</span>,<span class="st">'Fare'</span>,<span class="st">'Embarked'</span>,<span class="st">'SibSp'</span>,<span class="st">'Parch'</span>]]</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -213,52 +213,56 @@ dtype: int64</code></pre>
 <section id="step-3-encode-categorical-variables" class="level3">
 <h3 class="anchored" data-anchor-id="step-3-encode-categorical-variables">Step 3: Encode Categorical Variables</h3>
 <p><code>sklearn</code> does not work directly with categorical variables. It requires the categorical variables to be encoded into numeric variables. There are multiple way to encode categorical variables. Here, we implement the simplest way of encoding: <code>one-hot</code> encoding or <code>dummy</code> encoding.</p>
-<div class="cell" data-tags="[]" data-execution_count="76">
+<div class="cell" data-tags="[]" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Encode categorical variable</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> pd.get_dummies(X)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>C:\Users\sonou\anaconda3_fa22\lib\site-packages\pandas\core\algorithms.py:798: FutureWarning: In a future version, the Index constructor will not infer numeric dtypes when passed object-dtype sequences (matching Series behavior)
+  uniques = Index(uniques)</code></pre>
+</div>
 </div>
 </section>
 <section id="step-4-split-the-data-into-training-and-testing" class="level3">
 <h3 class="anchored" data-anchor-id="step-4-split-the-data-into-training-and-testing">Step 4: Split the data into training and testing</h3>
-<div class="cell" data-tags="[]" data-execution_count="77">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>x_train,x_test,y_train,y_test<span class="op">=</span>train_test_split(X,y,test_size<span class="op">=</span><span class="fl">0.15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-tags="[]" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>x_train,x_test,y_train,y_test<span class="op">=</span>train_test_split(X,y,test_size<span class="op">=</span><span class="fl">0.15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="step-5-train-a-model" class="level3">
 <h3 class="anchored" data-anchor-id="step-5-train-a-model">Step 5: Train a model</h3>
-<div class="cell" data-tags="[]" data-execution_count="78">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a decision tree and train</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeRegressor</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>tree1 <span class="op">=</span> DecisionTreeRegressor(criterion<span class="op">=</span><span class="st">'squared_error'</span>, max_leaf_nodes<span class="op">=</span><span class="dv">5</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>tree1.fit(x_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="78">
-<style>#sk-container-id-7 {color: black;}#sk-container-id-7 pre{padding: 0;}#sk-container-id-7 div.sk-toggleable {background-color: white;}#sk-container-id-7 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-7 label.sk-toggleable__label-arrow:before {content: "▸";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-7 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-7 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-7 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-7 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-7 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-7 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: "▾";}#sk-container-id-7 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-7 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-7 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-7 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-7 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-7 div.sk-parallel-item::after {content: "";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-7 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-7 div.sk-serial::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-7 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-7 div.sk-item {position: relative;z-index: 1;}#sk-container-id-7 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-7 div.sk-item::before, #sk-container-id-7 div.sk-parallel-item::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-7 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-7 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-7 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-7 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-7 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-7 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-7 div.sk-label-container {text-align: center;}#sk-container-id-7 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-7 div.sk-text-repr-fallback {display: none;}</style><div id="sk-container-id-7" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>DecisionTreeRegressor(max_leaf_nodes=5)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-13" type="checkbox" checked=""><label for="sk-estimator-id-13" class="sk-toggleable__label sk-toggleable__label-arrow">DecisionTreeRegressor</label><div class="sk-toggleable__content"><pre>DecisionTreeRegressor(max_leaf_nodes=5)</pre></div></div></div></div></div>
+<div class="cell" data-tags="[]" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a decision tree and train</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeRegressor</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>tree1 <span class="op">=</span> DecisionTreeRegressor(criterion<span class="op">=</span><span class="st">'squared_error'</span>, max_leaf_nodes<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>tree1.fit(x_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="12">
+<pre><code>DecisionTreeRegressor(max_leaf_nodes=5)</code></pre>
 </div>
 </div>
 <section id="plot-the-tree" class="level4">
 <h4 class="anchored" data-anchor-id="plot-the-tree">Plot the tree</h4>
-<div class="cell" data-tags="[]" data-execution_count="79">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># conda install graphviz</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-tags="[]" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># conda install graphviz</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-tags="[]" data-execution_count="80">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn <span class="im">import</span> tree</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> graphviz </span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree1, out_file<span class="op">=</span><span class="va">None</span>) </span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree1, out_file<span class="op">=</span><span class="va">None</span>, </span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                     feature_names<span class="op">=</span>x_train.columns,  </span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                     class_names<span class="op">=</span>[<span class="st">'Not Survived'</span>,<span class="st">'Survived'</span>],  </span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                     filled<span class="op">=</span><span class="va">True</span>, rounded<span class="op">=</span><span class="va">True</span>,  </span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                     special_characters<span class="op">=</span><span class="va">True</span>)  </span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> graphviz.Source(dot_data)  </span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>graph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="80">
+<div class="cell" data-tags="[]" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn <span class="im">import</span> tree</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> graphviz </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree1, out_file<span class="op">=</span><span class="va">None</span>) </span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree1, out_file<span class="op">=</span><span class="va">None</span>, </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                     feature_names<span class="op">=</span>x_train.columns,  </span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                     class_names<span class="op">=</span>[<span class="st">'Not Survived'</span>,<span class="st">'Survived'</span>],  </span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                     filled<span class="op">=</span><span class="va">True</span>, rounded<span class="op">=</span><span class="va">True</span>,  </span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                     special_characters<span class="op">=</span><span class="va">True</span>)  </span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> graphviz.Source(dot_data)  </span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>graph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="14">
 <p><img src="tree_regression_files/figure-html/cell-15-output-1.svg" class="img-fluid"></p>
 </div>
 </div>
@@ -268,22 +272,22 @@ dtype: int64</code></pre>
 <h3 class="anchored" data-anchor-id="step-6-test-the-model">Step 6: Test the model</h3>
 <section id="plot" class="level4">
 <h4 class="anchored" data-anchor-id="plot">Plot</h4>
-<div class="cell" data-tags="[]" data-execution_count="81">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>predicted_value <span class="op">=</span> tree1.predict(x_test)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>true_value <span class="op">=</span> y_test</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">10</span>))</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>plt.scatter(true_value, predicted_value, c<span class="op">=</span><span class="st">'crimson'</span>)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>p1 <span class="op">=</span> <span class="bu">max</span>(<span class="bu">max</span>(predicted_value), <span class="bu">max</span>(true_value))</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>p2 <span class="op">=</span> <span class="bu">min</span>(<span class="bu">min</span>(predicted_value), <span class="bu">min</span>(true_value))</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>plt.plot([p1, p2], [p1, p2], <span class="st">'b-'</span>)</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'True Values'</span>, fontsize<span class="op">=</span><span class="dv">15</span>)</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Predictions'</span>, fontsize<span class="op">=</span><span class="dv">15</span>)</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>plt.axis(<span class="st">'equal'</span>)</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-tags="[]" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>predicted_value <span class="op">=</span> tree1.predict(x_test)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>true_value <span class="op">=</span> y_test</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>,<span class="dv">10</span>))</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>plt.scatter(true_value, predicted_value, c<span class="op">=</span><span class="st">'crimson'</span>)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>p1 <span class="op">=</span> <span class="bu">max</span>(<span class="bu">max</span>(predicted_value), <span class="bu">max</span>(true_value))</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>p2 <span class="op">=</span> <span class="bu">min</span>(<span class="bu">min</span>(predicted_value), <span class="bu">min</span>(true_value))</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>plt.plot([p1, p2], [p1, p2], <span class="st">'b-'</span>)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'True Values'</span>, fontsize<span class="op">=</span><span class="dv">15</span>)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Predictions'</span>, fontsize<span class="op">=</span><span class="dv">15</span>)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>plt.axis(<span class="st">'equal'</span>)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="tree_regression_files/figure-html/cell-16-output-1.png" class="img-fluid"></p>
 </div>
@@ -291,11 +295,11 @@ dtype: int64</code></pre>
 </section>
 <section id="rsquare" class="level4">
 <h4 class="anchored" data-anchor-id="rsquare">Rsquare</h4>
-<div class="cell" data-tags="[]" data-execution_count="82">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> r2_score</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Rsquared on Testing: '</span>, np.<span class="bu">round</span>(r2_score(y_test, tree1.predict(x_test)), <span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-tags="[]" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> r2_score</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Rsquared on Testing: '</span>, np.<span class="bu">round</span>(r2_score(y_test, tree1.predict(x_test)), <span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Rsquared on Testing:  0.127</code></pre>
+<pre><code>Rsquared on Testing:  0.192</code></pre>
 </div>
 </div>
 </section>
@@ -309,37 +313,34 @@ dtype: int64</code></pre>
 <p>Tuning hyperparameters or Tuning a model is to search for the set of hyperparameters that works the best. To tune a model, one first needs to know what the hyperparameters/tuning parameters that the model has. A model may have several hyperparamters that sometime it is not practical to tune all the hyperparameters.</p>
 <p>Our model here is decision tree. To see the list of tuning parameters of decision trees, one can check at the <code>sklearn</code> document of the model. One way to find out is to <code>google</code>: DecisionTreeRegressor and sklearn. This search brings us to <a href="https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html">this link.</a></p>
 <p>From the link, you can see the list of (hyper)parameters. In this example, we will tune two parameters <code>max_leaf_nodes</code> and <code>criterion</code>.</p>
-<div class="cell" data-tags="[]" data-execution_count="83">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> warnings</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>warnings.filterwarnings(<span class="st">"ignore"</span>)</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Decide what hyperparameter to tune then decide the searching range</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>param_grid <span class="op">=</span> {<span class="st">'max_leaf_nodes'</span>: <span class="bu">range</span>(<span class="dv">2</span>,<span class="dv">10</span>), </span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>              <span class="st">'criterion'</span>:[<span class="st">'squared_error'</span>, <span class="st">'friedman_mse'</span>, <span class="st">'absolute_error'</span>, <span class="st">'poisson'</span>]}</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list of trees</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>tree2 <span class="op">=</span> GridSearchCV(DecisionTreeRegressor(), param_grid, cv <span class="op">=</span> <span class="dv">5</span>)</span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>tree2.fit(x_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="83">
-<style>#sk-container-id-8 {color: black;}#sk-container-id-8 pre{padding: 0;}#sk-container-id-8 div.sk-toggleable {background-color: white;}#sk-container-id-8 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-8 label.sk-toggleable__label-arrow:before {content: "▸";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-8 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-8 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-8 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-8 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-8 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-8 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: "▾";}#sk-container-id-8 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-8 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-8 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-8 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-8 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-8 div.sk-parallel-item::after {content: "";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-8 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-8 div.sk-serial::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-8 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-8 div.sk-item {position: relative;z-index: 1;}#sk-container-id-8 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-8 div.sk-item::before, #sk-container-id-8 div.sk-parallel-item::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-8 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-8 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-8 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-8 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-8 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-8 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-8 div.sk-label-container {text-align: center;}#sk-container-id-8 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-8 div.sk-text-repr-fallback {display: none;}</style><div id="sk-container-id-8" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>GridSearchCV(cv=5, estimator=DecisionTreeRegressor(),
+<div class="cell" data-tags="[]" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> warnings</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>warnings.filterwarnings(<span class="st">"ignore"</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Decide what hyperparameter to tune then decide the searching range</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>param_grid <span class="op">=</span> {<span class="st">'max_leaf_nodes'</span>: <span class="bu">range</span>(<span class="dv">2</span>,<span class="dv">10</span>), </span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>              <span class="st">'criterion'</span>:[<span class="st">'squared_error'</span>, <span class="st">'friedman_mse'</span>, <span class="st">'absolute_error'</span>, <span class="st">'poisson'</span>]}</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list of trees</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>tree2 <span class="op">=</span> GridSearchCV(DecisionTreeRegressor(), param_grid, cv <span class="op">=</span> <span class="dv">5</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>tree2.fit(x_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="17">
+<pre><code>GridSearchCV(cv=5, estimator=DecisionTreeRegressor(),
              param_grid={'criterion': ['squared_error', 'friedman_mse',
                                        'absolute_error', 'poisson'],
-                         'max_leaf_nodes': range(2, 10)})</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-14" type="checkbox"><label for="sk-estimator-id-14" class="sk-toggleable__label sk-toggleable__label-arrow">GridSearchCV</label><div class="sk-toggleable__content"><pre>GridSearchCV(cv=5, estimator=DecisionTreeRegressor(),
-             param_grid={'criterion': ['squared_error', 'friedman_mse',
-                                       'absolute_error', 'poisson'],
-                         'max_leaf_nodes': range(2, 10)})</pre></div></div></div><div class="sk-parallel"><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-15" type="checkbox"><label for="sk-estimator-id-15" class="sk-toggleable__label sk-toggleable__label-arrow">estimator: DecisionTreeRegressor</label><div class="sk-toggleable__content"><pre>DecisionTreeRegressor()</pre></div></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-16" type="checkbox"><label for="sk-estimator-id-16" class="sk-toggleable__label sk-toggleable__label-arrow">DecisionTreeRegressor</label><div class="sk-toggleable__content"><pre>DecisionTreeRegressor()</pre></div></div></div></div></div></div></div></div></div></div>
+                         'max_leaf_nodes': range(2, 10)})</code></pre>
 </div>
 </div>
 <p>In the above code, <code>cv=5</code> means the cross validation is done with 5 folds. This means that the training data will be partition into 5 pieces and each piece will be used as a validation data while the remaining four pieces will be used as the data to build model.</p>
 <p>More informatiom about <code>k-fold cross validation</code> can be seen <a href="https://bryantstats.github.io/overfitting.html#/50">here</a></p>
 <p>In this example, with 10 different values of <code>max_leaf_nodes</code> (2 to 9), and 2 different values of <code>criterion</code>, there will be 8x2=16 models (trees) will be tested. Each of these 16 models will be run 5 times (since <code>cv=5</code>). Thus, in total, there will be 16x5=80 times a tree is computed. The search for the best parameters could be time consuming!</p>
-<div class="cell" data-tags="[]" data-execution_count="84">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>cv_result <span class="op">=</span> pd.concat([pd.DataFrame(tree2.cv_results_[<span class="st">"params"</span>]),pd.DataFrame(tree2.cv_results_[<span class="st">"mean_test_score"</span>], columns<span class="op">=</span>[<span class="st">"Rsquared"</span>])],axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>cv_result[<span class="st">'Rank'</span>] <span class="op">=</span> (<span class="op">-</span>cv_result[<span class="st">'Rsquared'</span>]).argsort().argsort()</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>cv_result</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="84">
+<div class="cell" data-tags="[]" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>cv_result <span class="op">=</span> pd.concat([pd.DataFrame(tree2.cv_results_[<span class="st">"params"</span>]),pd.DataFrame(tree2.cv_results_[<span class="st">"mean_test_score"</span>], columns<span class="op">=</span>[<span class="st">"Rsquared"</span>])],axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>cv_result[<span class="st">'Rank'</span>] <span class="op">=</span> (<span class="op">-</span>cv_result[<span class="st">'Rsquared'</span>]).argsort().argsort()</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>cv_result</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="18">
 <div>
 
 
@@ -358,225 +359,225 @@ dtype: int64</code></pre>
 <td data-quarto-table-cell-role="th">0</td>
 <td>squared_error</td>
 <td>2</td>
-<td>0.123374</td>
-<td>29</td>
+<td>0.115100</td>
+<td>25</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">1</td>
 <td>squared_error</td>
 <td>3</td>
-<td>0.199248</td>
-<td>22</td>
+<td>0.169041</td>
+<td>18</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">2</td>
 <td>squared_error</td>
 <td>4</td>
-<td>0.232730</td>
-<td>17</td>
+<td>0.175558</td>
+<td>14</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">3</td>
 <td>squared_error</td>
 <td>5</td>
-<td>0.237966</td>
-<td>13</td>
+<td>0.178561</td>
+<td>11</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">4</td>
 <td>squared_error</td>
 <td>6</td>
-<td>0.257514</td>
-<td>12</td>
+<td>0.192311</td>
+<td>7</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">5</td>
 <td>squared_error</td>
 <td>7</td>
-<td>0.275912</td>
-<td>6</td>
+<td>0.219342</td>
+<td>3</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">6</td>
 <td>squared_error</td>
 <td>8</td>
-<td>0.300418</td>
-<td>3</td>
+<td>0.218151</td>
+<td>5</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">7</td>
 <td>squared_error</td>
 <td>9</td>
-<td>0.309710</td>
+<td>0.247011</td>
 <td>1</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">8</td>
 <td>friedman_mse</td>
 <td>2</td>
-<td>0.123374</td>
-<td>28</td>
+<td>0.115100</td>
+<td>24</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">9</td>
 <td>friedman_mse</td>
 <td>3</td>
-<td>0.199248</td>
-<td>23</td>
+<td>0.169041</td>
+<td>17</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">10</td>
 <td>friedman_mse</td>
 <td>4</td>
-<td>0.232730</td>
-<td>16</td>
+<td>0.175558</td>
+<td>13</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">11</td>
 <td>friedman_mse</td>
 <td>5</td>
-<td>0.237966</td>
-<td>14</td>
+<td>0.178561</td>
+<td>12</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">12</td>
 <td>friedman_mse</td>
 <td>6</td>
-<td>0.257514</td>
-<td>11</td>
+<td>0.192311</td>
+<td>8</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">13</td>
 <td>friedman_mse</td>
 <td>7</td>
-<td>0.275912</td>
-<td>7</td>
+<td>0.219342</td>
+<td>4</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">14</td>
 <td>friedman_mse</td>
 <td>8</td>
-<td>0.300418</td>
-<td>2</td>
+<td>0.218151</td>
+<td>6</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">15</td>
 <td>friedman_mse</td>
 <td>9</td>
-<td>0.309710</td>
+<td>0.247011</td>
 <td>0</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">16</td>
 <td>absolute_error</td>
 <td>2</td>
-<td>0.082917</td>
-<td>31</td>
+<td>0.083145</td>
+<td>27</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">17</td>
 <td>absolute_error</td>
 <td>3</td>
-<td>0.172369</td>
-<td>27</td>
+<td>0.179656</td>
+<td>10</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">18</td>
 <td>absolute_error</td>
 <td>4</td>
-<td>0.180068</td>
-<td>26</td>
+<td>0.174792</td>
+<td>15</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">19</td>
 <td>absolute_error</td>
 <td>5</td>
-<td>0.191549</td>
-<td>25</td>
+<td>0.184105</td>
+<td>9</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">20</td>
 <td>absolute_error</td>
 <td>6</td>
-<td>0.202012</td>
-<td>21</td>
+<td>0.170941</td>
+<td>16</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">21</td>
 <td>absolute_error</td>
 <td>7</td>
-<td>0.192278</td>
-<td>24</td>
+<td>0.157471</td>
+<td>20</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">22</td>
 <td>absolute_error</td>
 <td>8</td>
-<td>0.202153</td>
-<td>20</td>
+<td>0.162877</td>
+<td>19</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">23</td>
 <td>absolute_error</td>
 <td>9</td>
-<td>0.202293</td>
-<td>19</td>
+<td>0.227430</td>
+<td>2</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">24</td>
 <td>poisson</td>
 <td>2</td>
-<td>0.104874</td>
-<td>30</td>
+<td>-0.011264</td>
+<td>31</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">25</td>
 <td>poisson</td>
 <td>3</td>
-<td>0.207269</td>
-<td>18</td>
+<td>-0.011103</td>
+<td>30</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">26</td>
 <td>poisson</td>
 <td>4</td>
-<td>0.233166</td>
-<td>15</td>
+<td>0.005732</td>
+<td>29</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">27</td>
 <td>poisson</td>
 <td>5</td>
-<td>0.262687</td>
-<td>10</td>
+<td>0.057942</td>
+<td>28</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">28</td>
 <td>poisson</td>
 <td>6</td>
-<td>0.289653</td>
-<td>4</td>
+<td>0.105086</td>
+<td>26</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">29</td>
 <td>poisson</td>
 <td>7</td>
-<td>0.272234</td>
-<td>8</td>
+<td>0.127764</td>
+<td>21</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">30</td>
 <td>poisson</td>
 <td>8</td>
-<td>0.264713</td>
-<td>9</td>
+<td>0.115480</td>
+<td>23</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">31</td>
 <td>poisson</td>
 <td>9</td>
-<td>0.276791</td>
-<td>5</td>
+<td>0.122959</td>
+<td>22</td>
 </tr>
 </tbody>
 </table>
@@ -585,30 +586,30 @@ dtype: int64</code></pre>
 </div>
 </div>
 <p>The above shows that the best hyperparameters are criterion=entropy and max_leaf_nodes=7. We can use this information to redo step 5.</p>
-<div class="cell" data-execution_count="85">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>tree3 <span class="op">=</span> DecisionTreeRegressor(<span class="op">**</span>tree2.best_params_)</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Train with the selected hyperparameter</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>tree3.fit(X, y)</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Best Tree is:'</span>, tree2.best_params_)</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">''</span>)</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> graphviz </span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree3, out_file<span class="op">=</span><span class="va">None</span>) </span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree3, out_file<span class="op">=</span><span class="va">None</span>, </span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                     feature_names<span class="op">=</span>x_train.columns,  </span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                     class_names<span class="op">=</span>[<span class="st">'Not Survived'</span>,<span class="st">'Survived'</span>],  </span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>                     filled<span class="op">=</span><span class="va">True</span>, rounded<span class="op">=</span><span class="va">True</span>,  </span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>                     special_characters<span class="op">=</span><span class="va">True</span>)  </span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> graphviz.Source(dot_data)  </span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>graph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tree3 <span class="op">=</span> DecisionTreeRegressor(<span class="op">**</span>tree2.best_params_)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Train with the selected hyperparameter</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>tree3.fit(X, y)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Best Tree is:'</span>, tree2.best_params_)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">''</span>)</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> graphviz </span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree3, out_file<span class="op">=</span><span class="va">None</span>) </span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>dot_data <span class="op">=</span> tree.export_graphviz(tree3, out_file<span class="op">=</span><span class="va">None</span>, </span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>                     feature_names<span class="op">=</span>x_train.columns,  </span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>                     class_names<span class="op">=</span>[<span class="st">'Not Survived'</span>,<span class="st">'Survived'</span>],  </span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>                     filled<span class="op">=</span><span class="va">True</span>, rounded<span class="op">=</span><span class="va">True</span>,  </span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>                     special_characters<span class="op">=</span><span class="va">True</span>)  </span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>graph <span class="op">=</span> graphviz.Source(dot_data)  </span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>graph</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Best Tree is: {'criterion': 'squared_error', 'max_leaf_nodes': 9}
 </code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="85">
+<div class="cell-output cell-output-display" data-execution_count="19">
 <p><img src="tree_regression_files/figure-html/cell-20-output-2.svg" class="img-fluid"></p>
 </div>
 </div>
@@ -621,62 +622,59 @@ dtype: int64</code></pre>
 <p>We analyze the accuracy of Decision Tree when the spliting criterion and the number of leaves (<code>max_leaf_nodes</code>) change. These two parameters are also called hyper-parameters or tuning parameters.</p>
 <p>The following plot shows that the training accuracy will increase when the number of leaves (<code>max_leaf_nodes</code>) increase. The testing accuracy increases at the beginning and decreases or isolating in the long run.</p>
 <p>The next plot shows that the selection of criterion also impact model performance.</p>
-<div class="cell" data-execution_count="86">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>criterion <span class="op">=</span> [<span class="st">'squared_error'</span>, <span class="st">'friedman_mse'</span>, <span class="st">'absolute_error'</span>, <span class="st">'poisson'</span>]</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>max_leaf_nodes <span class="op">=</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">200</span>)</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co">#erros_plot = function(criterion, )</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>rs <span class="op">=</span> pd.DataFrame(columns <span class="op">=</span> [<span class="st">'Criterion'</span>,<span class="st">'Leaves'</span>, <span class="st">'Data'</span>,<span class="st">'Rsquared'</span>])</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criterion1 <span class="kw">in</span> criterion:</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> max_leaf_nodes1 <span class="kw">in</span> max_leaf_nodes:</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        tree1 <span class="op">=</span> DecisionTreeRegressor(criterion<span class="op">=</span>criterion1, max_leaf_nodes<span class="op">=</span>max_leaf_nodes1)</span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        tree1.fit(x_train, y_train)</span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>        new_row<span class="op">=</span>{<span class="st">'Criterion'</span>:criterion1,<span class="st">'Leaves'</span>:max_leaf_nodes1, <span class="st">'Data'</span>:<span class="st">'Train'</span>,<span class="st">'Rsquared'</span>:tree1.score(x_train, y_train)}</span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>        rs <span class="op">=</span> pd.concat([rs, pd.DataFrame([new_row])], ignore_index<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>        new_row<span class="op">=</span>{<span class="st">'Criterion'</span>:criterion1,<span class="st">'Leaves'</span>:max_leaf_nodes1, <span class="st">'Data'</span>:<span class="st">'Test'</span>,<span class="st">'Rsquared'</span>:tree1.score(x_test, y_test)}</span>
-<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>        rs <span class="op">=</span> pd.concat([rs, pd.DataFrame([new_row])], ignore_index<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>criterion <span class="op">=</span> [<span class="st">'squared_error'</span>, <span class="st">'friedman_mse'</span>, <span class="st">'absolute_error'</span>, <span class="st">'poisson'</span>]</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>max_leaf_nodes <span class="op">=</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">200</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co">#erros_plot = function(criterion, )</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>rs <span class="op">=</span> pd.DataFrame(columns <span class="op">=</span> [<span class="st">'Criterion'</span>,<span class="st">'Leaves'</span>, <span class="st">'Data'</span>,<span class="st">'Rsquared'</span>])</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> criterion1 <span class="kw">in</span> criterion:</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> max_leaf_nodes1 <span class="kw">in</span> max_leaf_nodes:</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>        tree1 <span class="op">=</span> DecisionTreeRegressor(criterion<span class="op">=</span>criterion1, max_leaf_nodes<span class="op">=</span>max_leaf_nodes1)</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>        tree1.fit(x_train, y_train)</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>        new_row<span class="op">=</span>{<span class="st">'Criterion'</span>:criterion1,<span class="st">'Leaves'</span>:max_leaf_nodes1, <span class="st">'Data'</span>:<span class="st">'Train'</span>,<span class="st">'Rsquared'</span>:tree1.score(x_train, y_train)}</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>        rs <span class="op">=</span> pd.concat([rs, pd.DataFrame([new_row])], ignore_index<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>        new_row<span class="op">=</span>{<span class="st">'Criterion'</span>:criterion1,<span class="st">'Leaves'</span>:max_leaf_nodes1, <span class="st">'Data'</span>:<span class="st">'Test'</span>,<span class="st">'Rsquared'</span>:tree1.score(x_test, y_test)}</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>        rs <span class="op">=</span> pd.concat([rs, pd.DataFrame([new_row])], ignore_index<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="87">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the training and testing accuracy of the model when criterion = gini</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>rs_gini <span class="op">=</span> rs[rs[<span class="st">'Criterion'</span>]<span class="op">==</span><span class="st">'squared_error'</span>]</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>rs_gini, y<span class="op">=</span><span class="st">"Rsquared"</span>, x<span class="op">=</span><span class="st">"Leaves"</span>, hue<span class="op">=</span><span class="st">'Data'</span>, ci<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="87">
-<pre><code>&lt;Axes: xlabel='Leaves', ylabel='Rsquared'&gt;</code></pre>
+<div class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the training and testing accuracy of the model when criterion = gini</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>rs_gini <span class="op">=</span> rs[rs[<span class="st">'Criterion'</span>]<span class="op">==</span><span class="st">'squared_error'</span>]</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>rs_gini, y<span class="op">=</span><span class="st">"Rsquared"</span>, x<span class="op">=</span><span class="st">"Leaves"</span>, hue<span class="op">=</span><span class="st">'Data'</span>, ci<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="21">
+<pre><code>&lt;AxesSubplot:xlabel='Leaves', ylabel='Rsquared'&gt;</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="tree_regression_files/figure-html/cell-22-output-2.png" class="img-fluid"></p>
 </div>
 </div>
-<div class="cell" data-execution_count="88">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the impact of the criterion on tetsing accuracy</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>rs[rs[<span class="st">'Data'</span>]<span class="op">==</span><span class="st">'Test'</span>], y<span class="op">=</span><span class="st">"Accuracy"</span>, x<span class="op">=</span><span class="st">"Leaves"</span>, hue<span class="op">=</span><span class="st">'Criterion'</span>)     </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-error">
-<pre><code>ValueError: Could not interpret value `Accuracy` for parameter `y`</code></pre>
+<div class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the impact of the criterion on tetsing accuracy</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>rs[rs[<span class="st">'Data'</span>]<span class="op">==</span><span class="st">'Test'</span>], y<span class="op">=</span><span class="st">"Rsquared"</span>, x<span class="op">=</span><span class="st">"Leaves"</span>, hue<span class="op">=</span><span class="st">'Criterion'</span>)     </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="22">
+<pre><code>&lt;AxesSubplot:xlabel='Leaves', ylabel='Rsquared'&gt;</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="tree_regression_files/figure-html/cell-23-output-2.png" class="img-fluid"></p>
 </div>
 </div>
 </section>
 </section>
 <section id="practice" class="level1">
 <h1>3. Practice</h1>
-<p>Following the sample codes at this link to do/answer the below.</p>
-<ul>
-<li>Import the breast cancer dataset. The data can be downloaded at <a href="https://bryantstats.github.io/math460/data/breast_cancer.csv">this link</a></li>
-<li>Check out the missing values in each columns</li>
-<li>Set the input (X) and output (y). Split the data into 80% training and 20% testing</li>
-<li>Train a decison tree with the max leaves of 4 using <code>entropy</code> as the criteria for spliting</li>
-<li>Calculate the testing error of the above tree</li>
-<li>Search for the best hyperparameters of decision where the max leaves runs from 3 to 12 and the criteria runs between <code>gini</code> and <code>entropy</code></li>
-<li>What are the best hyperparameters found after the search</li>
-<li>Train a decision tree using the best hyperparameters.</li>
-<li>(Optional) Plot the tree above.</li>
-<li>Export the notebook for submission: File -&gt; Export Notebook As -&gt; Export Notebook to html.</li>
-</ul>
+<p>Predicting NBA Salary. Download the data at: https://bryantstats.github.io/math460/python/nba_salary.csv</p>
+<ol type="1">
+<li><p>Import the data and drop all the missing values</p></li>
+<li><p>Set the input (X) and output (y) (Use <code>df.columns</code> to see all the columns to easier copy/paste). Split the data into 60% training and 40% testing (No need to do 1.3 and 1.4 as all variables are numeric and have correct types)</p></li>
+<li><p>Train a decision tree with maximum 3 leaves. What is testing Rsquared of the model?</p></li>
+<li><p>Find a tree that has higher Rsquared than the previous model.</p></li>
+</ol>
 </section>
 
 </main>
