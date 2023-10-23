@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>readme</title>
+<title>Exam 2: Boosting Models</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -23,17 +23,19 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="README_files/libs/clipboard/clipboard.min.js"></script>
-<script src="README_files/libs/quarto-html/quarto.js"></script>
-<script src="README_files/libs/quarto-html/popper.min.js"></script>
-<script src="README_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="README_files/libs/quarto-html/anchor.min.js"></script>
-<link href="README_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="README_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="README_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="README_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="README_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="exam2q_files/libs/clipboard/clipboard.min.js"></script>
+<script src="exam2q_files/libs/quarto-html/quarto.js"></script>
+<script src="exam2q_files/libs/quarto-html/popper.min.js"></script>
+<script src="exam2q_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="exam2q_files/libs/quarto-html/anchor.min.js"></script>
+<link href="exam2q_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="exam2q_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="exam2q_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="exam2q_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="exam2q_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 </head>
 
@@ -43,117 +45,126 @@ ul.task-list li input[type="checkbox"] {
 
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Exam 2: Boosting Models</h1>
+</div>
 
 
-<section id="math-460-applied-data-mining" class="level1">
-<h1>Math 460: Applied Data Mining</h1>
-<p><a href="m460syllabus.html">Syllabus</a></p>
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<hr>
+<p>Sample calculations can be found here: <a href="Exam2_sol.html">Link</a></p>
+<section id="problem-1.-adaboost." class="level4">
+<h4 class="anchored" data-anchor-id="problem-1.-adaboost.">Problem 1. Adaboost.</h4>
+<p>Given the data.</p>
+<center>
 <table class="table">
 <thead>
 <tr class="header">
-<th style="text-align: left;">Topics</th>
-<th style="text-align: left;">Slides/Notes</th>
-<th style="text-align: left;">SAS</th>
-<th style="text-align: left;">Python</th>
-<th style="text-align: left;">Assignments</th>
-<th style="text-align: left;">Exams</th>
 <th style="text-align: left;"></th>
-<th style="text-align: left;"></th>
+<th style="text-align: left;"><span class="math inline">\(x_1\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(x_2\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(y\)</span></th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">An Overview of Data Mining</td>
-<td style="text-align: left;"><a href="slides/intro.html">Slides</a>, <a href="">Notes</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">1</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Overfitting and Tuning</td>
-<td style="text-align: left;"><a href="slides/overfitting.pdf">Slides</a>, <a href="slides/overfitting_note.pdf">Notes</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">1</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Model Evaluation</td>
-<td style="text-align: left;"><a href="slides/measuring_performance.pdf">Slides</a>, <a href="slides/measuring_performance_note.pdf">Notes</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="assignments/Math460_Assignment1.html">Assignment 1</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">-1</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Classification Trees</td>
-<td style="text-align: left;"><a href="slides/fa21_classification_tree2_original.pdf">Slides</a>, <a href="slides/fa23_classification_tree2_note.pdf">Notes</a></td>
-<td style="text-align: left;"><a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=149629c1-f821-4b97-9c2f-b088010c70e4">Video 1</a>, <a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cacc4e6b-a4e5-4628-b8ee-b08a010b2c11">2</a> <br> Alternative: <a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=5d52b5d5-d4c7-4c26-b97f-af1e010b9304">1</a>, <a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=1b1ea9bc-81dd-48c8-a8c9-af20010860b9">2</a></td>
-<td style="text-align: left;"><a href="python/fa23/tree_classification.html">html</a>, <a href="python/fa23/tree_classification.ipynb">Notebook</a></td>
-<td style="text-align: left;"><a href="assignments/Math460_Assignment2.html">Assignment 2</a></td>
-<td style="text-align: left;"><a href="exams/Exam1/Exam1_fa22.html">Exam 1</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">-1</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Regression Trees</td>
-<td style="text-align: left;"><a href="slides/Regression_Trees.pdf">Note</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="python/fa23/tree_regression.html">html</a>, <a href="python/fa23/tree_regression.ipynb">Notebook</a></td>
-<td style="text-align: left;"><a href="assignments/assignment3_fa23.html">Assignment 3</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Random Forest</td>
-<td style="text-align: left;"><a href="slides/rf.pdf">Slides</a>, <a href="slides/rf_note_fa23.pdf">Notes</a>, <a href="slides/oob.pdf">oob</a></td>
-<td style="text-align: left;"><a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=3d0f4009-d088-40d0-b457-b0910102e606">Video</a></td>
-<td style="text-align: left;"><a href="python/fa23/rf_classification.html">Classification</a>, <a href="python/fa23/rf_regression.html">Regression</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Ensemble Method</td>
-<td style="text-align: left;"><a href="gganimate/boosting3.html">Slide</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Adaboost</td>
-<td style="text-align: left;"><a href="gganimate/adaboost.html">Example</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="python/fa23/adaboost_classification.html">Classification</a>, <a href="python/fa23/adaboost_regression.html">Regression</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Gradient Boosting</td>
-<td style="text-align: left;"><a href="slides/Adaboost_note.pdf">Note</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="python/fa23/gb_classification.html">Classification</a>, <a href="python/fa23/gb_regression.html">Regression</a></td>
-<td style="text-align: left;"><a href="assignments/assignment4_fa23.html">Assignment 4</a>,</td>
-<td style="text-align: left;"><a href="exams/Exam2/Exam2.html">Exam 2</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">-1</td>
 </tr>
 </tbody>
 </table>
+</center>
+<p>Suppose we use this data to train an adaboost model with the learning rate <span class="math inline">\(L=1\)</span> and obtain the three stumps as follows.</p>
+<ul>
+<li>Stump 1: <span class="math inline">\(I(x_1&lt;2.5)\)</span></li>
+<li>Stump 2: <span class="math inline">\(I(x_2&gt;1.5)\)</span></li>
+<li>Stump 3: <span class="math inline">\(I(x_2&gt;4.5)\)</span></li>
+</ul>
+<ol type="a">
+<li><p>Compute the weight of the data in the first round.</p></li>
+<li><p>After the first round, which observations should have the weights increased? Which observations should have the weights decreased? Explain why.</p></li>
+<li><p>Compute the weights of the data in the second round and third round.</p></li>
+<li><p>Compute the voting powers of the three stumps. Which stump has the highest voting power?</p></li>
+<li><p>Draw the decision boundary of the adaboost. This video shows how to make decision boundary of the adaboost: <a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=e0a751e8-d6c8-4a7d-98f7-adcc01064682">link</a></p>
+<p>Class note for drawing decision boundary of Adaboost can be found here: <a href="adaboost_db.pdf">Link</a></p></li>
+<li><p>Compute the error (misclassification) of the adataboost.</p></li>
+</ol>
+<p><br></p>
+</section>
+<section id="problem-2.-gradient-boosting" class="level4">
+<h4 class="anchored" data-anchor-id="problem-2.-gradient-boosting">Problem 2. Gradient Boosting</h4>
+<p>Given the data.</p>
+<center>
+<table class="table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">X</th>
+<th style="text-align: left;">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">-1</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">4</td>
+<td style="text-align: left;">5</td>
+</tr>
+</tbody>
+</table>
+</center>
+<p>We will train a gradient boosted tree (stump) on this data with the learning rate of 1.</p>
+<ol type="a">
+<li><p>Calculate the prediction of the first round.</p></li>
+<li><p>Calculate the target of the second round</p></li>
+<li><p>Suppose that the stump in the second round is: <span class="math inline">\(X&lt;3\)</span>. Calculate the predictions of the second round. What do the second round predict?</p></li>
+<li><p>What are the final predictions of the gradient boosting model for <span class="math inline">\(y\)</span> in the training data after the second round?</p></li>
+<li><p>Calculate the target of the third round.</p></li>
+<li><p>Suppose that the stump in the third round is: <span class="math inline">\(X&lt;0.5\)</span>. Calculate the predictions of the third round. What do the third round predict?</p></li>
+<li><p>What are the final predictions of the gradient boosting model for <span class="math inline">\(y\)</span> in the training data after the third round?</p></li>
+</ol>
 </section>
 
 </main>
