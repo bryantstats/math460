@@ -36,7 +36,7 @@ _**Instruction**_:
 
 - [Random Forest](), [Adaboost](), [Gradient Boosting]()
 
-- [Video Instruction](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=91c7ceb4-7949-48ee-adb3-af33010fc736)
+- [Video Instruction]()
 
 
 _**Note**_: To improve the accuracy of the model:
