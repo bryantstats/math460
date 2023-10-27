@@ -33,7 +33,7 @@ Submit the video or the link of the video to Canvas.
 
 _**Instruction**_:  
 
-- [Random Forest](), [Adaboost](), [Gradient Boosting]()
+- [Random Forest](https://bryantstats.github.io/math460/python/digits/fa23/image_recognition_rf.html), [Adaboost](), [Gradient Boosting]()
 
 - [Video Instruction]()
 
