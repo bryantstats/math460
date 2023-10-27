@@ -13,4 +13,6 @@
 | Ensemble Method  |[Slide](gganimate/boosting3.html) ||||
 | Adaboost                      |[Example](gganimate/adaboost.html)          |          |  [Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)       |  |     
 | Gradient Boosting                      |[Note](slides/Adaboost_note.pdf)                   |        |  [Classification](python/fa23/gb_classification.html), <br> [Regression](python/fa23/gb_regression.html)      |  [Assignment 4](assignments/assignment4_fa23.html), <br> [Extra Credits](assignments/assignment5_fa23.html)  |[Exam 2](exams/Exam2/Exam2.html)|
-|Hand-Written Recognition|  | | [Random Forest](python/digits/fa23/image_recognition_rf.html), [ipynb](python/digits/fa23/image_recognition_rf.ipynb) | [Assignment 6]() |  |
+|Hand-Written Recognition|  | | [Random Forest](python/digits/fa23/image_recognition_rf.html), [ipynb](python/digits/fa23/image_recognition_rf.ipynb) | [Assignment 6](assignments/assignment6_fa23.html) |  |
+| Linear Models and LASSO       |[Note](gganimate/lm_fa23.pdf)              |     | [Regression](python/lasso_regression_practice.html), [ipynb](python/lasso_regression_practice.ipynb) <br> [Classification](python/lasso_classification_fa21.html), [ipynb](python/lasso_classification_fa21.ipynb)|    |    [EC4](assignments/Extra_Credit_4.html)   |            |       |
+

@@ -1,5 +1,5 @@
 ---
-title: "Assignment 5: Handwritten Recognition with Ensemble Models"
+title: "Assignment 6: Handwritten Recognition with Ensemble Models"
 format: html
 editor: visual
 ---
@@ -17,9 +17,11 @@ Make a presentation of you doing the follows. Using Zoom to record a video of th
 
 -------
 
-_**What to do:**_  Train an ensemble model (Random forest, Adaboost or Gradient Boosting) to recognize three handwritten letters or numbers. Present your model and record the presentation using Zoom or any recording software.  In the presentation, 
+_**What to do:**_  Train an ensemble model (Random forest, Adaboost or Gradient Boosting) to recognize three handwritten letters or numbers or objects. Present your model and record the presentation using Zoom or any recording software.  
 
-- State clearly what letters or digits you want to predict.
+In the presentation, 
+
+- State clearly what letters/digits/objects you want to predict.
 
 - Show your training and testing data (images).
 
@@ -41,10 +43,12 @@ _**Instruction**_:
 
 _**Note**_: To improve the accuracy of the model:
 
+- Make the letter/digits dark and thick. 
+
 - Add more images to the training data.
 
 - Add images that are wrongly classified to the training data.
 
-- Try different the resolution, i.e., try different values for the `dim` variable.
+- Let the model see the images more clearly by increasing resolution of the images. This means increasing the value for the `dim` variable.
 
 - Try different values for the tuning parameters
