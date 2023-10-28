@@ -5,10 +5,7 @@ editor: visual
 ---
 
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
-                      echo=FALSE, warning=FALSE, message=FALSE)
-```
+
 
 
 -------
@@ -58,3 +55,4 @@ _**Note**_: To improve the accuracy of the model:
 - Let the model see the images more clearly by increasing resolution of the images. This means increasing the value for the `dim` variable.
 
 - Try different values for the tuning parameters
+
