@@ -191,7 +191,7 @@ We will train a gradient boosted tree (stump) on this data with the learning rat
 
 
 ## Solution
-a. The prediction of the first round (Pred1) is just the average of $y$ (Pred1 = $\bar{y}$).
+a. The prediction of the first round (Pred1) is just the average of $y$ (Pred1 = $\bar{y} = \frac{1+0+2}{3}= 1$).
 
 |    |   X |   Y |   Pred1 |
 |:---:|:----:|:----:|:--------:|
