@@ -19,4 +19,4 @@
 | Linear Models and LASSO       |[Note](gganimate/lm_fa23.pdf)              |     | [Regression](python/lasso_regression_practice.html), [Notebook](python/lasso_regression_practice.ipynb) <br> [Classification](python/lasso_classification_fa21.html), [Notebook](python/lasso_classification_fa21.ipynb)|    |  |
 | Neural Network|   [Notes]()           |     |        |            |  |     
 | Deep Learning | [Slides](gganimate/cnn.html)  |     || ||  
-|Image Recognition| | | [Codes](https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing)  |  |  |
+|Image Recognition| | |   |  |  |
