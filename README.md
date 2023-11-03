@@ -18,5 +18,5 @@
 |**Part 2. Linear Models and Neral Networks**|  | |  | || 
 | Linear Models and LASSO       |[Note](gganimate/lm_fa23.pdf)|     |[Regression](python/lasso_regression_practice.html)<br> [Classification](python/lasso_classification_fa21.html)|    |  |
 | Neural Network|   [Notes]()           |     |        |            |  |     
-| Deep Learning | [Slides]()  |     || ||  
+| Deep Learning | [Slides](gganimate/cnn.html)  |     || ||  
 |Image Recognition| | |   |  |  |
