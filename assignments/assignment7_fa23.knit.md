@@ -5,10 +5,7 @@ editor: visual
 ---
 
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
-                      echo=FALSE, warning=FALSE, message=FALSE)
-```
+
 
 
 -------
@@ -34,4 +31,5 @@ Find a dataset to train following models to predict your interested binary targe
 - A neural network of your own design
 
 Compare the models to determine the best model among the above models.
+
 
