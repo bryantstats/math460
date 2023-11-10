@@ -20,3 +20,5 @@
 | Neural Network|   [Notes](notes/nn.pdf)           |     |        |   [Assignment 7](assignments/assignment7_fa23.html)         |  |     
 | Deep Learning | [Slides](gganimate/cnn.html)  |     |[Codes](https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing)|  ||  
 |Image Recognition| | | [Codes](https://colab.research.google.com/drive/1w08iZYxummujaJ3u_NRBWKQxPpF3BL2H?authuser=1)  |  |  |
+|**Part 3. KNN and Recommendation System**|  | |  | ||
+|KNN| [1](slides/knn.html) | |  | ||
