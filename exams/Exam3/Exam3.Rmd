@@ -12,7 +12,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 ```
 
 
-Similar problems and solutions to Problem 1, 2 and 3 can be found [here](sol.html). Take photos of your answers and submit it to Canvas.  
+Similar problems and solutions to Problem 1, 2 and 3 can be found [here](practice_sol.html). Take photos of your answers and submit it to Canvas.  
 
 ### Problem 1. 
 Given the data.
