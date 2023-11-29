@@ -23,4 +23,8 @@
 |**Part 3. KNN and Recommendation System**|  | |  | ||
 |KNN| [1](slides/knn.html) | | [Notebook](python/knn.html) | ||
 | Recommendation System         | [1](slides/rs2.html), [2](slides/Netflix_Prize.pdf)             | |       | [Assignment 9](assignments/assignment9_fa23.html)           | [Exam 3](exams/Exam3/Exam3.html)| 
-
+|**Part 4. Unsupervised Learning**|  | |  | ||
+|Principal Component Analysis|  | |  | ||
+|Hierarchical Clustering|  | |  | ||
+|K-means Clustering|  | |  | ||
+|**Final Project**| [Project](final/Math460_Final.html) | |  | ||

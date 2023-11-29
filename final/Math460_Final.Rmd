@@ -52,7 +52,7 @@ You are asked to complete a RESEARCH PAPER.  Your paper should have a **title**;
 -------
 
 #### 3. Model Evaluation 
-Explain and give formulas if possible these metrics for classification model evaluation: 
+Explain and give formulas if possible of these metrics for classification model evaluation: 
 
 - Misclassification
 - Sensitivity
