@@ -29,4 +29,5 @@
 |Principal Component Analysis| [Note](slides/pca.pdf)  | |  | ||
 |K-means Clustering|[Note](slides/clustering_kmeans.pdf)   | |  | ||
 |Hierarchical Clustering| [Note](slides/clustering_hc.pdf)  | |  | ||
+|Association Rules| [Note](notes/association_rules.pdf)  | |  | ||
 |**Final Project**| [Project](final/Math460_Final.html) | |  | ||
