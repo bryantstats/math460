@@ -75,9 +75,9 @@ Explain and give formulas if possible of these metrics for classification model 
   - Decision Tree
   - LASSO
   - Stepwise/Forward/Backward Regression
-  
   - Metadata node. 
 
+This video shows how to implement these variable selection: [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257)
 
 - Report the SAS Enterprise Miner diagram
 - Report Train/Validation Ratio for data partition
