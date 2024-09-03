@@ -1,0 +1,20 @@
+---
+title: "Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+[Titanic]()
+
+[Breast Cancer]()
+
+[NBA Salary]()
+
+[Automobile Customer](data/automobile_customer.csv)
+
+[Mall Customer](data/mall_customers.csv)

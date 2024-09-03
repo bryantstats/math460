@@ -1,0 +1,14 @@
+---
+title: "Extra Credit 4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+- Do the practice sections at these two notebooks: [Classification](https://bryantstats.github.io/math460/python/lasso_classification_fa21.html) and [Regression](https://bryantstats.github.io/math460/python/lasso_regression_practice.html)
+
+- Export the notebook to html (File -> Save and Export Notebook As -> HTML) then submit the Canvas

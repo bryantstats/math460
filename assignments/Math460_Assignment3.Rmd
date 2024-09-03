@@ -1,0 +1,42 @@
+---
+title: "Assignment 3: Handwritten Recognition with Random Forest"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+-------
+
+_**What to do:**_  Train a random forest to recognize three handwritten letters or numbers. Present your model and record the presentation using Zoom or any recording software.  In the presentation, 
+
+- State clearly what letters or digits you want to predict.
+
+- Show your training and testing data (images).
+
+- Show some efforts to fix any wrong predictions (By adding images that are wrongly classified to the training data and retest with similar images). 
+
+- Discuss issues you run into, if any, and how you fix them. 
+
+- Are you happy with the predictions?
+
+Submit the video or the link of the video to Canvas.
+
+
+_**Instruction**_:  [Video Instruction](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=91c7ceb4-7949-48ee-adb3-af33010fc736)
+
+
+_**Note**_: To improve the accuracy of the model:
+
+- Add more images to the training data.
+
+- Add images that are wrongly classified to the training data.
+
+- Try different the resolution, i.e., try different values for the `dim` variable.
+
+- Try different numbers of trees by changing the value for `n_estimators.`

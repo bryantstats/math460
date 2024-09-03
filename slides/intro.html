@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>An Overview of Data Mining</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <link href="libs/tile-view/tile-view.css" rel="stylesheet" />
+    <script src="libs/tile-view/tile-view.js"></script>
+    <link href="libs/panelset/panelset.css" rel="stylesheet" />
+    <script src="libs/panelset/panelset.js"></script>
+    <script src="libs/xaringanExtra-webcam/webcam.js"></script>
+    <script id="xaringanExtra-webcam-options" type="application/json">{"width":"200","height":"200","margin":"1em"}</script>
+    <script src="libs/xaringanExtra_fit-screen/fit-screen.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# An Overview of Data Mining
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# What is Data Mining?
+
+- Data Mining can be defined as the process that starting from apparently unstructured data tries to extract knowledge and/or unknown interesting patterns.
+
+- During this process **Machine Learning algorithms** are used.
+
+---
+# Data Mining vs. Machine Learning
+
+- What are the differences?
+
+- The short answer is:  **None.** 
+
+- "They are concerned with the same question:  how do we learn from data?" - Wasserman. 
+
+- Read more:  [What's the difference between machine learning, statistics, and data mining?](https://www.r-bloggers.com/whats-the-difference-between-machine-learning-statistics-and-data-mining/)
+
+---
+# Machine learning Algorithms
+
+- Machine Learning relates with the study, design and development of the algorithms that give computers the capability to **learn** without being **explicitly** programmed
+
+---
+class: inverse, center, middle
+
+# Explicit vs. Implicit Programming
+
+
+---
+# Explicit vs. Implicit Programming
+
+- **Problem**:  Solve by a quadratic equation using computer. 
+  - Input: A quadratic Equation
+  - Output: Its solutions
+
+$$
+ax^2+bx+c = 0
+$$
+  
+
+- **Explicit** approach: using the quadratic formula 
+
+$$
+x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}
+$$
+
+- **Implicit** approach:  
+  - Collect data:  Find 1000 (or more!) quadratic equations with solutions.
+  - Train models:  Train multiple models to "learn" the relationship between the 100 equations and their solutions
+  - Validate model: Test the trained model to select the **best** model to use
+  - Use the best model "predict" the solutions of a given equation
+
+---
+# Explicit vs. Implicit Programming
+
+- ML approach needs data; explicit programming approach does not.
+
+- Machine:  Without data, there is no learning!
+
+- Human: Without experience, there is no learning!  
+
+---
+# Different types of Learning
+
+- **Supervised learning**: We use supervised learning algorithms when we want to *predict* something from the data.  
+
+- **Unsupervised learning**: We use unsupervised learning algorithms when we want to understand the structure of the data.
+
+---
+class: inverse, center, middle
+
+# Supervised vs. Unsupervised
+
+---
+# Supervised Learning
+
+
+![](images/intro1.png)
+
+
+---
+# Supervised Learning
+
+
+![](images/intro13.png)
+
+
+---
+# Supervised Learning
+
+
+![](images/intro11.png)
+
+
+---
+# Unsupervised Learning
+
+
+![](images/intro21.png)
+
+
+---
+# Unsupervised Learning
+
+
+![](images/intro2.png)
+
+
+---
+
+![](images/intro3.png)
+
+---
+
+![](images/intro6.png)
+
+---
+
+![](images/intro6.png)
+Also **Unsupervised Learning**
+
+---
+# Supervised vs. Unsupervised
+
+- **Supervised learning** requires **labels**
+
+
+---
+# Supervised vs. Unsupervised
+
+- **Supervised learning** requires **labels**
+- There are **training** data and **testing** data in supervised learning. 
+
+
+---
+# Supervised vs. Unsupervised
+
+- **Supervised learning** requires **labels**
+- There are **training** data and **testing** data in supervised learning. 
+- We can measure the **accuracy** of supervised learning algorithm. 
+
+---
+class: inverse, center, middle
+
+# Applications of Supervised learning
+
+---
+- Face recognition (tagging names on faces): Facebook.
+
+
+![](images/intro7.png)
+
+
+---
+
+![](images/intro8.png)
+
+
+---
+
+![](images/intro9.png)
+
+
+---
+
+![](images/intro10.png)
+
+
+---
+
+- Pneumonia Detection https://stanfordmlgroup.github.io/projects/chexnet/
+
+- Improving Palliative Care https://stanfordmlgroup.github.io/projects/improving-palliative-care/
+
+- Face Detection (Apple): https://machinelearning.apple.com/2017/11/16/face-detection.html
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

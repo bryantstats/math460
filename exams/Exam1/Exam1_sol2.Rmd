@@ -1,0 +1,170 @@
+---
+title: "Exam 1"
+output: html_document
+---
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+# Problem 2
+
+```{r, echo = FALSE}
+library(tidyverse)
+ip = function(n0, n1){
+  p0 = n0/(n0+n1)
+  return(1-p0^2-(1-p0)^2)}
+
+ig = function(a0, a1, b0, b1){
+  k = (b0+b1)/(a0+a1)
+  return(ip(a0, a1) - k*ip(b0,b1)-(1-k)*ip(a0-b0, a1-b1))}
+
+# children impurity
+
+ic <- function(a, b, c, d)
+{
+  n = a + b + c + d
+  n_l = a + b
+  n_r = c + d
+  
+  i_c = (n_l/n)*(2*a*b)/(a+b)^2 + (n_r/n)*(2*c*d)/(c+d)^2
+  return(i_c)
+}
+
+igg = function(df, v, s)
+# df = Data
+# v = Index of the Variable to split
+# s = Value the variable split at 
+  
+{
+  #set the variable (x1) and the value it splits at(x1==1)
+  s1 = table(df[df[,v]==s,]$target)
+  tt = table(df$target)
+  #calculate the children impurity of the split
+  ig1 = ig(tt[1],tt[2],s1[1],s1[2])
+  
+  return(ig1)
+  
+}
+
+Class     =c(1,1,1,1,1,1,1,1,3,2,3,2,2,3,2,3,3,2,1,2)
+
+Sex     =c(0,0,0,0,0,0,0,1,0,1,0,1,1,1,1,0,1,0,1,1)
+target =c(1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0)
+
+d = as_tibble(cbind(Class, Sex, target))
+
+
+n = nrow(d)
+n1 = sum(d$target)
+n0 = n - n1
+
+split <- function(df, col)
+{
+  u <- unique(df[[col]])
+  i_c  <- c()
+  
+  w = 1
+  
+  n1 <- sum(df$target)
+  n0 <- nrow(df)-n1
+  
+  for (i in u){
+    d1 <- df[df[col]==i,]
+    bb = sum(d1$target)
+    aa = nrow(d1)-bb
+    dd = n1 - bb
+    cc = n0 - aa
+    i1 = ig(n0,n1,aa,bb)
+    
+    i_c[w] <- i1
+    w <- w+1
+  }
+  
+  i_c <- data.frame(Split_at = c(paste(col,'=', u)), column=col, value=u, Impurity_Gain = i_c)
+  
+  
+  return(i_c)
+  
+}
+
+split_step1 <- function(df)
+{
+  col_names = head(names(df), -1)
+  
+  i_c <- split(df, col_names[1])
+  
+  for (col in col_names[-1])
+  {
+    i_c <- rbind(i_c, split(df, col)) 
+  }
+  i_c <- i_c[order(-i_c$Impurity_Gain),]
+  return(i_c)
+}
+
+split_step2 <- function(df)
+  
+{
+  ic1 = split_step1(df)
+  
+  col1 = ic1$column[1]
+  val1 = ic1$value[1]
+  
+  d1 <- df[(df[col1]==val1), ]
+  
+  d11 <- split_step1(d1)
+    
+  d11$Split <-paste0(col1,'=', val1, ', ',d11$Split_at) 
+  
+  d11$Split_at=NULL
+  
+  d2 <- df[df[col1]!=val1,]
+  
+  d22 <- split_step1(d2)
+    
+  d22$Split <-paste0(col1,'!=', val1,', ', d22$Split_at) 
+
+  d22$Split_at=NULL
+  
+  i_c = rbind(d11, d22)
+  
+  i_c$column=NULL
+  i_c$value=NULL
+  
+  i_c = i_c[,c(2,1)]
+  
+  return(i_c[order(-i_c$Impurity_Gain),])
+}
+
+
+split(d, 'Class')
+
+split2(d)
+split_step2(d)
+
+
+```
+
+
+```{r}
+Class     =c(1,1,1,1,1,1,1,3,3,2,3,2,2,3,2,3,1,2,1,2)
+Sex     =  c(0,0,0,1,0,0,0,1,0,1,0,1,1,1,1,0,0,0,1,1)
+target =   c(1,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0)
+
+d = as_tibble(cbind(Class, Sex, target))
+split_step1(d)
+split_step2(d)
+```
+
+
+```{r}
+Class     =c(1,1,1,1,1,1,1,3,3,2,3,2,2,3,2,3,1,2,1,2)
+Sex     =  c(0,0,0,1,0,0,0,1,0,1,0,1,1,1,1,0,0,0,1,1)
+target =   c(1,1,1,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,1)
+
+d = as_tibble(cbind(Class, Sex, target))
+split_step1(d)
+split_step2(d)
+```

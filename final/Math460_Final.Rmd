@@ -1,0 +1,120 @@
+---
+title: "Math 460 Final Project:  Classification with SAS Enterprise Miner"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+-------
+
+This is a project on binary classification. The project has two components: *written component* and *presentation component*. You can work in a group of no more than three.  
+
+-------
+
+## Data
+Your data should have at least 7 variables, at least 200 rows and be different from any dataset that have been used in the class. The target variable should be binary.
+
+-------
+
+## Written Component (80%):    
+You are asked to complete a RESEARCH PAPER.  Your paper should have a **title**; an **abstract** and **references.**  Your paper should also include the following sections. 
+
+-------
+
+#### 1.	Introduction of Machine Learning and your problem
+
+-	Overview of machine learning; supervised learning; unsupervised learning; classification; regression.  
+- Address the importance of supervised learning and give some real-life examples. 
+- Describe your problem:  what you want to predict?  
+- Summarize what you do in this paper. Mention your findings in the project. 
+
+-------
+
+#### 2. Predictive Modeling Explained. 
+
+- Describe the process of building a predictive model: Data partition, training model and validating/testing model. Explain the issue of overfitting. What is model tuning and why one should do it? 
+
+- Introduce and Explain the following models. For each model explain the given hyparameters in the parentheses and how the hyperparameters could affect model's performance. Discuss pros and cons of the models. 
+
+  - Decision tree (Number of Leaves or the depth):  
+  - Random forest (Number of Trees, Number of Variables considered at each split)
+  - Adaboost (Number of rounds, Learning Rate) 
+  - Gradient boosting (Number of rounds, Learning Rate) 
+  - Logistic regression, LASSO
+  - K-Nearest Neighbors (Number of nearest neighbors)
+  
+-------
+
+#### 3. Model Evaluation 
+Explain and give formulas if possible of these metrics for classification model evaluation: 
+
+- Misclassification
+- Sensitivity
+- Specificity
+- F1-Score
+- Explain ROC and ROC Index. 
+- Cumulative lift, cumulative % response
+
+-------
+
+#### 4. SAS Miner Implementation and Result. 
+
+- Introduce your dataset and your classification problem:  where/how do you get the data, what is the target variable; what input variables are; how many observations; how many variables. Description of variables.  
+
+
+- Implement the above models, excluding Adaboost.  
+- Show your effort to improve the models by trying different hyperparameters and using the below variables selection techniques. 
+
+  - Principal Component Analysis
+  - Decision Tree
+  - LASSO
+  - Stepwise/Forward/Backward Regression
+  - Metadata node. 
+
+This video shows how to implement these variable selection: [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257)
+
+- Report the SAS Enterprise Miner diagram
+- Report Train/Validation Ratio for data partition
+- Report the hyperparameters that you use for each model. For example, for random forest how many trees you have, how many variables are considered at each split...
+- Report and comment on the variable importance rankings of Decision Tree/Gradient Boosting/Random Forest
+- Report and comment on the comparison of ROC Curve, Misclassification, and F1-Score. (You will need to compute F1-Scores for the models) 
+
+Comment on the result of your effort. 
+
+-------
+
+#### 5. Conclusion
+
+ - Summarize what you have done in this project.  
+ - Suggest on how the project can be improved and the future research direction. 
+
+-------
+
+#### 6. Appendix. 
+Include any supplement documents. 
+
+-------
+
+#### 7. References. 
+Cite any papers and sources that you used. 
+
+-------
+
+## Presentation Component (20%):
+Present the project in the final exam day. You could follow the below guideline: 
+
+- Introduce the dataset: where/how do you get the data,  how many observations; how many variables. Description of variables.  How did you clean and what did you do to the data before importing it to SAS Miner. 
+
+- Describe your classification problem:  what is the target variable, why it may be useful to predict that variable, i.e. who might be interested in your models?
+ 
+- Show your diagram and discuss your results: how changing the hyperparameters affect the accuracy, how variable selections change the accuracy, which variables are the most important, what is the final model you select and so on.
+
+- Discuss the findings and limitation of the project.  What you would do if you have more time for this project? Discuss any future research direction coming out of this project. 
+
+-------
