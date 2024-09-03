@@ -30,7 +30,9 @@ regression models, and neural networks.
 
 ## Office Hours:
 
-You can find me at my office (A8 - Suite A) from 10:00AM-10:55PM on MWF. I am also available over Zoom (ID: 4419675207) during these times if needed. If these time slots do not work, please feel free to schedule another time with me.
+Tuesday and Thursday: 12:30pm - 2:00pm, Friday: 12-1pm, or by appointment 
+
+[Office hour Zoom Link](https://bryant.zoom.us/j/4419675207)
 
 ## Grades
 
@@ -42,8 +44,8 @@ library(dplyr)
 
 Percentage = c(.3,.48, .18, .04)
 Grades = c('Final Project','Exams','Assignments','Attendance')
-
-df = data.frame(Grades = Grades, Percentage = Percentage, labels = paste0(Percentage*100, "%"))
+label2 = paste0(Grades, " ", Percentage*100, "%")
+df = data.frame(Grades = Grades, Percentage = Percentage, labels = label2)
 
 ggplot(df, aes(x = "", y = Percentage, fill = Grades)) +
   geom_col() +
