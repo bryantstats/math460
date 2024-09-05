@@ -6,5 +6,6 @@
 
 |Topics| Slides/Notes |SAS | Python | Assignments | Exams |
 |:------------------------|:-------|:---------|:--------------|:--------------|:-------------|:-------------|:-------------|
-| An Overview of Data Mining    | [Slides](slides/intro.html), [Notes]()      |        |             |       |
-
+| An Overview of Data Mining    | [Slides](slides/intro.html)    |        |             |       |
+| Overfitting and Tuning  | [Slides](slides/overfitting.pdf)     |        |      | |
+| Model Evaluation| [Slides](), [Notes]()     ||      |   [Assignment 1]()    ||
