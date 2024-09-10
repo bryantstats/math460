@@ -8,4 +8,4 @@
 |:------------------------|:-------|:---------|:--------------|:--------------|:-------------|:-------------|:-------------|
 | An Overview of Data Mining    | [Slides](slides/intro.html)    |        |             |       |
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf)     |        |      | |
-| Model Evaluation| [Slides](), [Notes]()     ||      |   [Assignment 1]()    ||
+| Model Evaluation| [Slides](), [Notes]()     ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
