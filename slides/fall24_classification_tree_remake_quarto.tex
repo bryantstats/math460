@@ -328,7 +328,7 @@ SVM = Support Vector Machine
 
 \begin{frame}{Impurity Gain}
 \phantomsection\label{impurity-gain}
-\includegraphics{images/parent_child.png}
+\includegraphics[width=\textwidth,height=1.5in]{images/parent_child.png}
 
 \[
 IG = I_{parent} - \frac{N_{left}}{N}I_{left}-\frac{N_{right}}{N}I_{right}
@@ -384,6 +384,8 @@ IG = I_{parent} - \frac{N_{left}}{N}I_{left}-\frac{N_{right}}{N}I_{right}
 
 \begin{frame}{IG By Classification Error}
 \phantomsection\label{ig-by-classification-error}
+\includegraphics[width=\textwidth,height=1in]{images/im1.png}
+
 \begin{itemize}
 \tightlist
 \item
@@ -392,8 +394,6 @@ IG = I_{parent} - \frac{N_{left}}{N}I_{left}-\frac{N_{right}}{N}I_{right}
 \end{itemize}
 
 For Split 1: \(N = 5, N_{left} =1, N_{right} = 4\)
-
-\includegraphics{images/im1.png}
 
 \begin{itemize}
 \item
@@ -415,9 +415,9 @@ For Split 1: \(N = 5, N_{left} =1, N_{right} = 4\)
 
 \begin{frame}{IG By Classification Error}
 \phantomsection\label{ig-by-classification-error-1}
-For Split 2: \(N = 5, N_{left} =2, N_{right} = 3\)
+\includegraphics[width=\textwidth,height=1in]{images/im3.png}
 
-\includegraphics{images/im3.png}
+For Split 2: \(N = 5, N_{left} =2, N_{right} = 3\)
 
 \begin{itemize}
 \item
@@ -440,7 +440,7 @@ For Split 2: \(N = 5, N_{left} =2, N_{right} = 3\)
 \phantomsection\label{ig-by-classification-error-2}
 For Split 3: \(N = 5, N_{left} =3, N_{right} = 2\)
 
-\includegraphics{images/im2.png}
+\includegraphics[width=\textwidth,height=1in]{images/im2.png}
 
 \begin{itemize}
 \item
@@ -463,12 +463,12 @@ For Split 3: \(N = 5, N_{left} =3, N_{right} = 2\)
 \phantomsection\label{comparing-ig-by-classification-error}
 \begin{longtable}[]{@{}ll@{}}
 \toprule\noalign{}
-& IG \\
+Split & IG \\
 \midrule\noalign{}
 \endhead
-Split 1 & 0.2 \\
-Split 2 & 0 \\
-Split 3 & 0.2 \\
+1 & 0.2 \\
+2 & 0 \\
+3 & 0.2 \\
 \bottomrule\noalign{}
 \end{longtable}
 
@@ -484,7 +484,7 @@ Split 3 & 0.2 \\
 \phantomsection\label{ig-by-gini-index}
 For Split 1: \(N = 5, N_{left} =1, N_{right} = 4\)
 
-\includegraphics{images/im1.png}
+\includegraphics[width=\textwidth,height=1in]{images/im1.png}
 
 \begin{itemize}
 \item
@@ -501,14 +501,12 @@ For Split 1: \(N = 5, N_{left} =1, N_{right} = 4\)
   Impurity Gain of Split 1:
 \end{itemize}
 
-\[IG = 0.48 - \frac{1}{5} \cdot 0-\frac{4}{5} \cdot 0.375 = 0.18\]
-\end{frame}
+\[IG = 0.48 - \frac{1}{5} \cdot 0-\frac{4}{5} \cdot 0.375 = 0.18\] \#\#
+IG By Gini Index
 
-\begin{frame}{IG By Gini Index}
-\phantomsection\label{ig-by-gini-index-1}
 For Split 2: \(N = 5, N_{left} =2, N_{right} = 3\)
 
-\includegraphics{images/im3.png}
+\includegraphics{images/im3.png}\{1.5in\}
 
 \begin{itemize}
 \item
@@ -528,10 +526,10 @@ For Split 2: \(N = 5, N_{left} =2, N_{right} = 3\)
 \end{frame}
 
 \begin{frame}{IG By Gini Index}
-\phantomsection\label{ig-by-gini-index-2}
+\phantomsection\label{ig-by-gini-index-1}
 For Split 3: \(N = 5, N_{left} =3, N_{right} = 2\)
 
-\includegraphics{images/im2.png}
+\includegraphics{images/im2.png}\{1.5in\}
 
 \begin{itemize}
 \item
@@ -574,7 +572,7 @@ Split 3 & 0.216 \\
 \phantomsection\label{ig-by-entropy}
 For Split 1: \(N = 5, N_{left} =1, N_{right} = 4\)
 
-\includegraphics{images/im1.png}
+\includegraphics{images/im1.png}\{1.5in\}
 
 \begin{itemize}
 \item
@@ -662,9 +660,8 @@ Split 3 & 0.42 \\
 \begin{frame}{Comparing Impurity Measures}
 \phantomsection\label{comparing-impurity-measures}
 \includegraphics{images/i.png} - Relation between impurity and the class
-probabilities. All impurity measures are maximized at
-\textbf{\(p_1 =1/2\)} and minimized at \textbf{\(p_1 = 0\)} and
-\textbf{\(p_1=1\)}.
+probabilities. All impurity measures are maximized at \(p_1 =1/2\) and
+minimized at \(p_1 = 0\) and \(p_1=1\).
 \end{frame}
 
 \begin{frame}{Another Example}
@@ -717,8 +714,8 @@ Independence}
   The smaller the \(p-value\), the more dependent the two variables are.
   Thus the better the split is.
 \item
-  Therefore, we look for the split with the \textbf{greatest \(\chi^2\)
-  value.}
+  Therefore, we look for the split with the \textbf{greatest} \(\chi^2\)
+  value.
 \end{itemize}
 \end{frame}
 
