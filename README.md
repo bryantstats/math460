@@ -10,4 +10,4 @@
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf)     |        |      | |
 | Model Evaluation| [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_note.pdf)     ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
 |**Part 1. Tree-Based Models**|  | |  | ||  
-| Classification Trees          | [Slides](), [Notes]()     | [Video 1](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=43f78607-df37-405c-836b-b1f001126a1f)  | [html](),  [Notebook]()         |  [Assignment 2]()     |[Exam 1]()|
+| Classification Trees          | [Slides](), [Notes]()     | [Video 1](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=43f78607-df37-405c-836b-b1f001126a1f)  | [Notebook](python/fa23/tree_classification.html)       |  [Assignment 2](assignments/Math460_Assignment2.html)     |[Exam 1's Practice](exams/Exam1/Exam1_fall24_practice_problem.pdf)|
