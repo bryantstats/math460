@@ -149,7 +149,7 @@ $$
 H(x) = Sign \bigg( 0.693 \cdot I(x_2>2.5) + 0.733 \cdot I(x_1<1.5) + 1.018 \cdot I(x_1<4.5) \bigg)
 $$
 
-The decision boundary is as follows. (Red points are negatives).  See this note for how to draw this decision boundary: [Note](Adaboost_note2.pdf)
+The decision boundary is as follows. (Red points are negatives).  See this note for how to draw this decision boundary: [Note](Adaboost_note2.pdf), or [this note](Adaboost_2024.pdf)
 
 <center>
 ![](images/ada1.png)
