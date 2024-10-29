@@ -15,4 +15,4 @@
 | Random Forest                 | [Slides](slides/rf.pdf), [Notes](slides/rf_2024_note.pdf)    |   |||
 | Ensemble Method  |[Slide](gganimate/boosting3.html) ||   ||
 | Adaboost                      |[Example](gganimate/adaboost.html), [Note](slides/Adaboost_2024.pdf)          |        | |  |     
-| Gradient Boosting             |[Note](slides/gb_note_2024.pdf)            |        |      | [Assignment 4](assignments/assignment4_fa24.html)    |[Exam 2's Practice](exams/Exam2/Exam2_sol.html)|
+| Gradient Boosting             |[Note](slides/gb_note_2024.pdf)            |        |      | [Assignment 4](assignments/assignment4_fa24.html)    |[Exam 2's Practice](exams/Exam2/Exam2_sol.html), [Exam 2](exams/Exam2/Exam2_pdf.pdf)|
