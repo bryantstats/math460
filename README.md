@@ -1,5 +1,11 @@
 # Math 460: Applied Data Mining
 
+---
+
+Exam 2:  Please find the exam 2 at this link: [Exam 2](exams/Exam2/Exam2_pdf.pdf)
+
+---
+
 [Syllabus](m460syllabus.html)
 
 [Data](data.html)
