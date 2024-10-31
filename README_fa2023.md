@@ -14,7 +14,7 @@
 |Regression Trees| [Note](slides/Regression_Trees.pdf) |  | [html](python/fa23/tree_regression.html), [Notebook](python/fa23/tree_regression.ipynb)  | [Assignment 3](assignments/assignment3_fa23.html)  | |  
 | Random Forest                 | [Slides](slides/rf.pdf), [Notes](slides/rf_note_fa23.pdf), [oob](slides/oob.pdf)    |  [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=3d0f4009-d088-40d0-b457-b0910102e606)|[Classification](python/fa23/rf_classification.html), <br> [Regression](python/fa23/rf_regression.html) |||
 | Ensemble Method  |[Slide](gganimate/boosting3.html) ||||
-| Adaboost                      |[Example](gganimate/adaboost.html)          |          |  [Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)       |  |     
+| Adaboost                      |[Example](gganimate/adaboost.html)||[Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)       |  |     
 | Gradient Boosting                      |[Note](slides/Adaboost_note.pdf)                   |        |  [Classification](python/fa23/gb_classification.html), <br> [Regression](python/fa23/gb_regression.html)      |  [Assignment 4](assignments/assignment4_fa23.html), <br> [Extra Credits](assignments/assignment5_fa23.html)  |[Exam 2](exams/Exam2/Exam2.html)|
 |Hand-Written Recognition|  | | [Forest](python/digits/fa23/image_recognition_rf.html), [Notebook](python/digits/fa23/image_recognition_rf.ipynb) | [Assignment 6](assignments/assignment6_fa23.html) |  |
 |**Part 2. Linear Models and Neral Networks**|  | |  | || 
