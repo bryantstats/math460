@@ -16,3 +16,6 @@
 | Ensemble Method  |[Slide](gganimate/boosting3.html) ||     |   |[Exam 2](exams/Exam2/Exam2.html)|  
 | Adaboost|[Example](gganimate/adaboost.html), [Note](slides/Adaboost_2024.pdf)||[Learning Rate](python/adaboost_demonstrate_fa23.ipynb) [Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)  | ||  
 | Gradient Boosting             |[Note](slides/gb_note_2024.pdf)            |        | [Classification](python/fa23/gb_classification.html), <br> [Regression](python/fa23/gb_regression.html)       | [Assignment 4](assignments/assignment4_fa23.html), <br> [Extra Credits](assignments/assignment5_fa23.html)     |[Exam 2's Practice](exams/Exam2/Exam2_sol.html), <br> [Exam 2](exams/Exam2/Exam2_pdf.pdf)|
+|Hand-Written Recognition|  | | [Forest](python/digits/fa23/image_recognition_rf.html), [Notebook](python/digits/fa23/image_recognition_rf.ipynb) | [Assignment 6](assignments/assignment6_fa23.html) |  |
+|**Part 2. Linear Models and Neral Networks**|  | |  | || 
+| Linear Models and LASSO       |[Note](gganimate/lm_fa23.pdf)|     |[Regression](python/lasso_regression_practice.html)<br> [Classification](python/lasso_classification_fa21.html)|    |  |
