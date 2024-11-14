@@ -19,3 +19,5 @@
 |Hand-Written Recognition|  | | [Forest](python/digits/fa23/image_recognition_rf.html), [Notebook](python/digits/fa23/image_recognition_rf.ipynb) | [Assignment 6](assignments/assignment6_fa23.html) |  |
 |**Part 2. Linear Models and Neral Networks**|  | |  | || 
 | Linear Models and LASSO       |[Note](gganimate/lm_fa24.pdf)|     |[Regression](python/lasso_regression_practice.html)<br> [Classification](python/lasso_classification_fa21.html)|    |  |
+| Neural Network|   [Notes](notes/nn24.pdf)           |     |        |   [Assignment 7](assignments/assignment7_fa23.html)         |  |     
+| Deep Learning | [Slides](gganimate/cnn.html)  |     |[Codes](https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing)|  ||  
