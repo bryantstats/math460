@@ -24,3 +24,5 @@
 Image Recognition| | | [Codes](https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing)  |[Assignment 8](assignments/assignment8_fa24.html)  |  |
 |**Part 3. KNN and Recommendation System**|  | |  | ||
 |KNN| [1](slides/knn.html) | | [Notebook](python/knn.html) | ||
+| Recommendation System         | [1](slides/rs2.html), [2](slides/Netflix_Prize.pdf)             | |       | [Assignment 9](assignments/assignment9_fa23.html)           | [Exam 3](exams/Exam3/Exam3.html)| 
+|**Final Project**| [Project](final/Math460_Final.html) | |  | ||
