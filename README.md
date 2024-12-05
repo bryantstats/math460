@@ -25,4 +25,7 @@ Image Recognition| | | [Codes](https://colab.research.google.com/drive/1tSF1TJrG
 |**Part 3. KNN and Recommendation System**|  | |  | ||
 |KNN| [1](slides/knn.html) | | [Notebook](python/knn.html) | ||
 | Recommendation System         | [1](slides/rs2.html), [2](slides/Netflix_Prize.pdf)             | |       | [Assignment 9](assignments/assignment9_fa23.html)           | [Exam 3](exams/Exam3/Exam3.html)| 
-|**Final Project**| [Project](final/Math460_Final.html) | |  | ||
+|**Part 4. Unsupervised Learning**|  | |  | ||
+|Principal Component Analysis| [Note](slides/pca_fall24.pdf)  | |  |
+
+|**Final Project**| [Project](final/Math460_Final.html) | |  | 
