@@ -7,3 +7,5 @@
 |Topics| Slides/Notes|SAS | Python | Assignments | Exams |
 |:-----|:------------|:---|:-------|:------------|:------|
 | An Overview of Data Mining| [Slides](slides/intro.html) |        |              |       | |
+| Overfitting and Tuning  | [Slides](slides/overfitting.pdf)|        |      | ||
+| Model Evaluation| [Slides](slides/measuring_performance.pdf)    ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
