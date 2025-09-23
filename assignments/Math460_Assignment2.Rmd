@@ -14,7 +14,9 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
 
 -------
 
-Make a presentation of you doing the follows. Using Zoom to record a video of the presentation and the link of the video or the video to Canvas. 
+Make a presentation of you doing the follows. Using Zoom to record a video of the presentation and the link of the video or the video to Canvas.
+
+[Video Instruction](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=59129bd3-7152-4f94-9988-b36001446e0f)
 
 -------
 
