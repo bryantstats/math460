@@ -1,0 +1,14 @@
+---
+title: "Assignment 3: Classification Trees in Python"
+format: html
+editor: visual
+---
+
+Do the practice at the end of the notebook below. 
+
+[Link](https://bryantstats.github.io/math460/python/fa23/tree_classification.html)
+
+Submit the HTML to Canvas. 
+
+
+
