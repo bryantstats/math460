@@ -6,7 +6,7 @@ editor: visual
 
 *Instruction: Organize your answer in a word document and submit to Canvas. You can also take photos or scan your written answers and submit to Canvas.*
 
-[Sample Problem](assignment4_fa25_sample.pdf)
+[Sample Problem](assignment3_fa23_sample2.pdf)
 
 **Problem 1**
 
