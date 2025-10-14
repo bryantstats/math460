@@ -14,3 +14,4 @@
 |Regression Trees| [Note](assignments/assignment4_fa25_sample.pdf) |  | [Notebook](python/fa24/tree_regression.html)  | [Assignment 4](assignments/assignment4_fa25.html)  | |  
 | Random Forest                 | [Slides](slides/rf.pdf), [Notes](notes/rf_fa25.pdf)    |  [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=7a7553c0-97f4-424d-a985-b371013551bd) |[Classification](python/fa23/rf_classification.html), <br> [Regression](python/fa23/rf_regression.html)|||
 | Ensemble Method  |[Slide](gganimate/boosting3.html) ||     |   ||
+| Adaboost|[Example](gganimate/adaboost.html), [Note](notes/Adaboost_fa25.pdf)||[Learning Rate](python/adaboost_demonstrate_fa23.html) [Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)  | ||  
