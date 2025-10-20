@@ -10,7 +10,7 @@ Make a presentation of you doing the follows. Using Zoom to record a video of th
 
 -------
 
-[Video Instruction]()
+[Video Instruction](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=ee838c52-d785-40c9-8a2a-b37c01468094)
 
 1. Create a SAS Library and into the library the following dataset
 
