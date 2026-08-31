@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title> SOA-CAS Machine Learning</title>
+    <meta charset="utf-8" />
+    <meta name="author" content=" Son Nguyen " />
+    <script src="libs/header-attrs-2.7/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# <img src="figures/bat-cartoon.png" /> SOA-CAS Machine Learning
+### <font size="5"> Son Nguyen </font>
+
+---
+
+
+&lt;style&gt;
+
+.remark-slide-content {
+  background-color: #FFFFFF;
+  border-top: 80px solid #F9C389;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 1em 2em 1em 2em
+}
+
+.inverse {
+  background-color: #696767;
+  border-top: 80px solid #696767;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 50% 75%;
+  background-size: 150px;
+}
+
+.your-turn{
+  background-color: #8C7E95;
+  border-top: 80px solid #F9C389;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 95% 90%;
+  background-size: 75px;
+}
+
+.title-slide {
+  background-color: #F9C389;
+  border-top: 80px solid #F9C389;
+  background-image: none;
+}
+
+.title-slide &gt; h1  {
+  color: #111111;
+  font-size: 40px;
+  text-shadow: none;
+  font-weight: 400;
+  text-align: left;
+  margin-left: 15px;
+  padding-top: 80px;
+}
+.title-slide &gt; h2  {
+  margin-top: -25px;
+  padding-bottom: -20px;
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 35px;
+  text-align: left;
+  margin-left: 15px;
+}
+.title-slide &gt; h3  {
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 25px;
+  text-align: left;
+  margin-left: 15px;
+  margin-bottom: -30px;
+}
+
+&lt;/style&gt;
+
+&lt;style type="text/css"&gt;
+.left-code {
+  color: #777;
+  width: 50%;
+  height: 92%;
+  float: left;
+}
+.right-plot {
+  width: 49%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+
+&lt;style type="text/css"&gt;
+.pull-left {
+  color: #777;
+  width: 30%;
+  height: 92%;
+  float: left;
+}
+.pull-right {
+  width: 69%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+---
+# Agenda
+
+- Deep learning revolution
+
+- Python Example
+
+  - Apple diseases Detection: CNN vs. Gradient Boosting 
+  
+  - Pneumonia X-ray detection
+  
+  - GAN
+
+- Define neural networks
+
+
+---
+# Deep Learning
+
+
+&lt;img src="images/cnn6.png" width="2633" /&gt;
+
+
+---
+# Example
+
+https://www.youtube.com/watch?v=l82PxsKHxYc&amp;t=47s
+
+---
+
+# 2009: ImageNet Competition
+
+.pull-left[
+
+- Launched in 2009
+
+- 15 million high-resolution images
+
+- 22,000 categories]
+
+.pull-right[
+
+&lt;img src="images/cnn1.png" width="1080" /&gt;
+]
+---
+# AlexNet
+
+.pull-left[
+
+- Dramatic performance gain
+
+- No Teams get better than 25% accuracy by 2012
+
+- AlexNet was imtroduce in 2012 with 15.3% accuracy
+
+- No team did worst than 25% since
+
+
+]
+
+.pull-right[
+&lt;img src="images/cnn2.png" width="1180" /&gt;
+]
+
+
+---
+# AlexNet
+
+
+&lt;img src="images/cnn8.png" width="2048" /&gt;
+
+
+---
+# CNN
+
+
+&lt;img src="images/cnn3.png" width="1333" /&gt;
+
+---
+# 2014: DeepFace - Facebook
+
+- In 2014, Facebook - DeepFace can identify faces with 97.35% accuracy, beating rivals human performance
+
+&lt;img src="images/deep_face.png" width="2619" /&gt;
+
+---
+# 2016: AlphaGo - Google
+
+- In 2016, AlphaGo became the first computer program to defeat a professional human Go player
+
+- the first to defeat a Go world champion,
+
+- arguably the strongest Go player in history.
+
+- AlphaGo was one of the Breakthrough of the Year by Science. 
+
+
+&lt;img src="images/cnn_alphago.jpg" style="display: block; margin: auto;" /&gt;
+
+---
+# 2016: Google Translate
+
+- In 2016, Google Translate Deep Learning blew other language translation techniques out of the water
+
+&lt;img src="images/google_translate2.png" width="1143" /&gt;
+
+---
+# Google Assistant
+
+https://ai.googleblog.com/2018/05/duplex-ai-system-for-natural-conversation.html
+
+&lt;img src="images/google_assistant.png" width="2133" /&gt;
+
+---
+# 2017: Face ID - Apple
+
+- In 2017, Apple switched to use Deep Learning for face recognition
+
+&gt; We had to completely rethink our approach so that we could take advantage of this paradigm shift. https://machinelearning.apple.com/research/face-detection
+
+&lt;img src="images/apple_face_id.jpg" style="display: block; margin: auto;" /&gt;
+
+---
+# Apple Siri
+
+https://machinelearning.apple.com/research/siri-voices
+
+![](images/siri.jpg)&lt;!-- --&gt;
+
+---
+# Apple - Deep Learning
+
+
+&lt;img src="images/cnn5.png" width="1461" /&gt;
+
+---
+# Amazon
+
+![](images/amazon.jpg)&lt;!-- --&gt;
+
+---
+class: inverse, middle, center
+# Academia
+
+---
+# Academia
+
+&lt;img src="images/ml_academia.png" width="765" style="display: block; margin: auto;" /&gt;
+
+---
+# 2018: Alan Turing Award
+
+&lt;img src="images/turing.jpg" style="display: block; margin: auto;" /&gt;
+
+---
+class: inverse, middle, center
+
+# Big Tech Companies Interested
+
+---
+# Google
+
+- In 2014, Google acquired DeepMind. 
+
+- https://deepmind.com/research/case-studies/alphago-the-story-so-far
+
+- https://en.wikipedia.org/wiki/DeepMind
+
+- https://www.tensorflow.org/about
+
+---
+# Tensorflow
+
+- Google developed TensorFlow in 2015
+
+- particularly focuses on training and inference of deep neural networks.
+
+- Company uses Tensorflow
+
+&lt;img src="images/cnn_tensor_flow.png" width="1735" /&gt;
+
+- https://www.tensorflow.org/about
+
+---
+# Google Brain
+
+- Google Brain is a deep learning artificial intelligence research team at Google. 
+
+- Formed in the early 2010s
+
+- https://research.google/teams/brain/
+
+
+---
+# Apple
+
+- Deep Learning Team: 
+
+https://www.apple.com/jobs/us/teams/machine-learning-and-ai.html
+
+---
+# Facebook: Pytoch
+
+- In 2016, Facebook developed PyTorch, an open source deep learning framework
+
+---
+# Microsoft
+
+Deep Learning Group: https://www.microsoft.com/en-us/research/group/deep-learning-group/
+
+---
+class: inverse, center, middle
+
+# But...
+
+---
+# But...
+
+- Neural Network was invented a long time ago
+
+- Why now?
+
+---
+# CNN
+
+
+&lt;img src="images/cnn7.png" width="1967" style="display: block; margin: auto;" /&gt;
+
+---
+# Big Data
+
+&lt;img src="images/big_data3.jpg" style="display: block; margin: auto;" /&gt;
+
+
+---
+# Big Data
+
+&lt;img src="images/big_data2.jpg" style="display: block; margin: auto;" /&gt;
+
+
+---
+# Big Data
+
+&lt;img src="images/big_data.jpg" style="display: block; margin: auto;" /&gt;
+
+---
+# Powerful Computing
+
+&lt;img src="images/computing3.jpg" style="display: block; margin: auto;" /&gt;&lt;img src="images/computing4.png" width="387" style="display: block; margin: auto;" /&gt;
+
+- https://en.wikipedia.org/wiki/History_of_supercomputing
+
+
+---
+# Powerful Computing
+&lt;img src="images/computing.png" width="2880" style="display: block; margin: auto;" /&gt;
+
+---
+# Powerful Computing
+
+- If AlphaGoZero was trained in 1 day in 2020, how long would it take to train AlphaGoZero in 2012?
+
+- More than 821 years!
+
+---
+# Cheaper Computing
+
+&lt;img src="images/computing2.jpg" style="display: block; margin: auto;" /&gt;
+
+
+
+---
+# CNN
+
+
+&lt;img src="images/cnn4.png" width="1419" /&gt;
+
+---
+class: middle, inverse, center
+
+# Neural Network
+
+---
+# A linear Model is a Neural Network
+
+
+---
+# Number of Parameters
+
+&lt;img src="images/cnn_pam.png" width="2140" /&gt;
+
+- FLOP: Number of Operations
+---
+# Deeper and Deeper
+
+
+&lt;img src="images/cnn_alexnet.png" width="1997" /&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"slideNumberFormat": "<div class=\"progress-bar-container\">\n  <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">\n  </div>\n</div>`"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+---
+title: "Tokenization"
+format: revealjs
+editor: visual
+---
+
+## How Text Becomes Numbers in NLP
+
+### Tokenization • Vocab • Embeddings • Context Windows
+
+------------------------------------------------------------------------
+
+## Motivation
+
+Why do LLMs need numbers?
+
+-   Neural networks operate only on numbers\
+-   Text is symbolic\
+-   We must convert:\
+    **Text → Tokens → Token IDs → Embeddings → Tensors**
+
+This is the foundation of all NLP and LLMs.
+
+------------------------------------------------------------------------
+
+## Predictive Modeling Analogy
+
+### Classical machine learning:
+
+-   Inputs: \\(X_1, X_2, \dots, X_k\\)
+-   Output: \\(y\\)
+
+\[
+
+\begin{bmatrix}
+X_{1,1} & X_{1,2} & \dots & y_1 \\
+X_{2,1} & X_{2,2} & \dots & y_2 \\
+\vdots & \vdots & & \vdots \\
+\end{bmatrix}
+
+\]
+
+### Text prediction:
+
+-   Previous tokens → **input**\
+-   Next token → **output**
+
+\[ (t\_{i-2}, t\_{i-1}) \to t_i \]
+
+------------------------------------------------------------------------
+
+## Tokenization Overview
+
+**Tokenization** = splitting text into small units.
+
+-   Word tokens\
+-   Subword tokens (BPE)\
+-   Characters
+
+Models do *not* understand words.\
+They understand **token IDs**.
+
+------------------------------------------------------------------------
+
+## Example Sentence
+
+**Sentence:**\
+“I love large language models.”
+
+### Word-level tokens:
+
+1.  I\
+2.  love\
+3.  large\
+4.  language\
+5.  models\
+6.  .
+
+------------------------------------------------------------------------
+
+## Vocabulary → Token IDs
+
+| Token    | ID  |
+|----------|-----|
+| I        | 1   |
+| love     | 2   |
+| large    | 3   |
+| language | 4   |
+| models   | 5   |
+| .        | 6   |
+
+Sentence →\
+\[ \[1,;2,;3,;4,;5,;6\] \]
+
+------------------------------------------------------------------------
+
+## Context Window (Small Example)
+
+Assume: - **context length = 2**\
+- Predict the next token
+
+Examples:
+
+| Input Tokens         | Output   |
+|----------------------|----------|
+| \[I, love\]          | large    |
+| \[love, large\]      | language |
+| \[large, language\]  | models   |
+| \[language, models\] | .        |
+
+This is exactly like a regression table.
+
+------------------------------------------------------------------------
+
+## Embedding Layer
+
+Token IDs → embedding vectors\
+Assume embedding dimension = **3**
+
+Define an embedding matrix:
+
+| Token    | ID  | Embedding          |
+|----------|-----|--------------------|
+| I        | 1   | \[0.1, 0.2, 0.3\]  |
+| love     | 2   | \[-0.5, 0.1, 0.0\] |
+| large    | 3   | \[0.7, -0.2, 0.4\] |
+| language | 4   | \[0.0, 0.3, 0.9\]  |
+| models   | 5   | \[0.4, 0.4, 0.4\]  |
+| .        | 6   | \[-0.2, 0.0, 0.1\] |
+
+Embeddings are learned during training.
+
+------------------------------------------------------------------------
+
+## Convert Tokens → Embedding Vectors
+
+Example input:\
+**X = \[I, love\] = \[1,2\]**
+
+Embedding lookup:
+
+-   1 → `[0.1, 0.2, 0.3]`\
+-   2 → `[-0.5, 0.1, 0.0]`
+
+Tensor shape:
+
+**(context_length = 2) × (embed_dim = 3)**
+
+\[
+
+\begin{bmatrix}
+0.1 & 0.2 & 0.3 \\
+-0.5 & 0.1 & 0.0
+\end{bmatrix}
+
+\]
+
+------------------------------------------------------------------------
+
+## Full Training Examples
+
+| Tokens  | Tensor |
+|---------|--------|
+| \[1,2\] | \\(    |
+| \[2,3\] | \\(    |
+| \[3,4\] | \\(    |
+| \[4,5\] | \\(    |
+
+Target outputs:\
+\[ y = \[3,4,5,6\] \]
+
+------------------------------------------------------------------------
+
+## Next Token Prediction
+
+The model learns:
+
+\[ f: \mathbb{R}\^{(2 \times 3)} \to \text{Probabilities over vocabulary} \]
+
+Outputs a distribution:
+
+-   P(large)\
+-   P(language)\
+-   P(models)\
+-   P(.)\
+-   ...
+
+Prediction = argmax.
+
+------------------------------------------------------------------------
+
+## Regression Analogy
+
+| Text Modeling     | Regression                   |
+|-------------------|------------------------------|
+| Past tokens       | Input X                      |
+| Next token        | Output y                     |
+| Token IDs         | Encoded categorical features |
+| Embedding vectors | Learned numeric features     |
+| Context window    | Number of predictors         |
+| Sequence model    | Regression function          |
+
+LLMs = supervised learning with special input encoding.
+
+------------------------------------------------------------------------
+
+## Before Transformers
+
+RNN/LSTM: - Reads left → right\
+- Stores compressed memory\
+- Struggles with long context\
+- Cannot directly compare distant words
+
+------------------------------------------------------------------------
+
+## Transformers (High-level)
+
+Transformers take the same input tensor and add:
+
+-   Positional encoding\
+-   Multi-head self-attention\
+-   Deep feedforward layers\
+-   Parallel processing
+
+But **tokenization + embeddings = the foundation**.
+
+------------------------------------------------------------------------
+
+## Takeaways
+
+-   Text must become numbers\
+-   Tokenization assigns IDs\
+-   Embeddings turn IDs into vectors\
+-   Context window creates training examples\
+-   Prediction = next token\
+-   Same structure as classical prediction
+
+------------------------------------------------------------------------
+
+## End
+
+Questions?

@@ -1,0 +1,263 @@
+\documentclass{beamer}
+
+\usetheme{Madrid}
+
+\title{How Text Becomes Numbers in NLP}
+\subtitle{Tokenization, Vocabulary, Embeddings, Context Windows}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% --------------------------------------------------
+\begin{frame}{Motivation}
+Why convert text to numbers?
+\begin{itemize}
+    \item Neural networks operate only on numbers
+    \item Text is symbolic
+    \item Standard pipeline:
+\[
+\text{Text} \rightarrow \text{Tokens} \rightarrow \text{IDs} \rightarrow \text{Embeddings} \rightarrow \text{Tensors}
+\]
+\end{itemize}
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Predictive Modeling Analogy}
+Classical regression:
+\[
+(X_1, X_2, \dots, X_k) \rightarrow y
+\]
+
+Text modeling:
+\[
+(t_{i-2}, t_{i-1}) \rightarrow t_i
+\]
+
+Next-token prediction is just supervised learning.
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Tokenization}
+Tokenization = splitting text into small units:
+\begin{itemize}
+    \item Word tokens
+    \item Subword tokens (BPE)
+    \item Characters
+\end{itemize}
+
+Models do not understand words.  
+They understand integer token IDs.
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Example Sentence}
+Sentence:
+\[
+\text{``I love large language models.''}
+\]
+
+Tokens:
+\[
+\text{I, love, large, language, models, .}
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Vocabulary → Token IDs}
+
+Mapping:
+\[
+\begin{array}{c|c}
+\text{Token} & \text{ID} \\
+\hline
+\text{I} & 1 \\
+\text{love} & 2 \\
+\text{large} & 3 \\
+\text{language} & 4 \\
+\text{models} & 5 \\
+\text{.} & 6
+\end{array}
+\]
+
+Sentence becomes:
+\[
+[1, 2, 3, 4, 5, 6]
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Context Window Example}
+Assume:
+\begin{itemize}
+    \item Context length = 2
+    \item Predict the next token
+\end{itemize}
+
+Training examples:
+\[
+[I,\, love] \rightarrow large
+\]
+\[
+[love,\, large] \rightarrow language
+\]
+\[
+[large,\, language] \rightarrow models
+\]
+\[
+[language,\, models] \rightarrow .
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Embedding Layer}
+Token IDs → embedding vectors.
+
+Embedding dimension = 3
+
+Example embeddings:
+\[
+\begin{array}{c|c}
+\text{Token} & \text{Embedding} \\
+\hline
+\text{I} & (0.1,\;0.2,\;0.3) \\
+\text{love} & (-0.5,\;0.1,\;0.0) \\
+\text{large} & (0.7,\;-0.2,\;0.4) \\
+\text{language} & (0.0,\;0.3,\;0.9) \\
+\text{models} & (0.4,\;0.4,\;0.4) \\
+\text{.} & (-0.2,\;0.0,\;0.1)
+\end{array}
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Convert Tokens → Embeddings}
+
+Example input:
+\[
+[I,\, love] = [1,2]
+\]
+
+Embedding lookup:
+\[
+1 \rightarrow (0.1,\, 0.2,\, 0.3)
+\]
+\[
+2 \rightarrow (-0.5,\, 0.1,\, 0.0)
+\]
+
+Model input tensor (shape $2 \times 3$):
+\[
+\begin{pmatrix}
+0.1 & 0.2 & 0.3 \\
+-0.5 & 0.1 & 0.0
+\end{pmatrix}
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Full Training Examples}
+
+\[
+[1,2] \rightarrow
+\begin{pmatrix}
+0.1 & 0.2 & 0.3 \\
+-0.5 & 0.1 & 0.0
+\end{pmatrix}
+\]
+
+\[
+[2,3] \rightarrow
+\begin{pmatrix}
+-0.5 & 0.1 & 0.0 \\
+0.7 & -0.2 & 0.4
+\end{pmatrix}
+\]
+
+\[
+[3,4] \rightarrow
+\begin{pmatrix}
+0.7 & -0.2 & 0.4 \\
+0.0 & 0.3 & 0.9
+\end{pmatrix}
+\]
+
+\[
+[4,5] \rightarrow
+\begin{pmatrix}
+0.0 & 0.3 & 0.9 \\
+0.4 & 0.4 & 0.4
+\end{pmatrix}
+\]
+
+Targets:
+\[
+3,\;4,\;5,\;6
+\]
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Next Token Prediction}
+
+The model learns:
+\[
+f : \mathbb{R}^{2 \times 3} \rightarrow \text{Probability over vocabulary}
+\]
+
+Example:
+\[
+P(\text{large}) = 0.72,\;
+P(\text{language}) = 0.10,\;
+P(\text{models}) = 0.08
+\]
+
+Prediction = highest probability.
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Regression Analogy}
+
+\[
+\text{Inputs} = \text{previous tokens}
+\]
+\[
+\text{Output} = \text{next token}
+\]
+
+Embeddings = learned numeric features.
+
+Text modeling is classical supervised learning on sequences.
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Transformers (High-Level Summary)}
+Transformers add:
+\begin{itemize}
+    \item Positional encoding
+    \item Self-attention
+    \item Multi-head attention
+    \item Deep feedforward layers
+\end{itemize}
+
+Input is still the same embedding tensor.
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Takeaways}
+\begin{itemize}
+    \item Text → tokens → IDs → embeddings → tensors  
+    \item Next-token prediction is supervised learning  
+    \item Embeddings learn semantic similarity  
+    \item Context window = model input size  
+\end{itemize}
+\end{frame}
+
+% --------------------------------------------------
+\begin{frame}{Questions?}
+\centering
+Thank you!
+\end{frame}
+
+\end{document}

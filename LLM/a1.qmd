@@ -1,0 +1,141 @@
+---
+title: "Assignment: Building and Fine-Tuning Your Own LLM"
+subtitle: "Training Base Models, Instruction Tuning, and Inference"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+---
+
+# Introduction
+
+This assignment can be done in group and will be graded for extra credits. This assignment is worth the same as a regular class assignment. Make a presentation to address the guideline below.  
+
+
+---
+
+# Colab Setup
+
+You will use **Google Colab Pro** (student accounts available) and work with models small enough to run on a Colab GPU.
+
+1. Sign up for **Google Colab Pro** using your student account.  
+2. Create a new notebook in Colab.  
+3. Choose the **strongest GPU available** (A100 if possible; otherwise L4 or T4).  
+
+[Link](https://colab.research.google.com/signup)
+
+---
+
+# Train a Small Base Model on Your Own Dataset
+
+You will train a small transformer (1–10M parameters) using your own text dataset from Google Drive.
+
+## Dataset Requirements
+
+In your presentation, include:
+
+- A preview of the text dataset  
+- How you obtained the dataset  
+- Domain of the dataset (e.g., finance, literature, conversations, sports, medical, social media, etc.)  
+- Dataset size measured in:
+  - tokens  
+  - words  
+  - file size (KB/MB)
+
+## Model Architecture Requirements
+
+Show the following:
+
+- Vocabulary size  
+- Context window (block size)  
+- Embedding dimension  
+- Number of layers  
+- Total number of parameters  
+
+## Inference Demo
+
+Show at least **3 examples** of inference:
+
+- Text continuation  
+- A question about your dataset  
+- A creative prompt (story, summary, etc.)
+
+---
+
+# Convert Your Base Model Into an INSTRUCT Model
+
+You will now make your model behave like an assistant.
+
+Use a small instruction dataset such as:
+
+- Alpaca  
+- Dolly  
+- OASST  
+- A small custom dataset you create (Q/A pairs)
+
+## Show the Instruction Dataset
+
+Include:
+
+- Sample instruction → response pairs  
+- Dataset size (# of examples)  
+
+## Train an Instruction-Tuned Version
+
+Use SFT (supervised fine-tuning).
+
+## Show Before vs. After Comparison
+
+Demonstrate:
+
+- How the base model responded to instructions before tuning  
+- How the new *instruct model* responds now  
+
+At least **3 comparison examples** must be shown.
+
+---
+
+# Use a Stronger Pretrained Base Model
+
+Import a stronger BASE model (not instruction-tuned), such as:
+
+- microsoft/phi-2
+- Mistral-7B Base  
+- Qwen-2 7B Base  
+- Gemma 7B Base  
+- Llama-3 8B Base
+
+## Inference Demonstration
+
+Show:
+
+- Text continuation  
+- Factual Q/A behavior (will often be weak)  
+- An instruction the model **fails** to follow  
+  (because base models are not aligned)
+
+---
+
+# Instruction-Tune the Stronger Base Model
+
+Show how you train the model to be an assistant. 
+
+## Compare Behavior Before and After
+
+Show at least **3 comparison prompts** trying to demonstrate:  
+
+- Before: does not follow instructions  
+- After: correctly follows instructions
+
+---
+
+# Reflection
+
+- Compare your model (in 3) and the strong pretrain model (in 5)
+- How the base model do inferences?
+- How instruction tuning alters model behavior  
+- What surprised you about training LLMs  
+- What you would do differently with more compute  
+- What you learned about raw base models vs aligned assistants  
+

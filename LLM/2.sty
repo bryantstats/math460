@@ -1,0 +1,350 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\title{How Text Becomes Numbers in NLP}
+\subtitle{Tokenization • IDs • Embeddings • Context Windows}
+\author{}
+\date{}
+
+\begin{document}
+
+% Title Page
+\begin{frame}
+  \titlepage
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Why Convert Text to Numbers?}
+Neural networks operate only on \textbf{numbers}.  
+Text is \textbf{symbolic}.  
+We must encode it numerically.
+
+\medskip
+
+Pipeline:
+\[
+\text{Text} \rightarrow \text{Tokens} \rightarrow \text{IDs} \rightarrow \text{Embeddings} \rightarrow \text{Tensors}
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Predictive Modeling Analogy}
+Traditional ML:
+\[
+(X_1, X_2, \dots, X_k) \rightarrow y
+\]
+
+Text modeling:
+\[
+(\text{token}_{i-2},\ \text{token}_{i-1}) \rightarrow \text{token}_i
+\]
+
+Same structure: Inputs → Model → Output.
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Tokenization}
+Tokenization splits text into:
+\begin{itemize}
+    \item Word tokens
+    \item Subword tokens (BPE)
+    \item Characters
+\end{itemize}
+
+Models do \textbf{not} understand words — they understand \textbf{token IDs}.
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Example Sentence}
+Sentence:
+\[
+\text{``I love large language models.''}
+\]
+
+Tokens:
+\begin{itemize}
+    \item I
+    \item love
+    \item large
+    \item language
+    \item models
+    \item .
+\end{itemize}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Vocabulary → Token IDs}
+Using larger token IDs:
+
+\[
+\begin{aligned}
+\text{I} &\rightarrow 101\\
+\text{love} &\rightarrow 587\\
+\text{large} &\rightarrow 233\\
+\text{language} &\rightarrow 902\\
+\text{models} &\rightarrow 744\\
+\text{.} &\rightarrow 999
+\end{aligned}
+\]
+
+Encoded sentence:
+\[
+[101, 587, 233, 902, 744, 999]
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Context Window (Size = 2)}
+
+Training samples:
+\[
+[I,\ love] \rightarrow \text{large}
+\]
+\[
+[love,\ large] \rightarrow \text{language}
+\]
+\[
+[large,\ language] \rightarrow \text{models}
+\]
+\[
+[language,\ models] \rightarrow .
+\]
+
+In IDs:
+\[
+[101, 587] \rightarrow 233
+\]
+\[
+[587, 233] \rightarrow 902
+\]
+\[
+[233, 902] \rightarrow 744
+\]
+\[
+[902, 744] \rightarrow 999
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Embedding Layer (dim = 3)}
+
+\[
+\begin{aligned}
+101 &\rightarrow (0.1,\ 0.2,\ 0.3)\\
+587 &\rightarrow (-0.5,\ 0.1,\ 0.0)\\
+233 &\rightarrow (0.7,\ -0.2,\ 0.4)\\
+902 &\rightarrow (0.0,\ 0.3,\ 0.9)\\
+744 &\rightarrow (0.4,\ 0.4,\ 0.4)\\
+999 &\rightarrow (-0.2,\ 0.0,\ 0.1)
+\end{aligned}
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Input Tensor (Context = 2)}
+Tokens:
+\[
+[101,\ 587]
+\]
+
+Embeddings:
+\[
+\begin{pmatrix}
+0.1 & 0.2 & 0.3\\
+-0.5 & 0.1 & 0.0
+\end{pmatrix}
+\]
+
+Tensor shape:
+\[
+2 \times 3
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Training Examples (Tensor Form)}
+
+\[
+[101, 587] \rightarrow 
+\begin{pmatrix}
+0.1 & 0.2 & 0.3\\
+-0.5 & 0.1 & 0.0
+\end{pmatrix}
+\rightarrow 233
+\]
+
+\[
+[587, 233] \rightarrow
+\begin{pmatrix}
+-0.5 & 0.1 & 0.0\\
+0.7 & -0.2 & 0.4
+\end{pmatrix}
+\rightarrow 902
+\]
+
+\[
+[233, 902] \rightarrow 
+\begin{pmatrix}
+0.7 & -0.2 & 0.4\\
+0.0 & 0.3 & 0.9
+\end{pmatrix}
+\rightarrow 744
+\]
+
+\[
+[902, 744] \rightarrow
+\begin{pmatrix}
+0.0 & 0.3 & 0.9\\
+0.4 & 0.4 & 0.4
+\end{pmatrix}
+\rightarrow 999
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Next Token Prediction}
+Model learns:
+
+\[
+\text{Tensor} (2 \times 3) \rightarrow \text{Probability distribution}
+\]
+
+Example output:
+\[
+P(\text{large}) = 0.72,\quad
+P(\text{language}) = 0.10,\quad
+P(\text{models}) = 0.08
+\]
+
+Prediction = \(\arg\max\).
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Regression Analogy}
+
+\[
+\begin{array}{ll}
+\text{NLP Concept} & \text{ML Concept}\\
+\hline
+\text{Previous tokens} & \text{Input } X\\
+\text{Next token} & y\\
+\text{Token IDs} & \text{Encoded categories}\\
+\text{Embeddings} & \text{Learned features}\\
+\text{Context window} & \text{Number of predictors}\\
+\text{Sequence model} & f(X)
+\end{array}
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Our Tiny Dataset}
+We used:
+\begin{itemize}
+    \item 1 sentence
+    \item 6 tokens
+    \item vocab size = 6
+    \item context = 2
+    \item embedding dim = 3
+    \item only 4 training pairs
+\end{itemize}
+Tiny and illustrative.
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Real LLM Dataset Scale}
+
+Modern LLMs train on:
+\begin{itemize}
+    \item Trillions of tokens
+    \item Multilingual web data
+    \item Code, math, papers
+    \item Social media
+    \item Multimodal content
+\end{itemize}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{ChatGPT / GPT-4}
+\begin{itemize}
+    \item 2–10 trillion tokens
+    \item Web, code, books
+    \item Embedding dim $\sim$ 10k
+    \item Context window: 128k–1M
+    \item Multimodal
+\end{itemize}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Gemini}
+\begin{itemize}
+    \item Trillions of tokens
+    \item Heavy multimodality (audio, video)
+    \item Embedding dim $\sim$ 8k–16k
+    \item Context up to 1M
+\end{itemize}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Tiny Example vs LLMs}
+
+\begin{table}[]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Feature & Example & GPT-4 & Gemini & Grok\\
+\midrule
+Tokens & 6 & trillions & trillions & trillions\\
+Vocab & 6 & 100k & 100k & 100k\\
+Embedding dim & 3 & 10k & 10k & 8k\\
+Context & 2 & 128k--1M & 1M & 128k--1M\\
+Data size & 1 sentence & internet-scale & internet-scale & internet-scale\\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{What This Comparison Shows}
+\begin{itemize}
+    \item Our example is tiny
+    \item LLMs are huge
+    \item But the pipeline is identical:
+\end{itemize}
+
+\[
+\text{Text}
+\rightarrow
+\text{Tokens}
+\rightarrow
+\text{IDs}
+\rightarrow
+\text{Embeddings}
+\rightarrow
+\text{Model}
+\rightarrow
+\text{Next Token}
+\]
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Key Takeaways}
+\begin{itemize}
+    \item NLP = converting text to numbers
+    \item Embeddings = learned numeric features
+    \item Context window = model history
+    \item Our example is small
+    \item LLMs scale the same math to trillions
+\end{itemize}
+\end{frame}
+
+%-------------------------------------------------------------
+\begin{frame}{Questions?}
+\centering
+\Large
+Questions?
+\end{frame}
+
+\end{document}

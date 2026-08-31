@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Recommendation System</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Recommendation System
+]
+
+---
+
+###  Examples - Amazon
+
+![](images/rs1.png)
+
+---
+###  Examples - In e-commerce
+
+![](images/rs2.png)
+
+---
+###  Examples - In Social Media
+
+![](images/rs3.png)
+
+---
+###  Examples - Mobile Apps
+
+![](images/rs4.png)
+
+---
+###  Definition - Problem domain
+
+- Recommendation systems (RS) help to match **users** with
+**items**
+
+---
+###  Definition - Problem domain
+
+
+- RS are one of the **most successful and widespread applications** of machine learning technologies in business.
+
+---
+###  Two types of systems
+
+
+- **Content- Based Filtering**: Recommeding to user A based on his/her existing profiles. 
+
+- **Collaborative Filtering**: Recommeding to user A based on his/her community's profiles. 
+
+
+---
+###  Two types of systems
+
+![](images/rs8.png)
+
+
+---
+###  Content- Based Filtering
+
+
+![](images/rs5.png)
+
+
+
+---
+###  Content- Based Filtering
+
+- Assume there are four categories of news A) Politics B) Sports C) Entertainment D) Technology 
+
+- User A who has read 10 articles related to Technology 
+
+- Recommend a new article in Technology for him to read. 
+
+---
+###  Collaborative Filtering
+
+
+
+![](images/rs6.png)
+
+
+
+---
+###  Collaborative Filtering
+
+
+- Assume there are four categories of news A) Politics B) Sports C) Entertainment D) Technology 
+
+- User A who has read 10 articles related to Technology 
+
+- User B who has read **the same** 10 articles related to Technology and an X article in Sports.
+
+- Recommend the article X to user A. 
+
+---
+###  Collaborative Filtering: Two approaches
+
+
+
+![](images/rs7.png)
+
+
+
+---
+###  Utility Matrix
+
+
+- Utility Matrix contains ratings of users on items
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|Item 5 |
+|:------|------:|------:|------:|------:|:------|
+|Alice  |      5|      3|      4|      4|???    |
+|User 1 |      3|      1|      2|      3|3      |
+|User 2 |      4|      3|      4|      3|5      |
+|User 3 |      3|      3|      1|      4|4      |
+|User 4 |      1|      5|      5|      2|1      |
+
+
+- A **recommendation problem** tunrs into a **prediction problem**.
+
+- Predict the rating of the new user on his/her new item.
+
+- If the predicted rating of *Alice* on Item 5 are high (4 or 5), we will recommend Item 5 to her. 
+
+
+---
+###  Nearest-neighbors (kNN)
+
+
+- A "pure" CF approach and traditional baseline
+- Using the utility as inputs
+- Returns a ranked list of items based on rating predictions
+
+
+---
+###  Nearest-neighbors (kNN)
+
+
+- **Assumptions**
+  - If users had similar tastes in the past they will have similar tastes in the
+future
+  - User preferences remain stable and consistent over time
+
+
+---
+###  User-based KNN
+
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|Item 5 |
+|:------|------:|------:|------:|------:|:------|
+|Alice  |      5|      3|      4|      4|???    |
+|User 1 |      3|      1|      2|      3|3      |
+|User 2 |      4|      3|      4|      3|5      |
+|User 3 |      3|      3|      1|      4|4      |
+|User 4 |      1|      5|      5|      2|1      |
+
+
+- Find find k nearst neighbors of Alice. 
+- User the average rating of the nearest neighbors on Item 5 as a prediction of Alice on Item 5.
+
+---
+###  User-based KNN
+
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|Item 5 |
+|:------|------:|------:|------:|------:|:------|
+|Alice  |      5|      3|      4|      4|???    |
+|User 1 |      3|      1|      2|      3|3      |
+|User 2 |      4|      3|      4|      3|5      |
+|User 3 |      3|      3|      1|      4|4      |
+|User 4 |      1|      5|      5|      2|1      |
+
+
+Let `\(A1\)` is the distance from Alice to User 1 and so on.  We have:
+
+$$
+A1 = 3.60 \\
+A2 = 1.41 \\
+A3 = 3.60 \\
+A4 = 5
+$$
+
+- For 3NN, the predicted rating of Alice for item 5 is the average of ratings on item 5 of her 3 neast neighbors, User 1, 2 and 3. 
+
+- Predicted rating of Alicie on item 5 is: (3+5+4)/3 = 4. 
+- We will **recommend** item 5 to Alice. 
+
+---
+###  Item-based KNN
+
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|Item 5 |
+|:------|------:|------:|------:|------:|:------|
+|Alice  |      5|      3|      4|      4|???    |
+|User 1 |      3|      1|      2|      3|3      |
+|User 2 |      4|      3|      4|      3|5      |
+|User 3 |      3|      3|      1|      4|4      |
+|User 4 |      1|      5|      5|      2|1      |
+
+
+- Find the k nearest neighbors of **Item 5**. 
+- The predicted rating of Alice on item 5 is the average rating of Alice on the nearest neighbors. 
+
+---
+###  Item-based KNN
+
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|Item 5 |
+|:------|------:|------:|------:|------:|:------|
+|Alice  |      5|      3|      4|      4|???    |
+|User 1 |      3|      1|      2|      3|3      |
+|User 2 |      4|      3|      4|      3|5      |
+|User 3 |      3|      3|      1|      4|4      |
+|User 4 |      1|      5|      5|      2|1      |
+
+
+Let `\(d54\)` be the distance of item 5 to item 4 and so on. We have
+
+$$
+d54 = 2.23\\
+d53 = 5.19 \\
+d52 = 5 \\
+d51 = 1.41
+$$
+
+- For 3NN, the two nearest neighbors of Item 5 are Item 1,4 and Item 2.
+
+- Predicted rating of Alice on Item 5 is the average of her ratings on Item 1, 4 and 2, which is (5+4+3)/3 = 4 
+- We **recommend** her to buy Item 5! 
+
+---
+###  Similarity Measure 
+
+- Neighborhood can be decided by **similarity** measures
+
+- Similarity can be measured as the inverse of the Distance
+
+- The possible similarity values are between 0 and 1, where values near to 1 indicate a strong similarity.
+
+- There are many distance measure
+
+- There are many similarity measure
+
+---
+###  Similarity Measure 
+
+
+![](images/rs9.png)
+
+
+
+---
+###  Manhattan Distance 
+
+
+![](images/rs10.png)
+
+---
+- ManhattanDistance between Alice and User 1 (A1). 
+
+
+
+
+|       | Item 1| Item 2| Item 3| Item 4|
+|:------|------:|------:|------:|------:|
+|Alice  |      5|      3|      4|      4|
+|User 1 |      3|      1|      2|      3|
+
+`$$A1  = |5-3| + |3-1|+|4-2|+|4-3| = 7$$`
+
+---
+###  Manhattan vs. Euclidean
+
+![](images/rs11.png)
+
+
+
+---
+###  Cosine Similarity
+
+
+![](images/rs12.png)
+
+- **Cosine similarity** is established as the standard in Recommendation System. 
+
+---
+###  Cosine Similarity Measure 
+
+- Cosine similarity between Alice and User 1 (S1). 
+
+
+|       | Item 1| Item 2| Item 3| Item 4|
+|:------|------:|------:|------:|------:|
+|Alice  |      5|      3|      4|      4|
+|User 1 |      3|      1|      2|      3|
+
+`$$S1  = \frac{5 \cdot 3 + 3 \cdot 1 + 4 \cdot 2 + 4 \cdot 3}{\sqrt{5^2+3^2+4^2+4^2}\cdot \sqrt{3^2+1^2+2^2+3^2}} = 0.975$$`
+
+
+---
+###  The Netflix Challenge
+
+[Link](Netflix_Prize.pptx)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

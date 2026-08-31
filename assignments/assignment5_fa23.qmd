@@ -1,0 +1,24 @@
+---
+title: "Assignment 5 - Extra Credits: Python"
+format: html
+editor: visual
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+1. Classification: Do the practices sections in the following notebooks. Export the ipynb to html then submit the html. You can also submit the ipynb. 
+
+- [Tree](https://bryantstats.github.io/math460/python/fa23/tree_classification.html)
+- [Random Forest](https://bryantstats.github.io/math460/python/fa23/rf_classification.html)
+- [Adaboost](https://bryantstats.github.io/math460/python/fa23/adaboost_classification.html)
+- [Gradient Boosting](https://bryantstats.github.io/math460/python/fa23/gb_classification.html)
+
+2. Regression: Do the practices sections in the following notebooks. Export the ipynb to html then submit the html. You can also submit the ipynb. 
+
+- [Tree](https://bryantstats.github.io/math460/python/fa23/tree_regression.html)
+- [Random Forest](https://bryantstats.github.io/math460/python/fa23/rf_regression.html)
+- [Adaboost](https://bryantstats.github.io/math460/python/fa23/adaboost_regression.html)
+- [Gradient Boosting](https://bryantstats.github.io/math460/python/fa23/gb_regression.html)

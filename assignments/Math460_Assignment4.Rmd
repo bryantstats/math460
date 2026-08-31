@@ -1,0 +1,36 @@
+---
+title: "Assignment 4: Image Recognition with Tree Based Models"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+
+Follow this below video and this notebook to implement a tree based model (Gradient Boosting, Adaboost or Random Forest) for image recognition. **Make sure you have similar amount of images for each categories**.  Record a presentation of your final model and upload the link to Canvas. 
+
+- Link to the video: [link](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cc0acb3e-295b-40d3-a813-af4b00168c19)
+
+In your presentation you should
+
+- Show your training data, testing data
+
+- Present the performance (prediction) of your model.  
+
+- Try different values of number of trees, learning rate, and dimension (dim) then comment on the changes (if any) in the model prediction with these different values.  
+
+- What are your final values selection for the number of trees, learning rate, and dimension?
+
+- Are you happy with the model? If not, how would you do if you have time to improve the model. 
+
+- Discuss any issue you run into training the model. 
+
+
+-------
+
+

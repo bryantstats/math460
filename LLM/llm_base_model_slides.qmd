@@ -1,0 +1,372 @@
+---
+title: "Understanding the Base Model of Large Language Models (LLMs)"
+subtitle: "From text to intelligence — how GPT learns to predict the next word"
+author: "Your Name"
+format:
+  revealjs:
+    theme: simple
+    transition: slide
+    slide-number: true
+    incremental: true
+    code-line-numbers: true
+execute:
+  echo: false
+---
+
+## 🎯 Learning Objectives
+
+By the end of this session, you will be able to:
+
+- Explain how an LLM base model works (no fine-tuning yet)
+- Describe tokenization, embedding, and attention
+- Understand training as next-token prediction
+- Compare with CNNs and RNNs
+- Recognize the limitations of a base LLM
+
+---
+
+## 🧩 What Is a Base LLM?
+
+- A **base LLM** = the “raw” model trained to predict the next token  
+- **Input:** sequence of tokens  
+- **Output:** probability distribution over next token  
+- Learns structure and meaning of language  
+- No conversation logic yet — that’s added later via fine-tuning and RLHF
+
+---
+
+## 🔤 Tokenization
+
+**Goal:** Convert text → tokens (numbers)
+
+Example:
+
+```
+"The cat sat" → [154, 912, 33]
+```
+
+- Each token = word, subword, or character  
+- Vocabulary size (*V*) typically 50k–200k  
+- Enables model to handle variable-length text numerically
+
+---
+
+## 📈 Embeddings
+
+LLMs convert tokens to *vectors* of real numbers.
+
+$$
+E: \text{token} \rightarrow \mathbb{R}^{n_{embd}}
+$$
+
+Example:
+- Embedding dimension \( n_{embd} = 4096 \)
+- Embedding matrix size: \( V \times n_{embd} \)
+- Semantically similar words → close in vector space
+
+---
+
+## 🧮 Input Example
+
+| Token | Vector dimension |
+|--------|------------------|
+| “The” | [0.24, 0.11, -0.05, ...] |
+| “cat” | [-0.12, 0.89, 0.34, ...] |
+| “sat” | [0.56, 0.04, 0.13, ...] |
+
+The resulting **embedding matrix** has shape *(context length × n_embd)*.
+
+---
+
+## 🕸️ Transformer Overview
+
+The **Transformer** is the core of LLMs:
+
+- Adds **positional encodings** to embeddings  
+- Uses **multi-head self-attention** to find relationships between tokens  
+- Applies **feed-forward layers** for deeper processing  
+- Outputs next-token probabilities
+
+![](https://jalammar.github.io/images/t/transformer_architecture_diagram.png){width=80%}
+
+---
+
+## 🔍 Self-Attention Intuition
+
+“How each word looks at others.”
+
+Example: “The cat sat on the mat”
+
+- “cat” attends strongly to “sat”  
+- “mat” attends to “on” and “the”  
+- Attention builds **context-aware meaning**
+
+---
+
+## ⚙️ Inside One Transformer Block
+
+**Each layer includes:**
+
+1. Multi-head self-attention  
+2. Add & LayerNorm  
+3. Feed-forward network  
+4. Add & LayerNorm again  
+
+Stack many such layers (e.g., 12–96) to build depth and abstraction.
+
+---
+
+## 🧠 Next-Token Prediction
+
+Training objective:
+$$
+\text{Loss} = - \log P(t_{i+1} | t_1, t_2, ..., t_i)
+$$
+
+Each position predicts the next token in sequence.
+
+Example:
+```
+[t₁, t₂, t₃, …, tₙ] → predict tₙ₊₁
+```
+
+---
+
+## 🔄 Autoregressive Generation
+
+Once trained, the model generates text step-by-step:
+
+```
+Input: The cat
+→ Predict “sat”
+→ Add to context
+→ Predict “on”
+→ Predict “the”
+→ Predict “mat”
+```
+
+---
+
+## ⚖️ Training Details
+
+| Parameter | Description | Example |
+|------------|--------------|----------|
+| batch_size | Sequences per update | 32 |
+| block_size | Context window (tokens) | 64 |
+| n_embd | Embedding dimension | 128–4096 |
+| n_layer | Transformer depth | 2–96 |
+| vocab_size | Vocabulary size | 50k–200k |
+
+---
+
+## 🔥 From Base Model → ChatGPT
+
+To make a *chat model*:
+
+1. **Instruction fine-tuning** (learn to follow tasks)
+2. **RLHF** (Reinforcement Learning from Human Feedback)
+3. Add **System**, **User**, **Assistant** roles
+
+Result: **Helpful, aligned conversational behavior**
+
+---
+
+## 💬 Base vs ChatGPT
+
+| Feature | Base LLM | ChatGPT |
+|----------|-----------|----------|
+| Objective | Next-token prediction | Helpful, aligned dialogue |
+| Training data | Raw text | Instruction + feedback data |
+| Roles | None | User / Assistant / System |
+| Behavior | Continuation | Conversation |
+
+---
+
+## 🧩 Analogy
+
+- Base LLM = knows the **grammar and facts**
+- ChatGPT = learns **how to talk like a helpful teacher**
+
+---
+
+## ⚠️ Limitations of Base Model
+
+- No instruction-following ability  
+- No memory beyond context window  
+- No fine-tuning or safety layers  
+- Produces continuations, not guaranteed relevance
+
+---
+
+## 🚀 Recap
+
+- Base model = next-token predictor  
+- Built with embeddings + transformer blocks + attention  
+- Context length defines “memory”  
+- Foundation for all aligned chat models
+
+---
+
+## 🧭 Hands-On Ideas
+
+- Visualize token embeddings in 2D  
+- Train a mini-GPT in Colab  
+- Experiment with different `n_embd` and `block_size`  
+- Observe text generation quality changes
+
+---
+
+## 📘 References
+
+- Vaswani et al. (2017), *Attention Is All You Need*  
+- OpenAI GPT papers (2018–2024)  
+- Andrej Karpathy, *Let’s Build GPT from Scratch*  
+- Jay Alammar, *The Illustrated Transformer*
+
+---
+
+## 🧠 Quote
+
+> “LLMs don’t just store language —  
+> they **predict and compress** it.”
+
+
+## Goal
+
+We build a **toy GPT-style example** with:
+
+- Context length = **2** tokens
+- Embedding dimension = **3**
+- Sentence: _"This open play is for players of all levels"_
+
+We will:
+
+1. Tokenize the sentence
+2. Map tokens → 3D embeddings (hand-crafted for teaching)
+3. Build all sliding windows (size=2) to form the training samples
+4. Assemble the full input tensor of shape **(7, 2, 3)**
+5. Visualize each context window in **3D**
+
+---
+
+## Imports
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from itertools import pairwise
+```
+
+---
+
+## Sentence → Tokens
+
+```{python}
+sentence = "This open play is for players of all levels"
+# Simple whitespace tokenization
+tokens = sentence.split()
+tokens
+```
+
+---
+
+## 3D Embedding Lookup Table
+
+*(These numbers are illustrative — in a real model, embeddings are learned.)*
+
+```{python}
+emb = {
+    "This":     [ 0.2,  0.5, -0.1],
+    "open":     [-0.3,  0.7,  0.4],
+    "play":     [ 0.6,  0.2, -0.2],
+    "is":       [-0.1, -0.4,  0.8],
+    "for":      [ 0.3,  0.9,  0.1],
+    "players":  [-0.2,  0.1,  0.6],
+    "of":       [ 0.5, -0.3,  0.2],
+    "all":      [-0.4,  0.8, -0.5],
+    "levels":   [ 0.7,  0.0,  0.3],
+}
+
+# Sanity check: ensure all tokens have embeddings
+missing = [t for t in tokens if t not in emb]
+missing
+```
+
+---
+
+## Build Sliding Windows (Context = 2)
+
+For next-token prediction, each training sample is a pair of tokens (context) that predicts the following token. With 9 tokens total, we get **7** context windows.
+
+```{python}
+# Build contexts (size=2) and targets (next token)
+contexts = [tokens[i:i+2] for i in range(len(tokens)-2)]
+targets  = [tokens[i+2]   for i in range(len(tokens)-2)]
+
+pd.DataFrame({
+    "context_1": [c[0] for c in contexts],
+    "context_2": [c[1] for c in contexts],
+    "target": targets
+})
+```
+
+---
+
+## Convert Contexts → 3D Vectors and Assemble Tensor
+
+```{python}
+# Convert each 2-token context into a (2, 3) array, then stack to (7, 2, 3)
+X = np.stack([
+    np.array([emb[c[0]], emb[c[1]]], dtype=float) for c in contexts
+], axis=0)
+
+X.shape, X
+```
+
+---
+
+## 3D Visualization of Context Windows
+
+Each colored line connects the **two tokens** in a context window (since context=2). Together they form our training batch of 7 samples.
+
+```{python}
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D)
+
+fig = plt.figure(figsize=(7,6))
+ax = fig.add_subplot(111, projection='3d')
+colors = plt.cm.viridis(np.linspace(0, 1, X.shape[0]))
+
+for i, seq in enumerate(X):
+    xs, ys, zs = seq[:,0], seq[:,1], seq[:,2]
+    ax.plot(xs, ys, zs, marker='o', label=f"Seq {i+1}")
+
+ax.set_xlabel('Embedding dim 1')
+ax.set_ylabel('Embedding dim 2')
+ax.set_zlabel('Embedding dim 3')
+ax.set_title('Context Windows in 3D (shape = 7×2×3)')
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Interpreting the 3 Embedding Dimensions (Intuition)
+
+- **Dim 1** might loosely capture *word type* (e.g., nouns vs. function words)
+- **Dim 2** might capture *grammatical role or position*
+- **Dim 3** might capture *concreteness / sentiment*
+
+> In real LLMs, there are thousands of dimensions; each acts like a small “nudge” toward meaning. The axes are not human-labeled — they emerge from training.
+
+---
+
+## Summary
+
+- Sentence was tokenized into 9 tokens
+- Context windows (size=2) → **7** training samples
+- Each sample is a (2×3) matrix; stacking → **tensor (7×2×3)**
+- 3D plot shows how pairs of token embeddings populate the space
+
+You can modify the sentence, change the embeddings, or increase context size to see how the tensor and visualization change.

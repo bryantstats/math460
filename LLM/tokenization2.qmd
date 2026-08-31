@@ -1,0 +1,110 @@
+---
+title: "Teaching Tokenization for LLMs"
+subtitle: "Tiny GPT-Style Example: Context Length = 2, Embedding Dim = 3"
+author: "Your Name"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: fade
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## 🎯 Learning Objectives
+
+- Understand tokenization
+- Convert text → tokens
+- Use a fixed embedding table (3 dimensions)
+- Build context windows (size = 2)
+- Construct a 3D tensor `(3, 2, 3)` ready for a mini GPT
+
+---
+
+## 🧩 Sentence and Tokenization
+
+Sentence:
+```
+I love large language models
+```
+
+(Example content shown verbally — no code displayed)
+
+---
+
+## ✂️ Context Length = 2
+
+We slide a 2-token window across the sentence.
+
+```
+[I, love] → predict "large"
+[love, large] → predict "language"
+[large, language] → predict "models"
+```
+
+There are **3 context windows**.
+
+---
+
+## 🧠 Fixed 3‑Dimensional Embeddings
+
+These are **not random** and **not PCA** – they are fixed values for teaching.
+
+(Example content shown verbally — no code displayed)
+
+---
+
+## 🧮 Build Context Windows
+
+(Example content shown verbally — no code displayed)
+
+---
+
+## 📦 Final 3D Tensor
+
+(Example content shown verbally — no code displayed)
+
+Expected shape:
+```
+(3, 2, 3)
+```
+
+---
+
+## 🎨 Visualizing the Embeddings
+
+(Example content shown verbally — no code displayed)
+
+---
+
+## 📊 Tokenization & Data Scale Comparison
+
+| Feature | **Tiny Example** | **ChatGPT (GPT‑4/4o)** | **Gemini 1.5** | **Grok‑2** |
+|--------|-------------------|------------------------|----------------|------------|
+| Tokenization | Word-split | BPE | SentencePiece | SP/BPE hybrid |
+| Vocabulary size | ~10 words | ~100k–200k | ~250k | ~200k |
+| Context length | **2** | 8k–128k | **1,000,000** | 128k |
+| Embedding dim | **3** | 3k–12k | 2k–16k | 4k–8k |
+
+---
+
+## 📘 Summary Diagram
+
+```
+Sentence → Tokens → Embeddings → Context Windows → 3D Tensor
+```
+
+This tiny pipeline is exactly how LLMs work — just with **millions more dimensions and tokens**.
+
+---
+
+## 🎉 End of Lesson
+
+Let me know if you'd like:
+- a BPE tokenization slide
+- an emoji tokenization demo
+- an exercise sheet for students
+

@@ -1,0 +1,228 @@
+---
+title: "How LLMs Form Input & Output Tensors"
+subtitle: "Context Length • Token Windows • Embeddings • Batch Size"
+format:
+  beamer:
+    theme: "Madrid"
+    latex_engine: xelatex
+fontsize: 11pt
+---
+
+# Overview
+
+Concepts covered:
+
+- Tokenization of text  
+- Context length and token windows  
+- Input–output structure for next-token prediction  
+- Embedding dimension and matrix form  
+- Batch size and tensor shapes  
+
+---
+
+# Tokenized Example Sentence
+
+We use the sentence:
+
+"I love large language models."
+
+Token IDs (GPT-4o tokenizer):
+
+\[
+[40,\; 584,\; 2201,\; 7457,\; 9937,\; 13]
+\]
+
+Define the sequence:
+
+\[
+t_1 = 40,\quad
+t_2 = 584,\quad
+t_3 = 2201,\quad
+t_4 = 7457,\quad
+t_5 = 9937,\quad
+t_6 = 13.
+\]
+
+---
+
+# Context Length = 2
+
+The model uses a **context window of size \(2\)**.  
+Training pairs for next-token prediction are:
+
+\[
+\begin{aligned}
+(t_1,\, t_2) &\rightarrow t_3, \\
+(t_2,\, t_3) &\rightarrow t_4, \\
+(t_3,\, t_4) &\rightarrow t_5, \\
+(t_4,\, t_5) &\rightarrow t_6.
+\end{aligned}
+\]
+
+This corresponds to supervised learning:
+
+\[
+X_i = (t_i,\, t_{i+1}),
+\qquad
+y_i = t_{i+2}.
+\]
+
+---
+
+# Embedding Dimension and Input Matrices
+
+Let the embedding dimension be \(d\).  
+Each token \(t\) maps to an embedding vector:
+
+\[
+E[t] \in \mathbb{R}^d.
+\]
+
+Therefore each input \(X_i\) becomes a matrix in \(\mathbb{R}^{2 \times d}\):
+
+\[
+X_i =
+\begin{bmatrix}
+E[t_i] \\
+E[t_{i+1}]
+\end{bmatrix},
+\qquad
+X_i \in \mathbb{R}^{2 \times d}.
+\]
+
+---
+
+# All Four Training Examples
+
+\[
+\begin{aligned}
+X_1 &= 
+\begin{bmatrix}
+E[t_1]\\[2pt] E[t_2]
+\end{bmatrix},
+& y_1 &= t_3,
+\\[6pt]
+X_2 &= 
+\begin{bmatrix}
+E[t_2]\\[2pt] E[t_3]
+\end{bmatrix},
+& y_2 &= t_4,
+\\[6pt]
+X_3 &= 
+\begin{bmatrix}
+E[t_3]\\[2pt] E[t_4]
+\end{bmatrix},
+& y_3 &= t_5,
+\\[6pt]
+X_4 &= 
+\begin{bmatrix}
+E[t_4]\\[2pt] E[t_5]
+\end{bmatrix},
+& y_4 &= t_6.
+\end{aligned}
+\]
+
+Each \(X_i\) is a \(2 \times d\) matrix.
+
+---
+
+# Batch Size = 1
+
+If we train one example at a time:
+
+\[
+X_i \in \mathbb{R}^{2 \times d},
+\qquad
+y_i \in \mathbb{N}.
+\]
+
+No combined tensor is formed.  
+Each example is processed independently.
+
+---
+
+# Batch Size = 4 (All Samples Together)
+
+If we train on all four samples simultaneously:
+
+\[
+X =
+\begin{bmatrix}
+X_1 \\[4pt]
+X_2 \\[4pt]
+X_3 \\[4pt]
+X_4
+\end{bmatrix}
+\in \mathbb{R}^{4 \times 2 \times d}.
+\]
+
+The target vector:
+
+\[
+y = (t_3,\; t_4,\; t_5,\; t_6) \in \mathbb{N}^4.
+\]
+
+---
+
+# Tensor Shape Summary
+
+Context length: \(2\)  
+Embedding dimension: \(d\)  
+Number of samples: \(4\)
+
+Batch size \(=1\):
+
+\[
+X_i \in \mathbb{R}^{2 \times d},
+\qquad
+y_i \in \mathbb{N}.
+\]
+
+Batch size \(=4\):
+
+\[
+X \in \mathbb{R}^{4 \times 2 \times d},
+\qquad
+y \in \mathbb{N}^4.
+\]
+
+---
+
+# General Case
+
+For context length \(k\):
+
+\[
+X_i \in \mathbb{R}^{k \times d}.
+\]
+
+For batch size \(B\):
+
+\[
+X \in \mathbb{R}^{B \times k \times d},
+\qquad
+y \in \mathbb{N}^B.
+\]
+
+---
+
+# Key Takeaways
+
+- Tokens form a sequence \((t_1, \dots, t_n)\).  
+- Context windows create supervised learning pairs.  
+- Embeddings convert tokens to vectors in \(\mathbb{R}^d\).  
+- Each input is a matrix \(X_i \in \mathbb{R}^{k \times d}\).  
+- Batch size determines the shape of the full tensor.  
+
+---
+
+# Thank You!
+
+I can also add:
+
+- attention equations  
+- positional encoding math  
+- matrix illustrations  
+- model pipeline diagrams  
+
+Just tell me!

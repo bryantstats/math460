@@ -1,0 +1,281 @@
+---
+title: "How Text Becomes Numbers in NLP"
+subtitle: "Tokenization, IDs, Embeddings, Context Windows"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: fade
+    incremental: true
+fontsize: 1.1em
+---
+
+# Introduction  
+## How Letters Become Words & How Tokens Represent All Languages
+
+---
+
+# Introduction
+
+- English has only 26 letters.
+- Yet English has hundreds of thousands to millions of words.
+- LLMs use small vocabularies (8k–200k tokens).
+- Tokens represent English and all world languages.
+
+---
+
+# English Alphabet: Only 26 Letters
+
+- Lowercase: 26  
+- Uppercase: 26  
+- Punctuation/digits: ~40–50
+
+English speakers:
+- Understand: 20k–35k words  
+- Use: 3k–5k actively  
+- Dictionaries: 400k–600k  
+- Total lexicon: 1–2+ million  
+
+---
+
+# How Do 26 Letters Produce Millions of Words?
+
+### Key Morphology
+- Concatenation: run + ning  
+- Prefixes: un-, re-, anti-  
+- Suffixes: -ing, -tion, -ize  
+- Compound words: football  
+- Borrowed words: French/Latin/Greek
+
+---
+
+# From Letters → Subwords → Words
+
+LLMs use subwords, not words.
+
+| Word | Subwords |
+|------|----------|
+| international | inter + national |
+| unbelievable | un + believe + able |
+| picklebally | pickle + ball + y |
+
+---
+
+# Why LLMs Don’t Need Huge Vocabularies
+
+- English has millions of words  
+- Tokenizers use only 8k–200k tokens  
+
+Subwords:
+- split rare words  
+- compress common words  
+- allow infinite combinations  
+- represent all languages  
+
+---
+
+# Subword Example
+
+::: {.no-code}
+internationalization → inter + national + ization
+:::
+
+Tokenizers with 8k tokens can encode:
+- English  
+- all languages  
+- slang  
+- names  
+- scientific terms  
+- numbers/emojis  
+- URLs  
+- invented words  
+
+---
+
+# Vocabulary Sizes of Major LLMs
+
+- GPT-2 / GPT-3 / NeoX: 50k  
+- GPT-4 / GPT-4o: ~200k  
+- LLaMA-1: 32k  
+- LLaMA-2: 32k  
+- LLaMA-3 / 3.1: 128k  
+- Mistral / Mixtral: 32k  
+- Gemma: 256k  
+- Qwen: 152k  
+
+---
+
+# Bigger Vocabulary Pros/Cons
+
+### Pros
+- fewer splits  
+- better multilingual  
+- improved code/math  
+- shorter sequences (faster)
+
+### Cons
+- sparse training  
+- larger embedding matrix  
+- harder optimization  
+
+---
+
+# Why Convert Text to Numbers?
+
+::: {.no-code}
+Text → Tokens → IDs → Embeddings → Tensors
+:::
+
+Neural networks operate only on numbers.
+
+---
+
+# Modeling Analogy
+
+::: {.no-code}
+(X1, X2, X3) → y
+
+(token_{i-2}, token_{i-1}) → token_i
+:::
+
+---
+
+# Static vs Dynamic Embeddings
+
+**Static**  
+- same vector everywhere  
+- examples: TF-IDF, Word2Vec, GloVe  
+
+**Dynamic**  
+- vectors depend on context  
+- used in GPT, BERT, LLaMA, Mistral  
+
+---
+
+# Static Embedding Example
+
+::: {.no-code}
+Word2Vec:
+cat = [0.12, -0.89, 0.22]
+dog = [0.15, -0.91, 0.25]
+:::
+
+Same vector in all contexts.
+
+---
+
+# Dynamic Embedding Example
+
+::: {.no-code}
+"The river bank overflowed." → bank_A
+"I deposited money at the bank." → bank_B
+:::
+
+Meaning changes the vector.
+
+---
+
+# Tokenization Example
+
+Sentence:  
+I love large language models.
+
+Tokens:  
+I, love, large, language, models, .
+
+IDs:  
+[40, 3047, 4410, 6439, 7015, 13]
+
+---
+
+# Context Window (2 Tokens)
+
+::: {.no-code}
+[I, love] → large  
+[love, large] → language  
+[large, language] → models  
+[language, models] → .
+:::
+
+---
+
+# Embedding Example (Dim=3)
+
+::: {.no-code}
+40    → (0.1, 0.2, 0.3)
+3047  → (-0.5, 0.1, 0.0)
+4410  → (0.7, -0.2, 0.4)
+6439  → (0.0, 0.3, 0.9)
+7015  → (0.4, 0.4, 0.4)
+13    → (-0.2, 0.0, 0.1)
+:::
+
+---
+
+# Next Token Prediction
+
+Model computes:
+
+::: {.no-code}
+P(next_token | context)
+
+Example:
+"large":     0.72  
+"language":  0.10  
+"models":    0.08  
+:::
+
+---
+
+# Greedy vs Sampling
+
+Greedy:  
+choose the token with max probability
+
+Sampling:  
+draw token from the probability distribution
+
+---
+
+# Why Sampling?
+
+::: {.no-code}
+Sampling introduces variation → creativity.
+:::
+
+---
+
+# Temperature
+
+::: {.no-code}
+Low T (0.1) → deterministic  
+High T (1.0) → creative/chaotic  
+:::
+
+---
+
+# Top-k vs Top-p
+
+Top-k: keep top k tokens  
+Top-p: keep the smallest set with cumulative probability ≥ p  
+
+---
+
+# Why LLM Predictions Differ
+
+- sampling randomness  
+- temperature  
+- top-k / top-p  
+- random seed  
+- token-by-token amplification  
+
+---
+
+# Summary
+
+- LLMs convert text → numbers  
+- embeddings provide meaning  
+- models predict next tokens  
+- randomness = variation  
+- same mechanics scale to trillion-token LLMs  
+

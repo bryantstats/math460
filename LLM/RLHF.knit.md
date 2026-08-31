@@ -1,0 +1,374 @@
+---
+title: "How Modern Large Language Models Are Trained"
+subtitle: "Base Model → SFT → RLHF"
+author: "Prof. Nguyen"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: fade
+    chalkboard: true
+    incremental: false
+---
+
+
+
+## Overview
+
+Modern LLMs (GPT-4, Claude, Gemini, Llama-3, Grok) follow a **three-stage training pipeline**:
+
+1. **Pretraining the Base Model**
+2. **Supervised Fine-Tuning (SFT)**
+3. **Reinforcement Learning From Human Feedback (RLHF)**
+
+We’ll learn each step with simple, intuitive explanations.
+
+---
+
+## Stage 1: Pretraining the Base Model
+
+### What is Pretraining?
+- Train on **huge text datasets** (web pages, books, articles, code, Wikipedia)
+- Objective: **predict the next token**
+- Model learns:
+  - grammar
+  - world knowledge
+  - reasoning patterns
+  - long-range dependencies
+
+### Output of Stage 1
+A **base model** that knows a lot, but *does not know how to follow instructions*.
+
+---
+
+## Example: Base Model Behavior
+
+**User:** “How do I cook pasta?”  
+**Base Model:**  
+“Pasta is a food originating in Italy. Many countries consume pasta…”
+
+The base model tends to **ramble**, because it has never been trained to behave like an assistant.
+
+---
+
+## Stage 2: Supervised Fine-Tuning (SFT)
+
+### What is SFT?
+Teach the model to follow instructions by showing it **example conversations**:
+
+User: Explain photosynthesis simply.  
+Assistant: Photosynthesis is how plants make food using light...
+
+The model **imitates** this pattern.
+
+### SFT Improves:
+
+- Following directions
+- Helpful tone
+- Staying on topic
+- Formatting answers
+
+But SFT alone does **not** guarantee alignment, safety, or preference-following.
+
+
+---
+
+## Example: Model Behavior After SFT
+
+**User:** “How do I cook pasta?”  
+**SFT Model:**  
+“Boil water, add salt, place the pasta in the pot, cook until tender, then drain. Finish it with sauce or seasoning.”
+
+After SFT, the model becomes **much more direct, clear, and helpful**.
+
+
+
+---
+
+## Why SFT Is Not Enough
+
+After only SFT, models may still:
+- be unsafe
+- hallucinate confidently
+- produce biased/harmful content
+- ignore human preferences (too long, too short, etc.)
+
+This motivates **Stage 3**.
+
+---
+
+## Stage 3: RLHF (Reinforcement Learning from Human Feedback)
+
+### Goal
+Make the model **helpful, harmless, honest, aligned, and user-preferred**.
+
+### RLHF Process (Simple Version)
+1. Humans **rank model responses** (“A is better than B”)
+2. A **reward model** is trained to predict what humans prefer
+3. The LLM is optimized with **PPO**, rewarding preferred behavior
+
+---
+
+## RLHF Example
+
+Humans compare two answers:
+
+**Answer A:** clear, safe, helpful  
+**Answer B:** confusing, incomplete  
+
+Humans pick A → The LLM learns to produce more A-like answers.
+
+After RLHF, the model becomes:
+- **safer**
+- **more detailed when needed**
+- **aware of user intent**
+- **more conversational and supportive**
+
+---
+
+## Example: Model Behavior After RLHF
+
+**User:** “How do I cook pasta?”  
+
+**RLHF Model:**  
+“To cook pasta safely and correctly, start by boiling a large pot of water. Add a tablespoon of salt, then place the pasta in the water. Stir occasionally to prevent sticking. Cook according to the package instructions, usually 8–12 minutes, until al dente. Drain carefully to avoid burns, then add sauce or seasoning. Let me know if you want a specific recipe!”
+
+---
+
+## Result After RLHF
+
+The final aligned model becomes:
+- more polite
+- more helpful
+- safer
+- better at refusing harmful requests
+- less hallucination-prone
+- more consistent with human expectations
+
+This produces ChatGPT-like behavior.
+
+---
+
+## Entire Pipeline (Diagram)
+
+Base Model (Pretraining)  
+↓  
+SFT (Instruction Tuning)  
+↓  
+RLHF (Preference Optimization)
+
+Each stage builds on the previous.
+
+---
+
+## Why Three Stages?
+
+Because each stage has a different purpose:
+
+- **Base Model** → learns language + knowledge  
+- **SFT** → learns to follow instructions  
+- **RLHF** → learns human preferences and safety  
+
+Together, they create a strong, aligned assistant.
+
+---
+
+## Modern Variants (2024–2025)
+
+### Alternatives to RLHF
+- **DPO (Direct Preference Optimization)** — simpler, no reward model  
+- **IPO, KTO, RLAIF**  
+- **Constitutional AI** (Anthropic)
+
+But all still come **after SFT**.
+
+---
+
+## Final Takeaway
+
+### Modern LLMs are trained using:
+1. **Base Model Training**  
+2. **Supervised Fine-Tuning (SFT)**  
+3. **RLHF or DPO (Alignment Phase)**  
+
+This pipeline is why today's LLMs feel helpful, safe, and aligned.
+
+## Training Data Across the Three Stages
+
+Large Language Models require different types of datasets at each training stage.  
+Each stage has different goals, data formats, examples, and behaviors produced.
+
+---
+
+## Stage 1: Pretraining Data (Base Model)
+
+### Purpose
+Teach the model language, reasoning, and world knowledge.
+
+### Visual Diagram
+    PRETRAINING (BASE MODEL)
+    ┌─────────────────────────────────────┐
+    │ Massive Raw Text Corpus             │
+    │  • Books 📚                          │
+    │  • Wikipedia 🌍                      │
+    │  • News 📰                           │
+    │  • Web Pages 🌐                      │
+    │  • GitHub Code 💻                    │
+    └─────────────────────────────────────┘
+                ↓ next-token prediction
+       Model learns: grammar, facts,
+       reasoning, long-term patterns
+
+### Examples of Pretraining Data
+- Wikipedia articles  
+- Books (public domain + licensed)  
+- Scientific papers  
+- Online news  
+- Web pages (Common Crawl)  
+- GitHub repositories  
+
+### Example Raw Text Snippet
+    The process of photosynthesis allows plants to convert sunlight into energy...
+
+---
+
+## Stage 2: SFT (Supervised Fine-Tuning) Data
+
+### Purpose
+Teach the model to follow instructions and respond like an assistant.
+
+### Visual Diagram
+    SUPERVISED FINE-TUNING (SFT)
+    ┌────────────────────────────────────────┐
+    │ Instruction → Response Pairs           │
+    │  User: "Explain gravity."              │
+    │  Assistant: "Gravity is a force..."    │
+    │                                        │
+    │ Teaches structure, clarity, tone       │
+    └────────────────────────────────────────┘
+                     ↓ imitation learning
+             Model becomes helpful & direct
+
+### Examples of SFT Data
+    User: Summarize this article.
+    Assistant: Here is a concise summary...
+
+    User: Solve 3x + 5 = 20.
+    Assistant: x = 5.
+
+    User: Write a polite email.
+    Assistant: Hi Professor, I hope you're doing well...
+
+### Characteristics
+- Structured examples  
+- Teaches style, tone, formatting  
+- Produces direct, clear, helpful responses  
+
+---
+
+## Stage 3: RLHF (Human Preference) Data
+
+### Purpose
+Teach the model which responses humans prefer, focusing on safety and clarity.
+
+### Visual Diagram
+    RLHF (PREFERENCE LEARNING)
+    ┌─────────────────────────────────────────────┐
+    │ Human Ranking Data                          │
+    │  Prompt: "Explain gravity to a child."      │
+    │                                             │
+    │  Response A: Simple, clear 🌟 (preferred)   │
+    │  Response B: Too complex 📉                 │
+    │                                             │
+    │ Reward Model learns: A > B                  │
+    └─────────────────────────────────────────────┘
+                   ↓ PPO / DPO reinforcement
+            Model becomes aligned and safe
+
+### Example RLHF Data
+    Prompt: How do I fix a gas leak?
+
+    Response A: Contact a licensed technician immediately.
+    Response B: Try tightening the pipe.
+
+    Human Preference: A > B (safety)
+
+### Characteristics
+- Involves comparing multiple responses  
+- Encodes human judgment, safety, and clarity  
+- Produces aligned, safe, polite models  
+
+---
+
+## Comparison of the Three Data Types
+
+### Visual Comparison Table
+
+| Stage | Goal | Data Format | Examples | Produces |
+|------|-------|-------------|----------|----------|
+| Pretraining | Learn language + knowledge | Raw text | Wikipedia, books, web pages, code | Base model |
+| SFT | Learn to follow instructions | User → Assistant | Summaries, math problems, emails | Helpful assistant |
+| RLHF | Learn human preferences | Prompt + ranked answers | Safety choices, clarity preference | Safe, aligned model |
+
+---
+
+## Big Picture Diagram
+    TRAINING PIPELINE
+
+        ┌──────────────────────┐
+        │   Stage 1            │
+        │   Pretraining        │
+        │   Raw Text 📚        │
+        └──────────┬───────────┘
+                   ↓
+        ┌──────────────────────┐
+        │   Stage 2            │
+        │   SFT                │
+        │   Instr-Resp 🤝      │
+        └──────────┬───────────┘
+                   ↓
+        ┌──────────────────────┐
+        │   Stage 3            │
+        │   RLHF               │
+        │   A/B Ranking 🌟     │
+        └──────────────────────┘
+
+        Result: Helpful, Safe, Aligned Assistant 🤖✨
+
+---
+
+## Cost Comparison of the Three Training Stages
+
+The three stages of LLM training differ greatly in computational cost.  
+Pretraining is by far the most expensive, followed by SFT and RLHF.
+
+### Relative Example Costs
+- Pretraining: 100×  
+- SFT: 10×  
+- RLHF: 5×  
+
+---
+
+
+
+::: {.cell}
+::: {.cell-output-display}
+![](RLHF_files/figure-revealjs/unnamed-chunk-1-1.png){width=960}
+:::
+:::
+
+
+
+
+
+
+---
+
+## Key Takeaway
+
+- Pretraining = knowledge + grammar + reasoning  
+- SFT = instruction following  
+- RLHF = human preference alignment  
+
+Together, these datasets create modern LLMs like ChatGPT, Claude, Gemini, and Llama.
+
