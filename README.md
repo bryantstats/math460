@@ -6,8 +6,8 @@
 
 |Topics| Slides/Notes|SAS | Python | Assignments | Exams |
 |:-----|:------------|:---|:-------|:------------|:------|
-| An Overview of Data Mining| Slides |        |              |       | |
-| Overfitting and Tuning  | Slides|        |      | ||
+| An Overview of Data Mining| [Slides](slides/intro.html) |        |              |       | |
+| Overfitting and Tuning  | [Slides](slides/overfitting.pdf)|        |      | ||
 | Model Evaluation| Slides    ||      |   Assignment 1    ||
 |**Part 1. Tree-Based Models**|  | |  | ||  
 | Classification Trees| Notes   | Video 1, Video 2   | Notebook, <br> Video         |  Assignment 2 <br> Assignment 3     |Exam 1's Practice |
