@@ -1,7 +1,7 @@
 ---
 title: "M460 Applied Data Mining"
 format: 
-  html:
+  pdf:
     toc: true
 editor: visual
 ---
@@ -16,9 +16,9 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 ## Office Hours:
 
-Office: 3537 Unistructure
+Office: F2409 Unistructure
 
-MTh: 10:15pm-12:45pm or by appointment
+WF: 12pm-2pm or by appointment
 
 [Zoom's Link](https://bryant.zoom.us/j/4419675207)
 
@@ -33,6 +33,7 @@ After completing this course, you should be able to
 -   prepare data for analysis, including partitioning data and imputing missing values
 -   explain the algorithms of common predictive models such as decision trees, regression models, and neural networks.
 -   train, assess, and compare multiple predictive models such as decision trees, regression models, and neural networks.
+
 
 ## Grades
 
@@ -122,3 +123,38 @@ Cheating will result in an "F" as your final grade and may result in your expuls
 ## Regarding Diversity
 
 In this course, and all your courses at Bryant, and throughout the Bryant learning community, we value and respect diversity. This includes differences in race, ethnicity, nationality, gender, gender identity, sexuality, socioeconomic status, ability, and religion.
+
+## Honor Contract
+
+### 1. Honors Deliverables & Scope
+
+The Honors student will investigate state-of-the-art methodology in machine learning on imbalanced datasets, surveying theoretical formulations, algorithmic paradigms (e.g., re-sampling strategies, cost-sensitive learning, ensemble mechanisms), and evaluation metrics suited for severe class skew (e.g., PR-AUC, G-Mean, F-beta).
+
+* **Milestone 1: Research Proposal & Annotated Bibliography (5%)**  
+  * Due: End of Week 6.  
+  * A 2-page research outline defining the taxonomy of imbalanced learning techniques to be surveyed, accompanied by an annotated bibliography of at least 8–10 peer-reviewed journal or conference papers (e.g., IEEE, ACM, NeurIPS, ICML, KDD).
+
+* **Milestone 2: Comprehensive Literature Review Manuscript (15%)**  
+  * Due: End of Week 12.  
+  * An 8–12 page survey paper critically synthesizing the literature. The review must not merely summarize individual papers sequentially, but instead:
+    * Categorize techniques across data-level, algorithm-level, and hybrid/ensemble paradigms.
+    * Compare inductive biases, computational overhead, and empirical failure modes (e.g., borderline noise sensitivity, small disjuncts).
+    * Highlight recent advances and open challenges.
+
+* **Milestone 3: Seminar Presentation & Oral Defense (10%)**  
+  * Due: Weeks 13–14 (scheduled in consultation with the instructor).  
+  * A 20-minute slide presentation delivered to the class or research seminar, followed by a 10-minute Q&A/oral defense. The student will walk through the core taxonomy, analyze key experimental benchmarks from the surveyed literature, and respond to methodological questions.
+
+### 2. Honors Grading Criteria
+
+The Honors deliverables will be evaluated against academic research standards using the following criteria:
+
+* **Depth & Critical Analysis (20%):** Going beyond surface summaries to compare methods, highlight theoretical trade-offs, and identify methodological weaknesses across studies.
+  
+* **Taxonomy & Organization (20%):** A logical, clearly structured framework that effectively categorizes and contrasts different imbalanced learning algorithms.
+  
+* **Technical Rigor & Accuracy (20%):** Accurate mathematical definitions and explanations of sampling formulas, objective/loss functions, and evaluation metrics.
+  
+* **Scholarly Writing & Citation Quality (10%):** Clean academic prose, adherence to standard publication formatting, and thorough, correctly formatted citations.
+  
+* **Oral Communication & Defense (30%):** Clear slide design, effective delivery within time limits, and the ability to confidently defend methodological choices during Q&A.
