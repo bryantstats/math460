@@ -8,7 +8,7 @@
 |:-----|:------------|:---|:-------|:------------|:------|
 | An Overview of Data Mining| [Slides](slides/intro.html) |        |              |       | |
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf)|        |      | ||
-| Model Evaluation| Slides    ||      |   Assignment 1    ||
+| Model Evaluation| [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_notes.pdf)     ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
 |**Part 1. Tree-Based Models**|  | |  | ||  
 | Classification Trees| Notes   | Video 1, Video 2   | Notebook, <br> Video         |  Assignment 2 <br> Assignment 3     |Exam 1's Practice |
 |Regression Trees| Note |  | Notebook  | Assignment 4  | |  
