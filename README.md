@@ -10,7 +10,7 @@
 | Overfitting and Tuning  | [Slides](slides/overfitting.pdf)|        |      | ||
 | Model Evaluation| [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_notes.pdf)     ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
 |**Part 1. Tree-Based Models**|  | |  | ||  
-| Classification Trees| [Slides](slides/classification_tree2_original_fa26.pdf)   | Video 1, Video 2   | Notebook, <br> Video         |  Assignment 2 <br> Assignment 3     |Exam 1's Practice |
+| Classification Trees| [Slides](slides/classification_tree2_original_fa26.pdf)   |    | [Notebook](python/fa23/tree_classification.html)           |  [Assignment 2](assignments/assignment2_fa26.html), <br>  Assignment 3     |Exam 1's Practice |
 |Regression Trees| Note |  | Notebook  | Assignment 4  | |  
 | Random Forest                 | Slides, Notes    |  Video |Classification, <br> Regression|||
 | Ensemble Method  |Slide ||     |   ||
