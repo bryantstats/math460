@@ -11,7 +11,7 @@
 
 
 
-<title>README_fall24</title>
+<title>Assignment 3: SAS - Practice with Decision Trees</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,222 +348,44 @@ display: none;
 
 
 
+<h1 class="title toc-ignore">Assignment 3: SAS - Practice with Decision
+Trees</h1>
 
 </div>
 
 
-<div id="math-460-applied-data-mining" class="section level1">
-<h1>Math 460: Applied Data Mining</h1>
-<p><a href="m460syllabus.html">Syllabus</a></p>
-<p><a href="data.html">Data</a></p>
-<table>
-<colgroup>
-<col width="11%" />
-<col width="25%" />
-<col width="7%" />
-<col width="15%" />
-<col width="25%" />
-<col width="13%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">Topics</th>
-<th align="left">Slides/Notes</th>
-<th align="left">SAS</th>
-<th align="left">Python</th>
-<th align="left">Assignments</th>
-<th align="left">Exams</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">An Overview of Data Mining</td>
-<td align="left"><a href="slides/intro.html">Slides</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">Overfitting and Tuning</td>
-<td align="left"><a href="slides/overfitting.pdf">Slides</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Model Evaluation</td>
-<td align="left"><a href="slides/measuring_performance.pdf">Slides</a>,
-<a href="slides/measuring_performance_note.pdf">Notes</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"><a href="assignments/Math460_Assignment1.html">Assignment 1</a></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Part 1. Tree-Based Models</strong></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Classification Trees</td>
-<td align="left"><a href="slides/fa24_classification_tree2_note_xournal.pdf.pdf">Notes</a></td>
-<td align="left"><a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=43f78607-df37-405c-836b-b1f001126a1f">Video
-1</a>, <a href="https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=aa2d7618-7c34-4f62-96c3-b1f501127554">2</a></td>
-<td align="left"><a href="python/fa23/tree_classification.html">Notebook</a></td>
-<td align="left"><a href="assignments/Math460_Assignment2.html">Assignment 2</a></td>
-<td align="left"><a href="exams/Exam1/Exam1_fall24_practice_problem.pdf">Exam 1’s
-Practice</a>, <br> <a href="exams/Exam1/Exam1_fall24.pdf">Exam
-1</a></td>
-</tr>
-<tr class="even">
-<td align="left">Regression Trees</td>
-<td align="left"><a href="slides/Regression_Trees_fall24_note.pdf">Note</a></td>
-<td align="left"></td>
-<td align="left"><a href>Notebook</a></td>
-<td align="left"><a href="assignments/assignment3_fa23.html">Assignment
-3</a></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Random Forest</td>
-<td align="left"><a href="slides/rf.pdf">Slides</a>, <a href="slides/rf_2024_note.pdf">Notes</a></td>
-<td align="left"></td>
-<td align="left"><a href="python/fa23/adaboost_classification.html">Classification</a>, <br>
-<a href="python/fa23/adaboost_regression.html">Regression</a></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">Ensemble Method</td>
-<td align="left"><a href="gganimate/boosting3.html">Slide</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Adaboost</td>
-<td align="left"><a href="gganimate/adaboost.html">Example</a>, <a href="slides/Adaboost_2024.pdf">Note</a></td>
-<td align="left"></td>
-<td align="left"><a href="python/adaboost_demonstrate_fa23.ipynb">Learning Rate</a> <a href="python/fa23/adaboost_classification.html">Classification</a>, <br>
-<a href="python/fa23/adaboost_regression.html">Regression</a></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">Gradient Boosting</td>
-<td align="left"><a href="slides/gb_note_2024.pdf">Note</a></td>
-<td align="left"></td>
-<td align="left"><a href="python/fa23/gb_classification.html">Classification</a>, <br> <a href="python/fa23/gb_regression.html">Regression</a></td>
-<td align="left"><a href="assignments/assignment4_fa23.html">Assignment
-4</a>, <br> <a href="assignments/assignment5_fa23.html">Extra
-Credits</a></td>
-<td align="left"><a href="exams/Exam2/Exam2_sol.html">Exam 2’s
-Practice</a>, <br> <a href="exams/Exam2/Exam2_pdf.pdf">Exam 2</a></td>
-</tr>
-<tr class="odd">
-<td align="left">Hand-Written Recognition</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"><a href="python/digits/fa23/image_recognition_rf.html">Forest</a>, <a href="python/digits/fa23/image_recognition_rf.ipynb">Notebook</a></td>
-<td align="left"><a href="assignments/assignment6_fa23.html">Assignment
-6</a></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Part 2. Linear Models and Neral
-Networks</strong></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Linear Models and LASSO</td>
-<td align="left"><a href="gganimate/lm_fa24.pdf">Note</a></td>
-<td align="left"></td>
-<td align="left"><a href="python/lasso_regression_practice.html">Regression</a><br> <a href="python/lasso_classification_fa21.html">Classification</a></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">Neural Network</td>
-<td align="left"><a href="notes/nn24.pdf">Notes</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"><a href="assignments/assignment7_fa23.html">Assignment
-7</a></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Deep Learning</td>
-<td align="left"><a href="gganimate/cnn.html">Slides</a></td>
-<td align="left"></td>
-<td align="left"><a href="https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing">Codes</a></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">Image Recognition</td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"><a href="https://colab.research.google.com/drive/1tSF1TJrGnneJ3fScV3PUQQk5PiGQuK5l?usp=sharing">Codes</a></td>
-<td align="left"><a href="assignments/assignment8_fa24.html">Assignment
-8</a></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left"><strong>Part 3. KNN and Recommendation
-System</strong></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="even">
-<td align="left">KNN</td>
-<td align="left"><a href="slides/knn.html">1</a></td>
-<td align="left"></td>
-<td align="left"><a href="python/knn.html">Notebook</a></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Recommendation System</td>
-<td align="left"><a href="slides/rs2.html">1</a>, <a href="slides/Netflix_Prize.pdf">2</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"><a href="assignments/assignment9_fa23.html">Assignment
-9</a></td>
-<td align="left"><a href="exams/Exam3/Exam3.html">Exam 3</a></td>
-</tr>
-<tr class="even">
-<td align="left"><strong>Part 4. Unsupervised Learning</strong></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-<tr class="odd">
-<td align="left">Principal Component Analysis</td>
-<td align="left"><a href="slides/pca_fall24.pdf">Note</a></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
-<p>|<strong>Final Project</strong>| <a href="final/Math460_Final.html">Project</a> | | |</p>
-</div>
+<hr />
+<p>Make a presentation of you doing the follows. Using Zoom to record a
+video of the presentation and the link of the video or the video to
+Canvas.</p>
+<p><a href>Video Instruction</a></p>
+<hr />
+<ol style="list-style-type: decimal">
+<li><p>Download and Import to SAS Miner the
+<code>Breast Cancer Wisconsin (Diagnostic) Data Set</code> at <a href="../data/breast_cancer.csv">this link</a>.</p></li>
+<li><p>Reject all the <code>text</code> variables. Set
+<code>diagnosis</code> as the binary target.</p></li>
+<li><p>Split the data 70:30:0 for Training: Validation: Test. Create the
+following decision trees.</p>
+<ul>
+<li><p>a decision tree used <code>Gini Index</code> for splitting
+(Nominal Target Criterion)</p></li>
+<li><p>a decision tree used <code>Entropy</code> for splitting (Nominal
+Target Criterion)</p></li>
+<li><p>a decision tree used Chi-squared test for splitting (Nominal
+Target Criterion)</p></li>
+<li><p>a decision tree with 4 leaves.</p></li>
+</ul></li>
+<li><p>Compare the trees in terms of misclassification rate and
+ROC-Index.</p></li>
+<li><p>Show the confusion matrix (classification table) of the
+<code>Entropy</code> tree.</p></li>
+<li><p>What is the best tree in term of misclassification. In that tree,
+what is the most important variables?</p></li>
+<li><p>How many leaves that tree in 6. have? Explain why the tree ended
+up with that number of leaves. (i.e., explain the
+<code>Subtree Assessment Plot</code>).</p></li>
+</ol>
 
 
 
