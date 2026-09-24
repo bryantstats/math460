@@ -1,6 +1,6 @@
 # Math 460: Applied Data Mining
 
-[Course Page](https://bryantstats.github.io/math460/)
+[Course Page - New Tab](https://bryantstats.github.io/math460/)
 
 [Syllabus](m460syllabus.html)
 
