@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>readme</title>
+<title>Assignment 4</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -29,18 +29,47 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="README_files/libs/clipboard/clipboard.min.js"></script>
-<script src="README_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="README_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="README_files/libs/quarto-html/popper.min.js"></script>
-<script src="README_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="README_files/libs/quarto-html/anchor.min.js"></script>
-<link href="README_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="README_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="README_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="README_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="README_files/libs/bootstrap/bootstrap-215b371544c282197b31c8aa00ce3677.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="assignment4_fa26_files/libs/clipboard/clipboard.min.js"></script>
+<script src="assignment4_fa26_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="assignment4_fa26_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="assignment4_fa26_files/libs/quarto-html/popper.min.js"></script>
+<script src="assignment4_fa26_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="assignment4_fa26_files/libs/quarto-html/anchor.min.js"></script>
+<link href="assignment4_fa26_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="assignment4_fa26_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="assignment4_fa26_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="assignment4_fa26_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="assignment4_fa26_files/libs/bootstrap/bootstrap-215b371544c282197b31c8aa00ce3677.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -50,221 +79,118 @@ ul.task-list li input[type="checkbox"] {
 
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Assignment 4</h1>
+</div>
 
 
 
-<section id="math-460-applied-data-mining" class="level1">
-<h1>Math 460: Applied Data Mining</h1>
-<p><a href="https://bryantstats.github.io/math460/">Course Page - New Tab</a></p>
-<p><a href="m460syllabus.html">Syllabus</a></p>
-<p><a href="data.html">Data</a></p>
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><em>Instruction: Organize your answer in a word document and submit to Canvas. You can also take photos or scan your written answers and submit to Canvas.</em></p>
+<p><a href="assignment3_fa23_sample2.pdf">Sample Problem</a></p>
+<p><strong>Problem 1</strong></p>
+<p>Given the following training data. You want to build a regression tree to predict <span class="math inline">\(y\)</span> from <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th style="text-align: left;">Topics</th>
-<th style="text-align: left;">Slides/Notes</th>
-<th style="text-align: left;">SAS</th>
-<th style="text-align: left;">Python</th>
-<th style="text-align: left;">Assignments</th>
-<th style="text-align: left;">Exams</th>
+<th style="text-align: left;">Points</th>
+<th style="text-align: left;"><span class="math inline">\(x_1\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(x_2\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(y\)</span></th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">An Overview of Data Mining</td>
-<td style="text-align: left;"><a href="slides/intro.html">Slides</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">A</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">3.5</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Overfitting and Tuning</td>
-<td style="text-align: left;"><a href="slides/overfitting.pdf">Slides</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">B</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">3.7</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Model Evaluation</td>
-<td style="text-align: left;"><a href="slides/measuring_performance.pdf">Slides</a>, <a href="slides/measuring_performance_notes.pdf">Notes</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="assignments/Math460_Assignment1.html">Assignment 1</a></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">C</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">4.0</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><strong>Part 1. Tree-Based Models</strong></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">D</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">2.5</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Classification Trees</td>
-<td style="text-align: left;"><a href="slides/classification_tree2_original_fa26.pdf">Slides</a></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="python/fa23/tree_classification.html">Notebook</a></td>
-<td style="text-align: left;"><a href="assignments/assignment2_fa26.html">Assignment 2</a> <br> <a href="assignments/assignment3_fa26.html">Assignment 3</a></td>
-<td style="text-align: left;"><a href="exams/Exam1/Exam1_fall24_practice_problem.pdf">Exam 1’s Practice</a></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Regression Trees</td>
-<td style="text-align: left;">Note</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="python/fa23/tree_regression.html">Notebook</a></td>
-<td style="text-align: left;"><a href="assignments/assignment4_fa26.html">Assignment 4</a></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Random Forest</td>
-<td style="text-align: left;">Slides, Notes</td>
-<td style="text-align: left;">Video</td>
-<td style="text-align: left;">Classification, <br> Regression</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Ensemble Method</td>
-<td style="text-align: left;">Slide</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Adaboost</td>
-<td style="text-align: left;">Example, Note</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Learning Rate, Classification, <br> Regression</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Gradient Boosting</td>
-<td style="text-align: left;">Note, Lecture Video</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Classification, <br> Regression</td>
-<td style="text-align: left;">Assignment 5</td>
-<td style="text-align: left;">Exam 2’s Practice</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Hand-Written Recognition</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Forest, Notebook</td>
-<td style="text-align: left;">Assignment 6</td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"><strong>Part 2. Linear Models and Neral Networks</strong></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Linear Models and LASSO</td>
-<td style="text-align: left;">Note</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Regression<br> Classification</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Neural Network</td>
-<td style="text-align: left;">Notes</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Assignment 7</td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Deep Learning</td>
-<td style="text-align: left;">Slides</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Codes</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Image Recognition</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Codes</td>
-<td style="text-align: left;">Assignment 8</td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><strong>Part 3. KNN and Recommendation System</strong></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">KNN</td>
+<td style="text-align: left;">E</td>
+<td style="text-align: left;">0</td>
 <td style="text-align: left;">1</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Notebook</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Recommendation System</td>
-<td style="text-align: left;">1, 2</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Assignment 9</td>
-<td style="text-align: left;">Exam 3</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"><strong>Part 4. Large Language Models</strong></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Notes</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Small LLM</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Large LLM</td>
-<td style="text-align: left;">Assignment</td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;"><strong>Final Project</strong></td>
-<td style="text-align: left;">Project</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;"></td>
-<td style="text-align: left;">Final Project Presentation</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;">3.0</td>
 </tr>
 </tbody>
 </table>
-</section>
+<ol type="a">
+<li>Using the Residual Sum Squares (RSS) to decide the better split between</li>
+</ol>
+<ul>
+<li><p>Split 1: Region 1: <span class="math inline">\(x_1 \leq 1\)</span>, Region 2: <span class="math inline">\(x_1 &gt; 1\)</span></p></li>
+<li><p>Split 2: Region 1: <span class="math inline">\(x_2 \leq 2\)</span>, Region 2: <span class="math inline">\(x_2 &gt; 2\)</span></p></li>
+</ul>
+<ol start="2" type="a">
+<li><p>Suppose that your regression tree contain only one split which is the best split in the previous question. Calculate the <span class="math inline">\(R^2\)</span> of this regression tree on the training data.</p></li>
+<li><p>Use your regression tree to predict the <span class="math inline">\(y\)</span> for the below testing data. Calculate the <span class="math inline">\(R^2\)</span> of the tree on the below testing data.</p></li>
+</ol>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Points</th>
+<th style="text-align: left;"><span class="math inline">\(x_1\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(x_2\)</span></th>
+<th style="text-align: left;"><span class="math inline">\(y\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">F</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">3.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">G</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">3.6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">H</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">4.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">I</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">3.9</td>
+</tr>
+</tbody>
+</table>
 
 </main>
 <!-- /main column -->
