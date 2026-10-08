@@ -1,0 +1,188 @@
+---
+title: "Understanding Gradient Boosting"
+subtitle: "From Intuition and Residuals to Working Code"
+author: "Data Science"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: slide
+    code-line-numbers: true
+    embed-resources: true
+jupyter: python3
+---
+
+## Core Idea of Boosting
+
+- **Sequence of weak models:** Train a sequence of simple base learners (such as decision stumps) where each new model learns directly from the mistakes (errors/residuals) of the previous models.
+- **Additive combination:** The final model is a sequential combination of all individual models:
+
+$$H(x) = \hat{y}_1 + \hat{\epsilon}_1 + \hat{\epsilon}_2 + \dots$$
+
+- **Goal:** Drive the remaining error closer to zero at each step.
+
+---
+
+## The Intuitive Residual Process
+
+Visualizing how each successive learner targets the remaining gap:
+
+| Step | Current Target | Reality / Prediction | Residual Error ($Target - Reality$) |
+|:---:|:---:|:---:|:---:|
+| **Model 1** | $100$ | $70$ | $100 - 70 = \mathbf{30}$ |
+| **Model 2** | $30$ | $50$ | $30 - 50 = \mathbf{-20}$ |
+| **Model 3** | $-20$ | $-15$ | $-20 - (-15) = \mathbf{-5}$ |
+
+Each step turns the previous stage's error into its learning target.
+
+---
+
+## Step-by-Step Example from Notes
+
+```{python}
+import pandas as pd
+
+# The raw dataset
+df = pd.DataFrame({
+    'GPA': [3.5, 4.0, 3.0],
+    'Age': [60, 29, 49],
+    'Salary (Y)': [100, 120, 80]
+})
+df
+```
+
+---
+
+## Step 1: Model 1 on Raw Target ($Y$)
+
+Train a weak learner (Model 1) to predict original target $Y$:
+
+```{python}
+df['y_hat_1'] = [90, 150, 70]
+df['e_1 (Error 1)'] = df['Salary (Y)'] - df['y_hat_1']
+df[['GPA', 'Age', 'Salary (Y)', 'y_hat_1', 'e_1 (Error 1)']]
+```
+
+* Error $\epsilon_1 = Y - \hat{y}_1$ becomes the target for Model 2.
+
+---
+
+## Step 2: Model 2 on Residuals ($\epsilon_1$)
+
+Train Model 2 using features $(\text{GPA}, \text{Age})$ to predict $\epsilon_1$:
+
+```{python}
+df['e_hat_1'] = [5, -20, 15]
+df['e_2 (Error 2)'] = df['e_1 (Error 1)'] - df['e_hat_1']
+df[['GPA', 'Age', 'e_1 (Error 1)', 'e_hat_1', 'e_2 (Error 2)']]
+```
+
+* Error $\epsilon_2 = \epsilon_1 - \hat{\epsilon}_1$ becomes the target for Model 3.
+
+---
+
+## Step 3: Model 3 on Residuals ($\epsilon_2$)
+
+Train Model 3 to predict the remaining error $\epsilon_2$:
+
+```{python}
+df['e_hat_2'] = [5, -8, -6]
+df['Final Pred'] = df['y_hat_1'] + df['e_hat_1'] + df['e_hat_2']
+df[['Salary (Y)', 'y_hat_1', 'e_hat_1', 'e_hat_2', 'Final Pred']]
+```
+
+The final prediction combines all 3 models:
+$$\hat{Y}_{\text{final}} = \hat{y}_1 + \hat{\epsilon}_1 + \hat{\epsilon}_2$$
+
+---
+
+## Building a Pure Python Gradient Booster
+
+Let's implement this concept with `DecisionTreeRegressor(max_depth=1)` (Decision Stumps):
+
+```{python}
+#| echo: true
+import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+
+# Generate non-linear synthetic data
+np.random.seed(42)
+X = np.sort(np.random.rand(80, 1) * 10, axis=0)
+y = np.sin(X).ravel() + np.random.normal(0, 0.1, X.shape[0])
+
+# Step 0: Initial baseline prediction (mean of y)
+f_0 = np.mean(y)
+models = []
+residuals = y - f_0
+learning_rate = 0.5
+
+# Sequentially train 3 decision stumps on errors
+for i in range(3):
+    tree = DecisionTreeRegressor(max_depth=1)
+    tree.fit(X, residuals)
+    models.append(tree)
+    # Update residuals
+    residuals = residuals - learning_rate * tree.predict(X)
+```
+
+---
+
+## Visualizing the Sequential Fit
+
+```{python}
+#| echo: false
+#| fig-align: center
+import matplotlib.pyplot as plt
+
+x_grid = np.linspace(0, 10, 500).reshape(-1, 1)
+y_pred = np.full(x_grid.shape[0], f_0)
+
+fig, axes = plt.subplots(1, 3, figsize=(15, 4), sharey=True)
+
+for i, tree in enumerate(models):
+    y_pred += learning_rate * tree.predict(x_grid)
+    axes[i].scatter(X, y, color="black", s=15, alpha=0.6, label="Data")
+    axes[i].plot(x_grid, y_pred, color="crimson", lw=2, label=f"Stage {i+1}")
+    axes[i].set_title(f"After Model {i+1}")
+    axes[i].set_xlabel("X")
+    axes[i].grid(True, linestyle="--", alpha=0.5)
+    axes[i].legend()
+
+axes[0].set_ylabel("y")
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Comparing with Scikit-Learn
+
+In practice, `GradientBoostingRegressor` automates this sequence, learning rate scaling, and loss optimization:
+
+```{python}
+#| echo: true
+#| fig-align: center
+from sklearn.ensemble import GradientBoostingRegressor
+
+gb = GradientBoostingRegressor(n_estimators=30, max_depth=2, learning_rate=0.2, random_state=42)
+gb.fit(X, y)
+
+plt.figure(figsize=(8, 3.8))
+plt.scatter(X, y, color="black", s=15, alpha=0.6, label="Ground Truth")
+plt.plot(x_grid, gb.predict(x_grid), color="teal", lw=2, label="Scikit-Learn GBDT (30 trees)")
+plt.title("Fitted Gradient Boosting Regressor")
+plt.xlabel("X")
+plt.ylabel("y")
+plt.legend()
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
+```
+
+---
+
+## Key Takeaways
+
+1. **Weak Learners:** Individual trees can be extremely shallow (even single-split stumps).
+2. **Sequential Correction:** Every successive tree fits the negative gradient (residuals) of the loss function.
+3. **Shrinkage / Learning Rate:** Scaling each tree's contribution (e.g., $\eta = 0.1$) acts as regularization against overfitting.
+4. **Ensemble Output:** Final prediction is the baseline plus the scaled sum of all trees' predictions.
