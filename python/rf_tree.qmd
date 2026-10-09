@@ -1,0 +1,211 @@
+---
+title: "Exploratory Analysis"
+author: "Your Name"
+date: today
+format:
+  html:
+    toc: true
+    toc-location: right
+    code-fold: show
+execute:
+  warning: false
+---
+
+## Key Advantages: Random Forest vs. Single Decision Tree
+
+* **Reduced Overfitting:** Averaging across an ensemble of decorrelated trees prevents the model from memorizing training noise and hyper-specific local quirks.
+* **Lower Model Variance:** Bootstrap aggregation (bagging) and random feature sampling significantly stabilize predictions across different sample draws of data.
+* **Higher Robustness to Noise & Outliers:** Individual outliers are omitted from ~37% of bootstrapped sub-samples and get outvoted during prediction, preventing extreme data points from distorting decision boundaries.
+
+---
+
+### The Unified Link
+
+$$\text{Bagging \& Random Subspaces} \longrightarrow \mathbf{\text{Lower Variance}} \longrightarrow \begin{cases} \mathbf{\text{Less Overfitting}} \\ \mathbf{\text{Greater Noise Robustness}} \end{cases}$$
+
+> **Summary:** Reduced **variance** is the core mathematical engine of a Random Forest; lower **overfitting** and higher **noise robustness** are its primary practical results.
+
+
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+import ipywidgets as widgets
+from ipywidgets import interact
+
+# -----------------------------------------------------------------------------
+# 1. Interactive Variance Simulation
+# -----------------------------------------------------------------------------
+def plot_variance_demonstration(n_datasets=20, noise_level=0.30, max_depth=6, n_trees=50):
+    np.random.seed(42)
+    
+    # Dense test grid representing the true population x domain
+    X_test = np.linspace(0, 10, 300)[:, np.newaxis]
+    y_true = np.sin(X_test).ravel()
+    
+    dt_predictions = []
+    rf_predictions = []
+    
+    # Train models on N independent random samples drawn from the true process
+    for i in range(n_datasets):
+        # Draw a new random training set of 60 observations
+        X_train = np.random.uniform(0, 10, 60)[:, np.newaxis]
+        y_train = np.sin(X_train).ravel() + np.random.normal(0, noise_level, 60)
+        
+        # Fit models on this specific dataset sample
+        dt = DecisionTreeRegressor(max_depth=max_depth).fit(X_train, y_train)
+        rf = RandomForestRegressor(n_estimators=n_trees, max_depth=max_depth, random_state=i).fit(X_train, y_train)
+        
+        # Predict over test domain
+        dt_predictions.append(dt.predict(X_test))
+        rf_predictions.append(rf.predict(X_test))
+        
+    dt_predictions = np.array(dt_predictions)  # Shape: (n_datasets, 300)
+    rf_predictions = np.array(rf_predictions)
+    
+    # Compute mean prediction and standard deviation across all datasets
+    dt_mean = np.mean(dt_predictions, axis=0)
+    dt_std = np.std(dt_predictions, axis=0)
+    
+    rf_mean = np.mean(rf_predictions, axis=0)
+    rf_std = np.std(rf_predictions, axis=0)
+    
+    # Plotting
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), sharey=True)
+    
+    # --- Plot 1: Single Decision Trees ---
+    for pred in dt_predictions:
+        axes[0].plot(X_test.ravel(), pred, color='blue', alpha=0.18, linewidth=1)
+        
+    axes[0].plot(X_test.ravel(), y_true, 'k--', linewidth=2.5, label='True Signal: sin(x)')
+    axes[0].plot(X_test.ravel(), dt_mean, 'r-', linewidth=2.5, label='Average Tree Fit')
+    axes[0].fill_between(X_test.ravel(), dt_mean - dt_std, dt_mean + dt_std, 
+                         color='red', alpha=0.25, label=r'$\pm 1$ Std Dev Band (Variance)')
+    
+    axes[0].set_title(f"Single Decision Trees ({n_datasets} Random Samples)\nHigh Variance — Avg Std Dev: {np.mean(dt_std):.3f}", fontsize=11)
+    axes[0].set_xlabel("X")
+    axes[0].set_ylabel("Predicted Y")
+    axes[0].legend(loc='upper right')
+    axes[0].grid(True, alpha=0.3)
+    axes[0].set_ylim(-2.0, 2.0)
+    
+    # --- Plot 2: Random Forests ---
+    for pred in rf_predictions:
+        axes[1].plot(X_test.ravel(), pred, color='green', alpha=0.18, linewidth=1)
+        
+    axes[1].plot(X_test.ravel(), y_true, 'k--', linewidth=2.5, label='True Signal: sin(x)')
+    axes[1].plot(X_test.ravel(), rf_mean, 'r-', linewidth=2.5, label='Average Forest Fit')
+    axes[1].fill_between(X_test.ravel(), rf_mean - rf_std, rf_mean + rf_std, 
+                         color='red', alpha=0.25, label=r'$\pm 1$ Std Dev Band (Variance)')
+    
+    axes[1].set_title(f"Random Forests ({n_trees} Trees, {n_datasets} Samples)\nLow Variance — Avg Std Dev: {np.mean(rf_std):.3f}", fontsize=11)
+    axes[1].set_xlabel("X")
+    axes[1].legend(loc='upper right')
+    axes[1].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+
+# -----------------------------------------------------------------------------
+# 2. Widget Controls
+# -----------------------------------------------------------------------------
+interact(
+    plot_variance_demonstration,
+    n_datasets=widgets.IntSlider(min=5, max=50, step=5, value=20, description='Datasets (N):'),
+    noise_level=widgets.FloatSlider(min=0.05, max=0.60, step=0.05, value=0.30, description='Data Noise:'),
+    max_depth=widgets.IntSlider(min=2, max=10, step=1, value=6, description='Tree Depth:'),
+    n_trees=widgets.IntSlider(min=10, max=150, step=10, value=50, description='Forest Trees:')
+);
+```
+
+
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+
+# Set random seed
+np.random.seed(42)
+
+# -----------------------------------------------------------------------------
+# 1. Setup Ground Truth & Monte Carlo Parameters
+# -----------------------------------------------------------------------------
+X_test = np.linspace(0, 10, 300)[:, np.newaxis]
+y_true = np.sin(X_test).ravel()
+
+N_TRIALS = 100        # Number of independent dataset draws
+N_SAMPLES = 40       # Sample size per draw
+NOISE_STD = 0.4      # Noise level
+tree_numbers = np.arange(1, 51)  # B = 1, 2, ..., 50
+
+# Matrix arrays to collect predictions: shape (N_TRIALS, len(X_test))
+dt_predictions = np.zeros((N_TRIALS, len(X_test)))
+rf_predictions_by_b = np.zeros((len(tree_numbers), N_TRIALS, len(X_test)))
+
+# -----------------------------------------------------------------------------
+# 2. Run Simulation
+# -----------------------------------------------------------------------------
+# Define shared tree hyperparameters to ensure identical depth setup
+TREE_PARAMS = dict(max_depth=None, min_samples_split=2, random_state=None)
+
+for trial in range(N_TRIALS):
+    # Draw new noisy training dataset from the population
+    X_train = np.random.uniform(0, 10, N_SAMPLES)[:, np.newaxis]
+    y_train = np.sin(X_train).ravel() + np.random.normal(0, NOISE_STD, N_SAMPLES)
+    
+    # --- Model 1: Single Decision Tree (Trained on 100% of data without bootstrap) ---
+    dt = DecisionTreeRegressor(**TREE_PARAMS)
+    dt.fit(X_train, y_train)
+    dt_predictions[trial, :] = dt.predict(X_test)
+    
+    # --- Model 2: Random Forest with B trees ---
+    for idx, B in enumerate(tree_numbers):
+        rf = RandomForestRegressor(n_estimators=B, **TREE_PARAMS)
+        rf.fit(X_train, y_train)
+        rf_predictions_by_b[idx, trial, :] = rf.predict(X_test)
+
+# -----------------------------------------------------------------------------
+# 3. Calculate Variance across Trials
+# -----------------------------------------------------------------------------
+# Model 1 Variance (constant line across all B)
+model1_variance = np.mean(np.var(dt_predictions, axis=0))
+
+# Model 2 Variance for each B
+model2_variances = []
+for idx in range(len(tree_numbers)):
+    # Var across N_TRIALS at each point along X_test, averaged over the domain
+    var_B = np.mean(np.var(rf_predictions_by_b[idx, :, :], axis=0))
+    model2_variances.append(var_B)
+
+# -----------------------------------------------------------------------------
+# 4. Plot Model 1 vs. Model 2 Variance Curve
+# -----------------------------------------------------------------------------
+plt.figure(figsize=(10, 6))
+
+# Plot Model 1 baseline
+plt.axhline(y=model1_variance, color='red', linestyle='--', linewidth=2, 
+            label=f'Model 1: Single Decision Tree (Var = {model1_variance:.4f})')
+
+# Plot Model 2 curve
+plt.plot(tree_numbers, model2_variances, color='green', marker='o', markersize=4, linewidth=2,
+         label='Model 2: Random Forest (Var vs Number of Trees)')
+
+plt.title("Variance Reduction: Single Decision Tree vs. Random Forest (B Trees)", fontsize=12)
+plt.xlabel("Number of Trees in Random Forest (B)", fontsize=11)
+plt.ylabel("Average Prediction Variance Across Trials", fontsize=11)
+plt.xticks(np.arange(0, 51, 5))
+plt.legend(fontsize=10)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# Print summary metrics
+print(f"Model 1 (Single Decision Tree) Variance : {model1_variance:.4f}")
+print(f"Model 2 (RF with B=1 tree) Variance    : {model2_variances[0]:.4f}")
+print(f"Model 2 (RF with B=10 trees) Variance   : {model2_variances[9]:.4f}")
+print(f"Model 2 (RF with B=50 trees) Variance   : {model2_variances[-1]:.4f}")
+```
