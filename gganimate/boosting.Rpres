@@ -1,0 +1,152 @@
+<style>
+  .reveal pre {font-size: 12px;}
+  body {
+    overflow: scroll;
+}
+</style>
+
+Ensemble Method and Boosting
+========================================================
+author: Son Nguyen
+font-family: Garamond
+transition: none
+
+
+Netflix Prize
+=======================================================
+- **The winning team:** 
+
+
+
+Netflix Prize
+=======================================================
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+Netflix Prize
+=======================================================
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+- **The second-place team's name** is...
+
+Netflix Prize
+=======================================================
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+- **The second-place team's name** is "The Ensemble"
+
+Boosting Success
+=======================================================
+> "XGBoost is an algorithm that has recently been dominating applied machine learning and Kaggle competitions for structured or tabular data." [Link](https://machinelearningmastery.com/gentle-introduction-xgboost-applied-machine-learning/)
+
+
+Boosting Success
+=======================================================
+> Adaboost won 2003 **Godel Prize**: AdaBoost demonstrated novel possibilities in analysing data and is a permanent contribution to science even beyond computer science. [Link](http://eatcs.org/index.php/component/content/article/505)
+
+Boosting Success
+=======================================================
+>AdaBoost (with decision trees as the weak learners) is often referred to as the best out-of-the-box classifier.  [Link](https://en.wikipedia.org/wiki/AdaBoost)
+
+Boosting Success
+=======================================================
+> Leo Brieman, who invented "Bagging" and "Random Forest" crowned AdaBoost the "best off-the-shelf classifier in the world (2000). 
+
+
+
+Ensemble Machine Learning Approach
+=======================================================
+- An ensemble is a composite model, combining a series of low performing **classifiers**(classification models) or **learners** with the aim of creating an improved classifier.
+    
+
+Ensemble Machine Learning Approach
+=======================================================
+- An ensemble is a composite model, combining a series of low performing **classifiers**(classification models) or **learners** with the aim of creating an improved classifier.
+
+- Three common ensemble:
+
+    - Bagging
+    - Boosting
+    - Stacking
+
+
+Stacking
+=======================================================
+- Stacking combines multiple base learners  predictions into a new data set. 
+
+- This new data are treated as the **input data** for another learner (meta learner).
+
+![](images/b3.png)
+
+
+Bagging
+=======================================================
+
+Bagging  = Bootstrap Aggregating
+
+- Step 1:  Boostrapping
+
+![](images/ba1.png)
+
+Bagging 
+=======================================================
+- Step 2: Aggregating  
+
+![](images/ba2.png)
+
+
+Boosting 
+=======================================================
+- Boosting converts a series of weak learners, sequentially, into a strong learner. 
+- Each leaner in the sequence tries to correct its predecessor. 
+
+![](images/bo1.png)
+
+- Individually, Learn 1, Learner 2 and Learner 3 are **weak leaners** (a little better than a coin toss). 
+
+- The leaners are usually a tree with 2 leaves (**Stump**).
+
+- In D2, the wrong misclassified of Learner 1 gets higher weights. 
+
+- In D3, the wrong misclassified of Learner 2 gets higher weights. 
+
+Boosting 
+=======================================================
+![](images/bo3.png)
+
+
+
+Bagging vs. Boosting
+=======================================================
+![](images/b1.png)
+
+Bagging vs. Boosting
+=======================================================
+![](images/b2.png)
+
+Types of Boosting
+=======================================================
+
+- Adaboost
+
+- Gradient Boosting
+
+
+Adaboost
+=======================================================
+![](images/bo4.png)
+
+Adaboost
+=======================================================
+![](images/bo5.png)
+
+
+Adaboost, Clearly Explained
+=======================================================
+
+- Demonstration by StatQuest
+- [Link](https://www.youtube.com/watch?v=LsK-xG1cLYA)
+
+

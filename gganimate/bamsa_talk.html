@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title> Creating Useful Fake Data</title>
+    <meta charset="utf-8" />
+    <meta name="author" content=" Son Nguyen " />
+    <script src="libs/header-attrs-2.7/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# <img src="figures/bat-cartoon.png" /> Creating Useful Fake Data
+### <font size="5"> Son Nguyen </font>
+
+---
+
+
+&lt;style&gt;
+
+.remark-slide-content {
+  background-color: #FFFFFF;
+  border-top: 80px solid #F9C389;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 1em 2em 1em 2em
+}
+
+.inverse {
+  background-color: #696767;
+  border-top: 80px solid #696767;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 50% 75%;
+  background-size: 150px;
+}
+
+.your-turn{
+  background-color: #8C7E95;
+  border-top: 80px solid #F9C389;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 95% 90%;
+  background-size: 75px;
+}
+
+.title-slide {
+  background-color: #F9C389;
+  border-top: 80px solid #F9C389;
+  background-image: none;
+}
+
+.title-slide &gt; h1  {
+  color: #111111;
+  font-size: 40px;
+  text-shadow: none;
+  font-weight: 400;
+  text-align: left;
+  margin-left: 15px;
+  padding-top: 80px;
+}
+.title-slide &gt; h2  {
+  margin-top: -25px;
+  padding-bottom: -20px;
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 35px;
+  text-align: left;
+  margin-left: 15px;
+}
+.title-slide &gt; h3  {
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 25px;
+  text-align: left;
+  margin-left: 15px;
+  margin-bottom: -30px;
+}
+
+&lt;/style&gt;
+
+&lt;style type="text/css"&gt;
+.left-code {
+  color: #777;
+  width: 50%;
+  height: 92%;
+  float: left;
+}
+.right-plot {
+  width: 49%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+# Classification Problem
+
+![](images/dog_cat.png)
+---
+# Classification Problem
+
+.pull-left[
+
+
+]
+
+.pull-right[
+&lt;img src="images/credit.png" width="800" /&gt;
+]
+
+---
+# Classification Problem
+
+.pull-left[
+
+- Credit Card Default?
+
+
+]
+
+.pull-right[
+&lt;img src="images/credit.png" width="800" /&gt;
+]
+
+
+---
+# Classification Problem
+
+.pull-left[
+
+- Credit Card Default?
+
+- Or not?
+
+]
+
+.pull-right[
+&lt;img src="images/credit.png" width="800" /&gt;
+]
+
+
+---
+# Classification Problem
+
+
+.pull-left[
+
+
+- Is A yellow?
+
+]
+
+.pull-right[
+
+&lt;img src="a_col.png" width="2400" /&gt;
+]
+
+---
+# Classification Problem
+
+
+.pull-left[
+
+
+- Is A yellow?
+
+- Or purple?
+
+]
+
+.pull-right[
+
+&lt;img src="a_col.png" width="2400" /&gt;
+]
+
+
+
+---
+# Classification Problem
+
+
+.pull-left[
+
+
+- Decision Boundary
+
+
+]
+
+.pull-right[
+
+&lt;img src="db.png" width="2400" /&gt;
+]
+
+---
+# Classification Problem
+
+
+.pull-left[
+
+
+- Decision Boundary
+
+- of a classification model
+
+]
+
+.pull-right[
+
+&lt;img src="db.png" width="2400" /&gt;
+]
+
+---
+# Classification Problem
+
+
+.pull-left[
+
+
+- Decision Boundary
+
+- of a classification model
+
+- A is...
+
+]
+
+.pull-right[
+
+&lt;img src="db.png" width="2400" /&gt;
+]
+
+---
+# Accuracy
+
+.pull-left[
+
+
+|   Purple Accuracy  |   Yellow Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|--------------------:|
+ |                0.9 |                0.9 |                      0.9 |
+
+]
+
+.pull-right[
+&lt;img src="db.png" width="2400" /&gt;
+]
+
+---
+# Balance vs. Unbalanced Data
+
+.pull-left[
+
+&lt;img src="bal_data.png" width="2400" /&gt;
+]
+
+
+---
+# Balance vs. Unbalanced Data
+
+.pull-left[
+
+&lt;img src="bal_data.png" width="2400" /&gt;
+
+]
+
+.pull-right[
+&lt;img src="unbal_data.png" width="2400" /&gt;
+]
+
+---
+# Decision Boundary of Unbalanced Data
+
+.pull-left[
+
+&lt;img src="db.png" width="2400" /&gt;
+
+]
+
+.pull-right[
+
+]
+
+
+---
+# Decision Boundary of Unbalanced Data
+
+.pull-left[
+
+&lt;img src="db.png" width="2400" /&gt;
+
+
+]
+
+.pull-right[
+&lt;img src="db_03.png" width="2400" /&gt;
+
+
+]
+
+---
+# Decision Boundary of Unbalanced Data
+
+.pull-left[
+
+&lt;img src="db.png" width="2400" /&gt;
+
+
+
+]
+
+.pull-right[
+&lt;img src="db_03.png" width="2400" /&gt;
+
+&lt;img src="db_02.png" width="2400" /&gt;
+
+]
+
+
+---
+# Decision Boundary of Unbalanced Data
+
+.pull-left[
+
+&lt;img src="db.png" width="2400" /&gt;
+
+&lt;img src="db_01.png" width="2400" /&gt;
+
+]
+
+.pull-right[
+&lt;img src="db_03.png" width="2400" /&gt;
+
+&lt;img src="db_02.png" width="2400" /&gt;
+
+]
+
+---
+# Accuracy
+
+.pull-left[
+
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|--------------------:|
+ |                0.9 |                0.9 |                 0.9 |
+
+]
+
+.pull-right[
+&lt;img src="db.png" width="2400" /&gt;
+]
+
+---
+# Accuracy
+
+.pull-left[
+
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|--------------------:|
+|               0.75 |                  1 |                  0.875 |
+
+]
+
+.pull-right[
+&lt;img src="db_04.png" width="2400" /&gt;
+]
+
+---
+# Accuracy
+
+.pull-left[
+
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+ |           0.666667 |                  1 |                0.833333 |
+
+]
+
+.pull-right[
+&lt;img src="db_03.png" width="2400" /&gt;
+]
+
+---
+# Accuracy
+
+.pull-left[
+
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                0.5 |                  1 |                    0.75 |
+]
+
+.pull-right[
+&lt;img src="db_02.png" width="2400" /&gt;
+]
+
+
+---
+# Accuracy
+
+.pull-left[
+
+
+
+    |   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+ |                  0 |                  1 |                     0.5 |
+
+]
+
+.pull-right[
+&lt;img src="db_01.png" width="2400" /&gt;
+]
+
+---
+
+- It's more difficult to detect yellow points when the imbalance increases
+
+- Yellow points could present
+
+  - Cancer Patients, 
+  - Credit Card Fraud, 
+  - Bankrupted Companies, 
+  - Terrorist 
+
+- They are all rare events.
+
+---
+# Question
+
+- How to detect the yellow points when there are too few of them?
+
+
+
+---
+# Strategy 1
+
+.pull-left[
+
+- Remove the purple points so that the data more balanced
+
+
+]
+
+.pull-right[
+
+]
+
+---
+# Strategy 1
+
+.pull-left[
+
+- Remove the purple points so that the data more balanced
+
+- This is called under-sampling
+]
+
+.pull-right[
+
+]
+
+
+---
+# Strategy 1
+
+.pull-left[
+
+- Remove the purple points so that the data more balanced
+
+- This is called under-sampling
+]
+
+.pull-right[
+&lt;img src="un.png" width="417" /&gt;
+]
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+
+]
+
+.pull-right[
+
+]
+
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+
+]
+
+.pull-right[
+&lt;img src="un_data0.3.png" width="2400" /&gt;
+]
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="un_data0.3.png" width="2400" /&gt;
+
+&lt;img src="un_db0.3.png" width="2400" /&gt;
+]
+
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|           0.666667 |                  1 |               0.833333 |
+
+]
+
+.pull-right[
+
+&lt;img src="un_db0.3.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                0.8 |                    0.9 |
+
+]
+
+
+
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="un_data0.2.png" width="2400" /&gt;
+
+
+]
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="un_data0.2.png" width="2400" /&gt;
+
+&lt;img src="un_db0.2.png" width="2400" /&gt;
+]
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                0.5 |                  1 |                   0.75 |
+
+]
+
+.pull-right[
+
+&lt;img src="un_db0.2.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                0.8 |                    0.9 |
+
+]
+
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="un_data0.1.png" width="2400" /&gt;
+
+]
+
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="un_data0.1.png" width="2400" /&gt;
+
+&lt;img src="un_db0.1.png" width="2400" /&gt;
+]
+
+---
+# Undersampling
+
+.pull-left[
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+
+ |   Yellow Accuracy  |   Purple Accuracy  |   Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+ |                  0 |                  1 |                  0.5 |
+
+]
+
+.pull-right[
+
+&lt;img src="un_db0.2.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |   Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                0.9 |                 0.95 |
+
+]
+
+---
+# Strategy 2
+
+.pull-left[
+
+- Duplicate the yellow points many times so that the data more balanced
+
+- This is called Over-sampling
+]
+
+.pull-right[
+&lt;img src="ov.png" width="439" /&gt;
+]
+
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.3.png" width="2400" /&gt;
+
+
+]
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.3.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.3.png" width="2400" /&gt;
+
+&lt;img src="ov_db0.3.png" width="2400" /&gt;
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori_db0.3.png" width="2400" /&gt;
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|           0.666667 |                  1 |             0.833333 |
+
+]
+
+.pull-right[
+
+
+&lt;img src="ov_db0.3.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                0.9 |                 0.95 |
+
+
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.2.png" width="2400" /&gt;
+
+
+]
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.2.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.2.png" width="2400" /&gt;
+
+&lt;img src="ov_db0.2.png" width="2400" /&gt;
+]
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori_db0.2.png" width="2400" /&gt;
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                0.5 |                  1 |                   0.75 |
+
+]
+
+.pull-right[
+
+
+&lt;img src="ov_db0.2.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                0.9 |                 0.95 |
+
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.1.png" width="2400" /&gt;
+
+
+]
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori0.1.png" width="2400" /&gt;
+
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="ov_data0.1.png" width="2400" /&gt;
+
+&lt;img src="ov_db0.1.png" width="2400" /&gt;
+]
+
+
+---
+# Oversampling
+
+.pull-left[
+&lt;img src="ori_db0.1.png" width="2400" /&gt;
+
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  0 |                  1 |                  0.5 |
+
+]
+
+.pull-right[
+
+
+&lt;img src="ov_db0.1.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|                  1 |                  1 |                  1 |
+
+]
+
+
+
+
+---
+# Strategy 3:
+
+- Generate fake yellow points
+
+---
+# SMOTE
+
+&lt;img src="smote2.png" width="1280" /&gt;
+---
+# SMOTE
+
+.pull-left[
+&lt;img src="smote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="smote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+---
+# SMOTE
+
+.pull-left[
+&lt;img src="smote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="smote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="smote_data0.05.png" width="2400" /&gt;
+
+
+]
+
+---
+# SMOTE
+
+.pull-left[
+&lt;img src="smote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="smote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="smote_data0.05.png" width="2400" /&gt;
+
+&lt;img src="smote_db0.05.png" width="2400" /&gt;
+]
+
+
+---
+# SMOTE - Accuracy
+
+.pull-left[
+&lt;img src="smote_data0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.28 |              0.999 |               0.6395 |
+]
+
+.pull-right[
+&lt;img src="smote_db0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.96 |              0.864 |                 0.912 |
+
+
+]
+
+
+---
+# Borderline-SMOTE
+
+&lt;img src="dbsmote.png" width="1647" /&gt;
+
+
+
+---
+# Borderline-SMOTE
+
+.pull-left[
+&lt;img src="dbsmote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="dbsmote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+
+---
+# Borderline-SMOTE
+
+.pull-left[
+&lt;img src="dbsmote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="dbsmote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="dbsmote_data0.05.png" width="2400" /&gt;
+
+
+]
+
+
+---
+# Borderline-SMOTE
+
+.pull-left[
+&lt;img src="dbsmote_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="dbsmote_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="dbsmote_data0.05.png" width="2400" /&gt;
+
+&lt;img src="dbsmote_db0.05.png" width="2400" /&gt;
+]
+
+
+
+---
+# Borderline-SMOTE
+
+.pull-left[
+&lt;img src="dbsmote_ori_db0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.28 |              0.999 |                0.6395 |
+]
+
+.pull-right[
+&lt;img src="dbsmote_db0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.86 |              0.919 |                0.8895 |
+
+
+]
+
+
+---
+# Kmean SMOTE
+
+&lt;img src="kmean.png" width="1451" /&gt;
+
+---
+# Kmean-SMOTE
+
+.pull-left[
+&lt;img src="kmeans_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="kmeans_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+
+]
+
+---
+# Kmean-SMOTE
+
+.pull-left[
+&lt;img src="kmeans_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="kmeans_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="kmeans_data0.05.png" width="2400" /&gt;
+
+
+]
+
+---
+# Kmean-SMOTE
+
+.pull-left[
+&lt;img src="kmeans_ori_data0.05.png" width="2400" /&gt;
+
+&lt;img src="kmeans_ori_db0.05.png" width="2400" /&gt;
+]
+
+.pull-right[
+&lt;img src="kmeans_data0.05.png" width="2400" /&gt;
+
+&lt;img src="kmeans_db0.05.png" width="2400" /&gt;
+]
+
+
+---
+# Kmean-SMOTE Accuracy
+
+.pull-left[
+&lt;img src="kmeans_ori_db0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.28 |              0.999 |                  0.6395 |
+]
+
+.pull-right[
+&lt;img src="kmeans_db0.05.png" width="2400" /&gt;
+
+|   Yellow Accuracy  |   Purple Accuracy  |      Balanced Accuracy  |
+|-------------------:|-------------------:|---------------------:|
+|               0.82 |               0.94 |                    0.88 |
+
+
+]
+
+
+---
+# Research Project: Data Oriented
+
+- Find a dataset
+
+- Propose a method
+
+- Show that it works better than popular methods
+
+---
+# Research Project: Methodology Oriented
+
+- Propose a method
+
+- Find several datasets 
+
+- Show that your method works better than popular methods on the datasets
+
+
+---
+# NEDSI 2021
+
+- Northeast Decision Sciences Institute Conference 
+
+- March 26-27, 2021 
+
+- Abstract Submission:  January 16, 2021
+
+---
+# NEDSI in the past
+
+.pull-left[
+![](nedsi1.jpg)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+![](nedsi3.jpg)&lt;!-- --&gt;
+
+
+]
+
+---
+# NEDSI in the past
+
+.pull-left[
+
+
+![](nedsi2.jpg)&lt;!-- --&gt;
+]
+
+.pull-right[
+
+![](nedsi4.jpg)&lt;!-- --&gt;
+]
+
+
+
+
+---
+# NEDSI in the past
+
+.pull-left[
+![](nedsi5.jpg)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+![](nedsi6.jpg)&lt;!-- --&gt;
+
+]
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"slideNumberFormat": "<div class=\"progress-bar-container\">\n  <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">\n  </div>\n</div>`"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

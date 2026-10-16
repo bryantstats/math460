@@ -1,0 +1,446 @@
+---
+title: "AdaBoost: Step-by-Step Mechanical Walkthrough"
+subtitle: "Exact Numerical & Visual Progression (Rounds 1 to 3)"
+author: "Machine Learning Foundations"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    chalkboard: true
+    transition: fade
+    transition-speed: fast
+    fig-align: center
+    scrollable: true
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## 1. Initial Data Points & Weights {background-color="#f8fafc"}
+
+All 5 points start with **uniform sample weights**: $w_i^{(1)} = \frac{1}{5} = 0.200$.
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 5 toy points in 2D
+X = np.array([
+    [1.0, 4.0],  # x0: +1
+    [2.0, 1.0],  # x1: -1
+    [3.0, 3.0],  # x2: -1
+    [4.0, 5.0],  # x3: +1
+    [5.0, 2.0]   # x4: +1
+])
+y = np.array([1, -1, -1, 1, 1])
+N = len(X)
+w1 = np.full(N, 1.0 / N)
+
+# Helper function: draw crisp decision tree diagrams on ax2
+def draw_tree(ax, condition_str, left_text, right_text, err, alpha, round_num):
+    ax.set_xlim(0, 10); ax.set_ylim(0, 10); ax.axis('off')
+    # Root Decision Node
+    ax.text(5, 8.5, condition_str, ha="center", va="center", fontsize=11, fontweight='bold',
+            bbox=dict(boxstyle="round,pad=0.5", fc="#f8fafc", ec="#0f172a", lw=2))
+    # Branches
+    ax.annotate("", xy=(2.5, 5.2), xytext=(4.2, 7.8), arrowprops=dict(arrowstyle="->", lw=2, color="#334155"))
+    ax.text(2.8, 6.7, "Yes", fontsize=11, fontweight='bold', color="#16a34a")
+    ax.annotate("", xy=(7.5, 5.2), xytext=(5.8, 7.8), arrowprops=dict(arrowstyle="->", lw=2, color="#334155"))
+    ax.text(7.0, 6.7, "No", fontsize=11, fontweight='bold', color="#dc2626")
+    # Leaf Nodes
+    fc_l = "#e0f2fe" if "+1" in left_text else "#fee2e2"
+    ec_l = "#0284c7" if "+1" in left_text else "#ef4444"
+    ax.text(2.5, 4.2, left_text, ha="center", va="center", fontsize=11, fontweight='bold',
+            bbox=dict(boxstyle="round,pad=0.5", fc=fc_l, ec=ec_l, lw=2))
+    fc_r = "#e0f2fe" if "+1" in right_text else "#fee2e2"
+    ec_r = "#0284c7" if "+1" in right_text else "#ef4444"
+    ax.text(7.5, 4.2, right_text, ha="center", va="center", fontsize=11, fontweight='bold',
+            bbox=dict(boxstyle="round,pad=0.5", fc=fc_r, ec=ec_r, lw=2))
+    # Analytics Box
+    metrics = (
+        f"Stump {round_num} Analytics\n"
+        f"---------------------------\n"
+        f"Weighted Error (e_{round_num}): {err:.3f}\n"
+        f"Voting Weight  (a_{round_num}): {alpha:.3f}"
+    )
+    ax.text(5, 1.3, metrics, ha="center", va="center", fontsize=10, family='monospace',
+            bbox=dict(boxstyle="square,pad=0.5", fc="#f1f5f9", ec="#94a3b8", lw=1.5))
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# Standardized 2D Feature Space Plot
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w1[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=2, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w1[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=2, label='Class +1')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=11, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Initial Feature Space ($w_i = 0.200$)", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+# Weights Bar Chart
+ax2.bar([f"$x_{i}$" for i in range(N)], w1, color='#64748b', edgecolor='#334155', width=0.45, label='Sample Weight')
+ax2.axhline(0.2, color='#0284c7', linestyle='--', lw=1.5, label='Uniform Baseline (0.200)')
+ax2.set_title("Initial Weights Distribution $w^{(1)}$", fontsize=11, fontweight='bold')
+ax2.set_ylabel("Weight Value", fontsize=10)
+ax2.set_ylim(0, 0.6)
+ax2.grid(True, linestyle='--', alpha=0.35)
+ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+plt.show()
+```
+
+---
+
+## 2. Stump 1: Decision Boundary & Tree Diagram
+
+Vertical cut at $x_1 = 3.50$. Only point $x_0$ is misclassified ($\epsilon_1 = 0.200, \alpha_1 = 0.693$).
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+err1 = 0.200
+alpha1 = 0.5 * np.log((1.0 - err1) / err1)  # 0.6931
+
+xx, yy = np.meshgrid(np.linspace(0, 6, 250), np.linspace(0, 6, 250))
+Z1 = np.where(xx >= 3.5, 1, -1)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# 2D Plot with Boundary
+ax1.contourf(xx, yy, Z1, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.55)
+ax1.contour(xx, yy, Z1, levels=[0], colors='#0f172a', linewidths=2.5)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w1[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w1[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=1.5, label='Class +1')
+ax1.scatter([X[0, 0]], [X[0, 1]], s=360, facecolors='none', edgecolors='#f59e0b', lw=3, label='Mistake ($x_0$)')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Stump 1 Cut: $x_1 \geq 3.50$", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=3, frameon=True, fontsize=8.5)
+
+# Tree Diagram
+draw_tree(ax2, "Is $x_1 \geq 3.50$?", "Predict +1", "Predict -1", err1, alpha1, 1)
+
+plt.show()
+```
+
+---
+
+## 3. Weight Updates After Stump 1
+
+Point $x_0$ was misclassified $\Rightarrow$ its weight swells from $0.200 \to 0.500$. Correct points shrink to $0.125$.
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+w2 = np.array([0.500, 0.125, 0.125, 0.125, 0.125])
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# 2D Plot with Updated Weights
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w2[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=2, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w2[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=2, label='Class +1')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$\n({w2[i]:.3f})", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=9.5, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Weights $w^{(2)}$: $x_0$ Swells to 0.500", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+# Bar Comparison
+idx = np.arange(N)
+width = 0.35
+ax2.bar(idx - width/2, w1, width, label='Round 1 ($w^{(1)}$)', color='#94a3b8')
+bars2 = ax2.bar(idx + width/2, w2, width, label='Round 2 ($w^{(2)}$)', color='#3b82f6')
+bars2[0].set_color('#ef4444')
+ax2.set_xticks(idx)
+ax2.set_xticklabels([f"$x_{i}$" for i in range(N)])
+ax2.set_title("Shift: $w^{(1)} \Rightarrow w^{(2)}$", fontsize=11, fontweight='bold')
+ax2.set_ylabel("Weight Value", fontsize=10)
+ax2.set_ylim(0, 0.6)
+ax2.grid(True, linestyle='--', alpha=0.35)
+ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+plt.show()
+```
+
+---
+
+## 4. Stump 2: Decision Boundary & Tree Diagram
+
+Targeting large sample $x_0$, Stump 2 cuts horizontally at $x_2 = 3.50$. Only $x_4$ is misclassified ($\epsilon_2 = 0.125, \alpha_2 = 0.973$).
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+err2 = 0.125
+alpha2 = 0.5 * np.log((1.0 - err2) / err2)  # 0.9730
+
+Z2 = np.where(yy >= 3.5, 1, -1)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# 2D Plot with Boundary
+ax1.contourf(xx, yy, Z2, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.55)
+ax1.contour(xx, yy, Z2, levels=[0], colors='#0f172a', linewidths=2.5)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w2[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w2[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=1.5, label='Class +1')
+ax1.scatter([X[4, 0]], [X[4, 1]], s=360, facecolors='none', edgecolors='#f59e0b', lw=3, label='Mistake ($x_4$)')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Stump 2 Cut: $x_2 \geq 3.50$", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=3, frameon=True, fontsize=8.5)
+
+# Tree Diagram
+draw_tree(ax2, "Is $x_2 \geq 3.50$?", "Predict +1", "Predict -1", err2, alpha2, 2)
+
+plt.show()
+```
+
+---
+
+## 5. Combined Decision Boundary ($H_2 = \text{sign}(\alpha_1 h_1 + \alpha_2 h_2)$)
+
+$$H_2(x) = \text{sign}(0.693 \cdot h_1(x) + 0.973 \cdot h_2(x)) \quad \Rightarrow \quad \textbf{4/5 Correct (80.0\%)}$$
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+vote2 = alpha1 * Z1 + alpha2 * Z2
+Z_comb2 = np.where(vote2 >= 0, 1, -1)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# Standardized 2D Combined Boundary Plot
+ax1.contourf(xx, yy, Z_comb2, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.6)
+ax1.contour(xx, yy, Z_comb2, levels=[0], colors='#0f172a', linewidths=2.5)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w2[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=2, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w2[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=2, label='Class +1')
+ax1.scatter([X[4, 0]], [X[4, 1]], s=360, facecolors='none', edgecolors='#f59e0b', lw=3, label='H2 Mistake ($x_4$)')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Ensemble H2(x) Boundary (Acc: 80.0%)", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=3, frameon=True, fontsize=8.5)
+
+# Vote Ledger Infographic on ax2
+ax2.set_xlim(0, 10); ax2.set_ylim(0, 10); ax2.axis('off')
+ax2.text(5, 9.2, "Committee Voting Breakdown (H2)", ha="center", va="center",
+         fontsize=12, fontweight='bold')
+
+ledger_text = (
+    "Point | True | h1   | h2   | Vote Score | Result\n"
+    "--------------------------------------------------\n"
+    "x0    |  +1  | -1   | +1   |   +0.280   |  +1  OK\n"
+    "x1    |  -1  | -1   | -1   |   -1.666   |  -1  OK\n"
+    "x2    |  -1  | -1   | -1   |   -1.666   |  -1  OK\n"
+    "x3    |  +1  | +1   | +1   |   +1.666   |  +1  OK\n"
+    "x4    |  +1  | +1   | -1   |   -0.280   |  -1  ERR\n"
+)
+ax2.text(5, 5.0, ledger_text, ha="center", va="center", fontsize=10, family='monospace',
+         bbox=dict(boxstyle="square,pad=0.7", fc="#f8fafc", ec="#94a3b8", lw=1.5))
+ax2.text(5, 1.2, "* Notice: a2 > a1, so Stump 2 saved x0,\n  but Stump 2 overruled Stump 1 on x4.",
+         ha="center", va="center", fontsize=9.5, color="#475569")
+
+plt.show()
+```
+
+---
+
+## 6. Weight Updates After Stump 2
+
+Point $x_4$ was misclassified by Stump 2 $\Rightarrow$ its weight swells to $w_4^{(3)} = 0.500$.
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+w3 = np.array([2/7, 1/14, 1/14, 1/14, 0.500])
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# 2D Plot with Weights
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w3[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=2, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w3[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=2, label='Class +1')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$\n({w3[i]:.3f})", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=9.5, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Weights $w^{(3)}$: $x_4$ Swells to 0.500", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+# 3-Round Progression Bar Chart
+width = 0.25
+ax2.bar(idx - width, w1, width, label='Round 1', color='#94a3b8')
+ax2.bar(idx, w2, width, label='Round 2', color='#60a5fa')
+bars3 = ax2.bar(idx + width, w3, width, label='Round 3', color='#2563eb')
+bars3[4].set_color('#ef4444')
+ax2.set_xticks(idx)
+ax2.set_xticklabels([f"$x_{i}$" for i in range(N)])
+ax2.set_title("Progression: $w^{(1)} \Rightarrow w^{(2)} \Rightarrow w^{(3)}$", fontsize=11, fontweight='bold')
+ax2.set_ylabel("Weight Value", fontsize=10)
+ax2.set_ylim(0, 0.6)
+ax2.grid(True, linestyle='--', alpha=0.35)
+ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=3, frameon=True, fontsize=8.5)
+
+plt.show()
+```
+
+---
+
+## 7. Stump 3: Decision Boundary & Tree Diagram
+
+Targeting $x_4$, Stump 3 cuts horizontally at $x_2 = 1.50$. Only $x_2$ is misclassified ($\epsilon_3 = 0.071, \alpha_3 = 1.283$).
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+err3 = 1.0 / 14.0  # 0.0714
+alpha3 = 0.5 * np.log((1.0 - err3) / err3)  # 1.2825
+
+Z3 = np.where(yy >= 1.5, 1, -1)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# 2D Plot with Boundary
+ax1.contourf(xx, yy, Z3, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.55)
+ax1.contour(xx, yy, Z3, levels=[0], colors='#0f172a', linewidths=2.5)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=w3[y==-1]*2000, color='#ef4444', edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=w3[y==1]*2000, color='#0284c7', edgecolors='#0369a1', lw=1.5, label='Class +1')
+ax1.scatter([X[2, 0]], [X[2, 1]], s=360, facecolors='none', edgecolors='#f59e0b', lw=3, label='Mistake ($x_2$)')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Stump 3 Cut: $x_2 \geq 1.50$", fontsize=11, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=3, frameon=True, fontsize=8.5)
+
+# Tree Diagram
+draw_tree(ax2, "Is $x_2 \geq 1.50$?", "Predict +1", "Predict -1", err3, alpha3, 3)
+
+plt.show()
+```
+
+---
+
+## 8. Final Combined Decision Boundary ($H_3$) {transition="zoom"}
+
+$$H_3(x) = \text{sign}(0.693 \cdot h_1(x) + 0.973 \cdot h_2(x) + 1.283 \cdot h_3(x)) \quad \Rightarrow \quad \textbf{5/5 Correct (100.0\%)}$$
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+vote3 = alpha1 * Z1 + alpha2 * Z2 + alpha3 * Z3
+Z_comb3 = np.where(vote3 >= 0, 1, -1)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.08, right=0.96, top=0.88, bottom=0.22, wspace=0.35)
+
+# Standardized 2D Final Boundary Plot
+ax1.contourf(xx, yy, Z_comb3, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.6)
+ax1.contour(xx, yy, Z_comb3, levels=[0], colors='#0f172a', linewidths=2.5)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=180, color='#ef4444', edgecolors='#991b1b', lw=2, label='Class -1')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=180, color='#0284c7', edgecolors='#0369a1', lw=2, label='Class +1')
+for i in range(N):
+    ax1.annotate(f"$x_{i}$", (X[i, 0] + 0.15, X[i, 1] + 0.15), fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.set_xlabel("Feature $x_1$", fontsize=10); ax1.set_ylabel("Feature $x_2$", fontsize=10)
+ax1.set_title("Final Ensemble H3 (Acc: 100.0%)", fontsize=11, fontweight='bold', color='#15803d')
+ax1.grid(True, linestyle='--', alpha=0.35)
+ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.20), ncol=2, frameon=True, fontsize=8.5)
+
+# Consensus Scorecard on ax2
+ax2.set_xlim(0, 10); ax2.set_ylim(0, 10); ax2.axis('off')
+ax2.text(5, 9.2, "Final Committee Consensus (H3)", ha="center", va="center",
+         fontsize=12, fontweight='bold', color="#15803d")
+
+final_ledger = (
+    "Point | True | h1   | h2   | h3   | Total Vote | Result\n"
+    "--------------------------------------------------------\n"
+    "x0    |  +1  | -1   | +1   | +1   |   +1.562   |  +1  OK\n"
+    "x1    |  -1  | -1   | -1   | -1   |   -2.949   |  -1  OK\n"
+    "x2    |  -1  | -1   | -1   | +1   |   -0.384   |  -1  OK\n"
+    "x3    |  +1  | +1   | +1   | +1   |   +2.949   |  +1  OK\n"
+    "x4    |  +1  | +1   | -1   | +1   |   +1.003   |  +1  OK\n"
+)
+ax2.text(5, 5.0, final_ledger, ha="center", va="center", fontsize=9.5, family='monospace',
+         bbox=dict(boxstyle="square,pad=0.7", fc="#f0fdf4", ec="#16a34a", lw=2))
+ax2.text(5, 1.2, "* Perfect 100% classification reached\n  via consensus of 3 simple orthogonal cuts!",
+         ha="center", va="center", fontsize=9.5, color="#15803d", fontweight='bold')
+
+plt.show()
+```
+
+---
+
+## 9. Evolution Summary: $H_1 \Rightarrow H_2 \Rightarrow H_3$
+
+From single 1D orthogonal thresholds to an enclosed non-linear committee classifier:
+
+```{python}
+#| fig-width: 10.5
+#| fig-height: 4.4
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10.5, 4.4))
+fig.subplots_adjust(left=0.06, right=0.98, top=0.88, bottom=0.22, wspace=0.25)
+
+# Round 1
+ax1.contourf(xx, yy, Z1, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.6)
+ax1.contour(xx, yy, Z1, levels=[0], colors='#0f172a', linewidths=2)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], s=110, color='#ef4444', edgecolors='k')
+ax1.scatter(X[y==1, 0], X[y==1, 1], s=110, color='#0284c7', edgecolors='k')
+ax1.set_title("Round 1: 80% Acc (4/5)\n1 Stump ($x_1 \geq 3.5$)", fontsize=10, fontweight='bold')
+ax1.set_xlim(0, 6); ax1.set_ylim(0, 6)
+ax1.set_box_aspect(1)
+ax1.grid(True, alpha=0.3)
+
+# Round 2
+ax2.contourf(xx, yy, Z_comb2, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.6)
+ax2.contour(xx, yy, Z_comb2, levels=[0], colors='#0f172a', linewidths=2)
+ax2.scatter(X[y==-1, 0], X[y==-1, 1], s=110, color='#ef4444', edgecolors='k')
+ax2.scatter(X[y==1, 0], X[y==1, 1], s=110, color='#0284c7', edgecolors='k')
+ax2.set_title("Round 2: 80% Acc (4/5)\n2 Stumps Combined", fontsize=10, fontweight='bold')
+ax2.set_xlim(0, 6); ax2.set_ylim(0, 6)
+ax2.set_box_aspect(1)
+ax2.grid(True, alpha=0.3)
+
+# Round 3
+ax3.contourf(xx, yy, Z_comb3, levels=[-1.5, 0, 1.5], colors=['#fee2e2', '#e0f2fe'], alpha=0.6)
+ax3.contour(xx, yy, Z_comb3, levels=[0], colors='#0f172a', linewidths=2.5)
+ax3.scatter(X[y==-1, 0], X[y==-1, 1], s=110, color='#ef4444', edgecolors='k')
+ax3.scatter(X[y==1, 0], X[y==1, 1], s=110, color='#0284c7', edgecolors='k')
+ax3.set_title("Round 3: 100% Acc! (5/5)\n3 Stumps Combined", fontsize=10, fontweight='bold', color='#15803d')
+ax3.set_xlim(0, 6); ax3.set_ylim(0, 6)
+ax3.set_box_aspect(1)
+ax3.grid(True, alpha=0.3)
+
+plt.show()
+```

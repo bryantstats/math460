@@ -1,0 +1,34 @@
+# Math 460: Applied Data Mining
+
+[Course Page - New Tab](https://bryantstats.github.io/math460/)
+
+[Syllabus](m460syllabus.html)
+
+[Data](data.html)
+
+|Topics| Slides/Notes|SAS | Python | Assignments | Exams |
+|:-----|:------------|:---|:-------|:------------|:------|
+| An Overview of Data Mining| [Slides](slides/intro.html) |        |              |       | |
+| Overfitting and Tuning  | [Slides](slides/overfitting.pdf)|        |      | ||
+| Model Evaluation| [Slides](slides/measuring_performance.pdf), [Notes](slides/measuring_performance_notes.pdf)     ||      |   [Assignment 1](assignments/Math460_Assignment1.html)    ||
+|**Part 1. Tree-Based Models**|  | |  | ||  
+| Classification Trees| [Slides](slides/classification_tree2_original_fa26.pdf)   |    | [Notebook](python/fa23/tree_classification.html)           |  [Assignment 2](assignments/assignment2_fa26.html) <br>  [Assignment 3](assignments/assignment3_fa26.html)     |[Exam 1's Practice](exams/Exam1/Exam1_fall24_practice_problem.pdf)|
+|Regression Trees| Note |  | [Notebook](python/fa23/tree_regression.html)   | [Assignment 4](assignments/assignment4_fa26.html)   | |  
+| Random Forest                 | [Slides](slides/rf.pdf), [Forest vs. Trees](python/fa26/forest_vs_tree.html)    |   |[Classification](python/fa23/rf_classification.html), <br> [Regression](python/fa23/rf_regression.html)|||
+| Ensemble Method  | [Slide](gganimate/boosting3.html) ||     |   ||
+| Adaboost| [Classification](gganimate/adaboost.html), [Note](gganimate/Adaboost_fa26.pdf) <br> [Regression](python/fa26/adaboost/adaboost_regression_claude.html)||[Learning Rate](python/fa26/adaboost_demonstrate_fa26.html), [Classification](python/fa23/adaboost_classification.html), <br> [Regression](python/fa23/adaboost_regression.html)  | ||  
+| Gradient Boosting             |Note, Lecture Video            |        | Classification, <br> Regression       |   Assignment 5   |[Exam 2's Practice](exams/Exam2/Exam2_sol.html)|
+|Hand-Written Recognition|  | | Forest, Notebook | Assignment 6 |  |
+|**Part 2. Linear Models and Neral Networks**|  | |  | || 
+| Linear Models and LASSO       |Note|     |Regression<br> Classification|    |  |
+| Neural Network|   Notes           |     |        |   Assignment 7         | |     
+| Deep Learning | Slides  |     |Codes|  ||  
+Image Recognition| | | Codes  |Assignment 8  |  |
+|**Part 3. KNN and Recommendation System**|  | |  | ||
+|KNN| 1 | | Notebook | ||
+| Recommendation System         | 1, 2             | |       | Assignment 9           | Exam 3| 
+|**Part 4. Large Language Models**|  | |  | ||
+| | Notes    ||  Small LLM    |     ||
+| |    ||  Large LLM    |   Assignment    ||
+| **Final Project**| Project |        |              |       | |
+| | Final Project Presentation |        |              |       | |

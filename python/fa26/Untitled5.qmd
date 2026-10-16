@@ -1,0 +1,131 @@
+---
+title: "AdaBoost for Regression (AdaBoost.R2)"
+subtitle: "3-Round Case Study: U-Shaped Data"
+format:
+  revealjs:
+    theme: default
+    transition: slide
+    slide-number: true
+    mathjax: true
+    fig-align: center
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+## 1. Calculating Stump Confidence
+
+In round $t$, we train a stump and calculate its error to determine its weight $W_t$.
+
+**Step A: Relative Loss ($L_{t,i}$)**
+Scale the absolute error against the maximum absolute error $D_t$:
+$$ D_t = \max_{i} |y_i - \hat{y}_{t,i}| \quad \Rightarrow \quad L_{t,i} = \frac{|y_i - \hat{y}_{t,i}|}{D_t} $$
+
+**Step B: Average Loss ($\bar{L}_t$)**
+Sum the relative losses, weighted by current data point weights $w_{t,i}$:
+$$ \bar{L}_t = \sum_{i=1}^N w_{t,i} L_{t,i} $$
+
+---
+
+## 1. Calculating Stump Confidence (Cont.)
+
+**Step C: Stump Confidence ($\beta_t$) & Weight ($W_t$)**
+Calculate the confidence factor $\beta_t$. 
+$$ \beta_t = \frac{\bar{L}_t}{1 - \bar{L}_t} $$
+
+The final weight given to this stump's prediction in the ensemble is:
+$$ W_t = \ln\left(\frac{1}{\beta_t}\right) $$
+
+---
+
+## 2. Updating Data Point Weights
+
+After round $t$, we update the weight of each data point so the next stump focuses on the largest errors.
+
+$$ w_{t+1,i} = \frac{w_{t,i} \cdot \beta_t^{(1 - L_{t,i})}}{Z_t} $$
+
+- **High Error ($L_{t,i} \approx 1$):** Exponent is 0. Since $\beta^0 = 1$, the point retains its full weight.
+- **Low Error ($L_{t,i} \approx 0$):** Exponent is 1. The point's weight is multiplied by $\beta_t < 1$, down-weighting it.
+- **$Z_t$:** Normalization factor ensuring weights sum to 1.
+
+---
+
+## 3. The Final Model (Weighted Median)
+
+To predict an input $X$ after $T$ rounds:
+
+1. Get prediction $\hat{y}_t(X)$ from every stump.
+2. Sort predictions from lowest to highest.
+3. Accumulate their corresponding stump weights $W_t$.
+4. The final prediction is the smallest $\hat{y}$ where the cumulative weight crosses 50% of the total sum of weights:
+
+$$ \hat{y}_{final}(X) = \inf \left\{ y \in Y : \sum_{t:\hat{y}_t(X) \le y} W_t \ge \frac{1}{2} \sum_{t=1}^T W_t \right\} $$
+
+---
+
+## Setup: Initialization & Helper Code
+
+Let's evaluate a 5-point U-shaped dataset: $X = [1, 2, 3, 4, 5]$, $y = [8, 3, 2, 4, 9]$.
+Initial weights are equal: $w_{1,i} = 0.2$.
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from IPython.display import Markdown
+
+# Initialize Dataset
+X = np.array([1, 2, 3, 4, 5]).reshape(-1, 1)
+y = np.array([8.0, 3.0, 2.0, 4.0, 9.0])
+N = len(y)
+w = np.ones(N) / N
+X_plot = np.linspace(0.5, 5.5, 200).reshape(-1, 1)
+
+# Storage for rounds
+stumps = []
+stump_weights = []
+preds_train = []
+preds_plot = []
+round_stats = []
+
+# Run 3 Rounds of AdaBoost.R2 manually for exact calculations
+for t in range(3):
+    # Train stump
+    stump = DecisionTreeRegressor(max_depth=1)
+    stump.fit(X, y, sample_weight=w)
+    pred = stump.predict(X)
+    
+    # Calculate errors and weights
+    abs_err = np.abs(y - pred)
+    D_t = np.max(abs_err)
+    L_t = abs_err / D_t
+    L_bar = np.sum(w * L_t)
+    beta = L_bar / (1 - L_bar)
+    W_t = np.log(1 / beta)
+    
+    # Store round data
+    stumps.append(stump)
+    stump_weights.append(W_t)
+    preds_train.append(pred)
+    preds_plot.append(stump.predict(X_plot))
+    
+    # Calculate next weights
+    w_next = w * (beta ** (1 - L_t))
+    Z_t = np.sum(w_next)
+    w_next = w_next / Z_t
+    
+    # Save stats for display
+    df = pd.DataFrame({
+        'X': X.flatten(),
+        'y': y,
+        'Weight (w)': np.round(w, 3),
+        'Pred': np.round(pred, 2),
+        'Loss (L)': np.round(L_t, 3),
+        'Next w': np.round(w_next, 3)
+    })
+    round_stats.append((D_t, L_bar, beta, W_t, df))
+    
+    # Update weights for next iteration
+    w = w_next

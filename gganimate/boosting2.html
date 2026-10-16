@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title> gganimate - Revealing</title>
+    <meta charset="utf-8" />
+    <meta name="author" content=" Son Nguyen" />
+    <meta name="date" content="2020-09-28" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# <img src="figures/bat-cartoon.png" /> gganimate - Revealing
+### <font size="5"> Son Nguyen </font>
+### <font size="5"> September 28, 2020 </font>
+
+---
+
+
+&lt;style&gt;
+
+.remark-slide-content {
+  background-color: #FFFFFF;
+  border-top: 80px solid #F9C389;
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 1em 2em 1em 2em
+}
+
+.inverse {
+  background-color: #696767;
+  border-top: 80px solid #696767;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 50% 75%;
+  background-size: 150px;
+}
+
+.your-turn{
+  background-color: #8C7E95;
+  border-top: 80px solid #F9C389;
+  text-shadow: none;
+  background-image: url(https://github.com/goodekat/presentations/blob/master/2019-isugg-gganimate-spooky/figures/spider.png?raw=true);
+	background-position: 95% 90%;
+  background-size: 75px;
+}
+
+.title-slide {
+  background-color: #F9C389;
+  border-top: 80px solid #F9C389;
+  background-image: none;
+}
+
+.title-slide &gt; h1  {
+  color: #111111;
+  font-size: 40px;
+  text-shadow: none;
+  font-weight: 400;
+  text-align: left;
+  margin-left: 15px;
+  padding-top: 80px;
+}
+.title-slide &gt; h2  {
+  margin-top: -25px;
+  padding-bottom: -20px;
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 35px;
+  text-align: left;
+  margin-left: 15px;
+}
+.title-slide &gt; h3  {
+  color: #111111;
+  text-shadow: none;
+  font-weight: 300;
+  font-size: 25px;
+  text-align: left;
+  margin-left: 15px;
+  margin-bottom: -30px;
+}
+
+&lt;/style&gt;
+
+&lt;style type="text/css"&gt;
+.left-code {
+  color: #777;
+  width: 40%;
+  height: 92%;
+  float: left;
+}
+.right-plot {
+  width: 59%;
+  float: right;
+  padding-left: 1%;
+}
+&lt;/style&gt;
+
+---
+# Ensemble Method and Boosting
+
+author: Son Nguyen
+font-family: Garamond
+transition: none
+
+---
+# Netflix Prize
+
+- **The winning team:** 
+
+
+---
+# Netflix Prize
+
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+---
+# Netflix Prize
+
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+- **The second-place team's name** is...
+
+---
+# Netflix Prize
+
+- **The winning team:** "During the nearly 3 years of the Netflix competition, there were two main factors which improved the
+overall accuracy: The quality of the individual algorithms and the **ensemble idea**"
+
+- **The second-place team's name** is "The Ensemble"
+
+---
+# Boosting Success
+
+&gt; "XGBoost is an algorithm that has recently been dominating applied machine learning and Kaggle competitions for structured or tabular data." [Link](https://machinelearningmastery.com/gentle-introduction-xgboost-applied-machine-learning/)
+
+---
+# Boosting Success
+
+&gt; Adaboost won 2003 **Godel Prize**: AdaBoost demonstrated novel possibilities in analysing data and is a permanent contribution to science even beyond computer science. [Link](http://eatcs.org/index.php/component/content/article/505)
+
+---
+# Boosting Success
+
+&gt;AdaBoost (with decision trees as the weak learners) is often referred to as the best out-of-the-box classifier.  [Link](https://en.wikipedia.org/wiki/AdaBoost)
+
+---
+# Boosting Success
+
+&gt; Leo Brieman, who invented "Bagging" and "Random Forest" crowned AdaBoost the "best off-the-shelf classifier in the world (2000). 
+
+
+---
+# Ensemble Machine Learning Approach
+
+- An ensemble is a composite model, combining a series of low performing **classifiers**(classification models) or **learners** with the aim of creating an improved classifier.
+    
+---
+# Ensemble Machine Learning Approach
+
+- An ensemble is a composite model, combining a series of low performing **classifiers**(classification models) or **learners** with the aim of creating an improved classifier.
+
+- Three common ensemble:
+
+    - Bagging
+    - Boosting
+    - Stacking
+
+---
+# Stacking
+
+- Stacking combines multiple base learners  predictions into a new data set. 
+
+- This new data are treated as the **input data** for another learner (meta learner).
+
+![](images/b3.png)
+
+---
+# Bagging
+
+Bagging  = Bootstrap Aggregating
+
+- Step 1:  Boostrapping
+
+![](images/ba1.png)
+
+---
+# Bagging 
+
+- Step 2: Aggregating  
+
+![](images/ba2.png)
+
+---
+# Boosting 
+
+- Boosting converts a series of weak learners, sequentially, into a strong learner. 
+- Each leaner in the sequence tries to correct its predecessor. 
+
+![](images/bo1.png)
+
+- Individually, Learn 1, Learner 2 and Learner 3 are **weak leaners** (a little better than a coin toss). 
+
+- The leaners are usually a tree with 2 leaves (**Stump**).
+
+- In D2, the wrong misclassified of Learner 1 gets higher weights. 
+
+- In D3, the wrong misclassified of Learner 2 gets higher weights. 
+
+---
+# Boosting 
+
+![](images/bo3.png)
+
+
+---
+# Bagging vs. Boosting
+
+![](images/b1.png)
+
+---
+# Bagging vs. Boosting
+
+![](images/b2.png)
+
+---
+# Types of Boosting
+
+- Adaboost
+
+- Gradient Boosting
+
+---
+# Adaboost
+
+![](images/bo4.png)
+
+---
+# Adaboost
+
+![](images/bo5.png)
+
+---
+# Adaboost, Clearly Explained
+
+
+- Demonstration by StatQuest
+- [Link](https://www.youtube.com/watch?v=LsK-xG1cLYA)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"slideNumberFormat": "<div class=\"progress-bar-container\">   <div class=\"progress-bar\" style=\"width: calc(%current% / %total% * 100%);\">   </div> </div>`"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
