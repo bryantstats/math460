@@ -16,10 +16,10 @@
 |Regression Trees| Note |  | [Notebook](python/fa23/tree_regression.html)   | [Assignment 4](assignments/assignment4_fa26.html)   | |  
 | Random Forest                 | [Slides](slides/rf.pdf), [Forest vs. Trees](python/fa26/forest_vs_tree.html)    |   |[Classification](python/fa23/rf_classification.html), <br> [Regression](python/fa23/rf_regression.html)|||
 | Ensemble Method  | [Slide](gganimate/boosting3.html) ||     |   ||
-| Adaboost| [Classification](gganimate/adaboost.html), [Note](gganimate/Adaboost_fa26.pdf) <br> [Regression](python/fa26/adaboost/adaboost_regression_claude.html)||[Learning Rate](python/fa26/adaboost_demonstrate_fa26.html) <br> [Classification](python/fa23/adaboost_classification.html) <br> [Regression](python/fa23/adaboost_regression.html)  | ||  
+| Adaboost| [Classification](gganimate/adaboost.html) <br> [Note](gganimate/Adaboost_fa26.pdf) <br> [Regression](python/fa26/adaboost/adaboost_regression_claude.html)||[Learning Rate](python/fa26/adaboost_demonstrate_fa26.html) <br> [Classification](python/fa23/adaboost_classification.html) <br> [Regression](python/fa23/adaboost_regression.html)  | ||  
 | Gradient Boosting             |Note            |        | Classification, <br> Regression       |   [Assignment 5](assignments/assignment5_fa25.html)   |[Exam 2's Practice](exams/Exam2/Exam2_sol.html)|
 |Hand-Written Recognition|  | | [Forest](python/digits/fa23/image_recognition_rf.html) | [Assignment 6](assignments/assignment6_fa23.html) |  |
-|**Part 2. Linear Models and Neral Networks**|  | |  | || 
+|**Part 2. Linear Models and Neural Networks**|  | |  | || 
 | Linear Models and LASSO       |Note|     |Regression<br> Classification|    |  |
 | Neural Network|   Notes           |     |        |   Assignment 7         | |     
 | Deep Learning | Slides  |     |Codes|  ||  
