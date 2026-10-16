@@ -1,0 +1,250 @@
+---
+title: "AdaBoost for Regression (AdaBoost.R2)"
+subtitle: "A Step-by-Step Visual & Mathematical Guide"
+author: "Generated with Quarto"
+format:
+  revealjs:
+    theme: default
+    transition: slide
+    slide-number: true
+    chalkboard: true
+    mathjax: true
+    fig-align: center
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+## The Core Concept
+
+AdaBoost.R2 extends the classic AdaBoost classification algorithm to continuous regression problems.
+
+- **Weak Learners:** We typically use decision tree stumps (trees with a maximum depth of 1).
+- **Sequential Focus:** Each new stump focuses on the data points that the previous stumps predicted poorly.
+- **Weighted Aggregation:** The final prediction is not a simple average, but a **weighted median** of all the individual stump predictions.
+
+---
+
+## 1. Calculating Stump Confidence
+In round $t$, we train a stump and calculate its error on the dataset to determine its weight $W_t$.
+
+**Step A: Relative Loss ($L_{t,i}$)**
+For each data point $i$, we scale the absolute error against the maximum absolute error $D_t$ made by the stump:
+$$ D_t = \max_{i} |y_i - \hat{y}_{t,i}| \quad \Rightarrow \quad L_{t,i} = \frac{|y_i - \hat{y}_{t,i}|}{D_t} $$
+
+**Step B: Average Loss ($\bar{L}_t$)**
+Sum the relative losses, weighted by the current data point weights $w_{t,i}$:
+$$ \bar{L}_t = \sum_{i=1}^N w_{t,i} L_{t,i} $$
+
+---
+
+## 1. Calculating Stump Confidence (Cont.)
+
+**Step C: Stump Confidence ($\beta_t$) & Weight ($W_t$)**
+Calculate the confidence factor $\beta_t$. A lower error yields a lower $\beta_t$.
+$$ \beta_t = \frac{\bar{L}_t}{1 - \bar{L}_t} $$
+
+The final weight given to this stump's prediction in the ensemble is:
+$$ W_t = \ln\left(\frac{1}{\beta_t}\right) $$
+*(If $\bar{L}_t \ge 0.5$, the algorithm stops early because the stump is worse than guessing).*
+
+---
+
+## 2. Updating Data Point Weights
+
+After round $t$, we update the weight of each data point so the next stump focuses on the largest errors.
+
+$$ w_{t+1,i} = \frac{w_{t,i} \cdot \beta_t^{(1 - L_{t,i})}}{Z_t} $$
+
+- **High Error ($L_{t,i} \approx 1$):** The exponent becomes 0. Since $\beta^0 = 1$, the point retains its full weight.
+- **Low Error ($L_{t,i} \approx 0$):** The exponent becomes 1. The point's weight is multiplied by $\beta_t < 1$, effectively down-weighting it.
+- **$Z_t$:** A normalization factor ensuring all weights sum to 1.
+
+---
+
+## 3. The Final Model (Weighted Median)
+
+Once all $T$ stumps are trained, how do we make a new prediction for an input $X$?
+
+1. Get the prediction $\hat{y}_t(X)$ from every stump.
+2. Sort these predictions from lowest to highest.
+3. Accumulate their corresponding stump weights $W_t$.
+4. The final prediction is the smallest $\hat{y}$ where the cumulative weight crosses 50% of the total sum of weights:
+
+$$ \hat{y}_{final}(X) = \inf \left\{ y \in Y : \sum_{t:\hat{y}_t(X) \le y} W_t \ge \frac{1}{2} \sum_{t=1}^T W_t \right\} $$
+
+This median approach makes the ensemble highly robust to outlier predictions.
+
+---
+
+## Step-by-Step Example: Initialization
+Let's use a small 6-point dataset. Initially, all points have equal weight ($w_{1,i} = 1/6 \approx 0.167$).
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from IPython.display import Markdown
+
+# Create the dataset
+X = np.array([1, 2, 3, 4, 5, 6]).reshape(-1, 1)
+y = np.array([1.0, 1.2, 1.5, 4.0, 4.2, 3.8])
+N = len(y)
+w1 = np.ones(N) / N
+
+plt.figure(figsize=(8, 4))
+plt.scatter(X, y, color='black', s=w1 * 1000, label='Data (Size = Weight)')
+plt.xlim(0, 7)
+plt.ylim(0, 5)
+plt.xlabel("X")
+plt.ylabel("y")
+plt.legend()
+plt.title("Initial Data (Equal Weights)")
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+```
+
+---
+
+## Round 1: Training the First Stump
+Stump 1 minimizes error across all equally weighted points.
+
+```{python}
+stump1 = DecisionTreeRegressor(max_depth=1)
+stump1.fit(X, y, sample_weight=w1)
+pred1 = stump1.predict(X)
+
+X_plot = np.linspace(0, 7, 200).reshape(-1, 1)
+pred1_plot = stump1.predict(X_plot)
+
+plt.figure(figsize=(8, 4))
+plt.scatter(X, y, color='black', s=w1 * 1000)
+plt.plot(X_plot, pred1_plot, color='red', linewidth=3, label='Stump 1')
+for i in range(N):
+    plt.plot([X[i][0], X[i][0]], [y[i], pred1[i]], 'r--', alpha=0.5)
+plt.xlim(0, 7)
+plt.ylim(0, 5)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+```
+
+---
+
+## Round 1: The Calculations
+
+```{python}
+# Calculate math for Round 1
+abs_err1 = np.abs(y - pred1)
+D1 = np.max(abs_err1)
+L1 = abs_err1 / D1
+L_bar1 = np.sum(w1 * L1)
+beta1 = L_bar1 / (1 - L_bar1)
+W1 = np.log(1 / beta1)
+
+# Format for display
+df1 = pd.DataFrame({
+    'X': X.flatten(),
+    'y': y,
+    'Init w': np.round(w1, 3),
+    'Pred': np.round(pred1, 2),
+    'Abs Err': np.round(abs_err1, 2),
+    'Rel Loss (L)': np.round(L1, 3)
+})
+
+Markdown(f"""
+- **Max Error ($D_1$):** {D1:.2f}
+- **Average Loss ($\bar{{L}}_1$):** {L_bar1:.3f}
+- **Confidence ($\beta_1$):** {beta1:.3f}
+- **Stump Weight ($W_1$):** {W1:.3f}
+
+{df1.to_markdown(index=False)}
+""")
+```
+
+---
+
+## Round 2: Updating Data Weights
+Points with higher relative loss keep their weight; points with low loss are penalized by $\beta_1$. We then normalize ($Z_1$).
+
+```{python}
+# Update weights
+w2 = w1 * (beta1 ** (1 - L1))
+Z1 = np.sum(w2)
+w2_norm = w2 / Z1
+
+df2 = pd.DataFrame({
+    'X': X.flatten(),
+    'Rel Loss (L)': np.round(L1, 3),
+    'Power (1-L)': np.round(1-L1, 3),
+    'Factor (β^(1-L))': np.round(beta1**(1-L1), 3),
+    'New w (w2)': np.round(w2_norm, 3)
+})
+
+Markdown(df2.to_markdown(index=False))
+```
+
+---
+
+## Round 2: Visualizing the New Weights
+Notice how points 4, 5, and 6 (which Stump 1 predicted perfectly) have shrunk in weight. Points 1, 2, and 3 now dominate.
+
+```{python}
+plt.figure(figsize=(8, 4))
+plt.scatter(X, y, color='black', s=w2_norm * 3000, label='Data (Size = New w2)')
+plt.xlim(0, 7)
+plt.ylim(0, 5)
+plt.xlabel("X")
+plt.ylabel("y")
+plt.legend()
+plt.title("Updated Data Weights for Round 2")
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+```
+
+---
+
+## Round 2: Training the Second Stump
+Because points 1, 2, and 3 have massive weight, Stump 2 shifts its split entirely to reduce their error.
+
+```{python}
+stump2 = DecisionTreeRegressor(max_depth=1)
+stump2.fit(X, y, sample_weight=w2_norm)
+pred2_plot = stump2.predict(X_plot)
+
+plt.figure(figsize=(8, 4))
+plt.scatter(X, y, color='black', s=w2_norm * 3000)
+plt.plot(X_plot, pred2_plot, color='green', linewidth=3, label='Stump 2')
+plt.xlim(0, 7)
+plt.ylim(0, 5)
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+```
+
+---
+
+## The Final Ensemble Model
+By combining dozens of these weighted stumps using the median formula, AdaBoost builds a highly robust, non-linear regression boundary.
+
+```{python}
+from sklearn.ensemble import AdaBoostRegressor
+
+ada_final = AdaBoostRegressor(estimator=DecisionTreeRegressor(max_depth=1), n_estimators=10, random_state=42)
+ada_final.fit(X, y)
+pred_final_plot = ada_final.predict(X_plot)
+
+plt.figure(figsize=(9, 5))
+plt.scatter(X, y, color='black', s=100, label='Original Data')
+plt.plot(X_plot, pred1_plot, color='red', alpha=0.2, linewidth=2, label='Stump 1')
+plt.plot(X_plot, pred2_plot, color='green', alpha=0.2, linewidth=2, label='Stump 2')
+plt.plot(X_plot, pred_final_plot, color='purple', linewidth=4, label='Final AdaBoost Model')
+plt.xlim(0, 7)
+plt.ylim(0, 5)
+plt.legend()
+plt.title("Final Model (Combined Stumps)")
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+```

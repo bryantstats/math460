@@ -1,0 +1,327 @@
+---
+title: "Interactive AdaBoost"
+subtitle: "Turning Weak Stumps into an Unstoppable Committee"
+author: "Machine Learning Foundations"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    chalkboard: true
+    code-line-numbers: true
+    transition: slide
+    fig-align: center
+    scrollable: true
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## Cold Open: A Riddle for the Room {background-color="#0f172a"}
+
+::: {.incremental}
+- Suppose you assemble a committee of **50 students**.
+- Every single student is a **terrible predictor**—they only get questions right **51% of the time** (barely better than a coin flip).
+- **The Question:** Can you combine their votes to build a system that is **99.9% accurate**?
+- **The Answer of Boosting:** *Yes.* If their errors are slightly decorrelated, weak consensus compounds exponentially into near certainty.
+:::
+
+---
+
+## The Core Problem: Linearly Inseparable Data
+
+A single straight line cannot separate this dataset.
+
+```{python}
+#| echo: false
+#| fig-width: 6.5
+#| fig-height: 3.8
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Fixed toy dataset for easy visual tracking
+X = np.array([
+    [1.0, 2.0], [2.0, 3.5], [3.0, 1.5], [4.0, 4.0],
+    [5.0, 2.5], [6.0, 4.5], [7.0, 2.0], [8.0, 3.5]
+])
+y = np.array([-1, -1, -1, 1, -1, 1, 1, 1])
+
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+ax.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=120, edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=120, edgecolors='#0369a1', lw=1.5, label='Class +1')
+ax.set_title("How do we classify this without a complex neural net?", fontsize=11, fontweight='bold')
+ax.set_xlabel("Feature $x_1$")
+ax.set_ylabel("Feature $x_2$")
+ax.legend(frameon=True, loc='upper left')
+ax.grid(True, linestyle='--', alpha=0.5)
+plt.tight_layout()
+plt.show()
+```
+
+Instead of building a deep, complicated model, AdaBoost strings together the **simplest classifier possible**.
+
+---
+
+## Meet the Weak Learner: The Decision Stump
+
+A **Decision Stump** is a tree with depth = 1: one feature, one threshold cut.
+
+$$h(x) = \text{polarity} \times \text{sign}(x_j - \theta)$$
+
+```{python}
+#| echo: false
+#| fig-width: 7
+#| fig-height: 3.5
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=120, edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=120, edgecolors='#0369a1', lw=1.5, label='Class +1')
+
+# Stump cut at x1 = 3.5
+ax.axvline(x=3.5, color='#0f172a', linestyle='--', lw=2.5, label='Stump Cut: $x_1 = 3.5$')
+ax.axvspan(0, 3.5, alpha=0.1, color='#ef4444')
+ax.axvspan(3.5, 9, alpha=0.1, color='#0284c7')
+
+# Highlight mistake point (5.0, 2.5) which is -1 but sits in +1 region
+ax.scatter([5.0], [2.5], s=250, facecolors='none', edgecolors='#f59e0b', lw=3, label='Mistake!')
+
+ax.set_title("Round 1 Stump: Makes 1 mistake out of 8 points", fontsize=11)
+ax.set_xlim(0, 9)
+ax.set_ylim(0.5, 5.5)
+ax.legend(frameon=True, loc='upper left', fontsize=8)
+ax.grid(True, linestyle='--', alpha=0.4)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Step 1: Initial Sample Weights $w_i$
+
+Every data point starts with equal importance:
+
+$$w_i^{(1)} = \frac{1}{N} = \frac{1}{8} = 0.125$$
+
+```{python}
+#| echo: true
+N = len(X)
+w = np.full(N, 1.0 / N)
+
+print(f"Sample weights array: {np.round(w, 3)}")
+assert np.isclose(np.sum(w), 1.0), "Weights must sum to 1.0"
+```
+
+::: {.callout-tip}
+### Intuition
+No data instance is special on day 1. Special attention is earned only when a learner gets it wrong.
+:::
+
+---
+
+## Step 2: Weighted Error Rate $\epsilon_t$
+
+The error of stump $h_t$ is the **sum of weights** of the points it got wrong:
+
+$$\epsilon_t = \sum_{i: y_i \neq h_t(x_i)} w_i^{(t)}$$
+
+```{python}
+#| echo: true
+# Suppose Stump 1 predicts +1 for x1 > 3.5 and -1 otherwise
+preds = np.where(X[:, 0] > 3.5, 1, -1)
+misclassified = (preds != y)
+
+error = np.sum(w[misclassified])
+print(f"Indices misclassified: {np.where(misclassified)[0]}")
+print(f"Weighted error epsilon_1: {error:.3f}")
+```
+
+Condition: As long as $\epsilon_t < 0.5$, this learner beats a random guess.
+
+---
+
+## Step 3: Learner Voting Power $\alpha_t$
+
+How much authority does Stump $t$ get in the final committee vote?
+
+$$\alpha_t = \frac{1}{2} \ln\left( \frac{1 - \epsilon_t}{\epsilon_t} \right)$$
+
+```{python}
+#| echo: false
+#| fig-width: 7.5
+#| fig-height: 3.4
+eps = np.linspace(0.01, 0.99, 400)
+alpha_curve = 0.5 * np.log((1.0 - eps) / eps)
+
+fig, ax = plt.subplots(figsize=(7, 3.4))
+ax.plot(eps, alpha_curve, color='#0284c7', lw=2.5)
+ax.axhline(0, color='gray', linestyle=':')
+ax.axvline(0.5, color='#ef4444', linestyle='--', label=r'Random Guess: $\epsilon = 0.5 \Rightarrow \alpha = 0$')
+
+# Plot our Stump 1
+alpha_stump1 = 0.5 * np.log((1 - error) / error)
+ax.scatter([error], [alpha_stump1], color='#16a34a', s=120, zorder=5, label=f'Our Stump 1 (ε={error:.2f}, α={alpha_stump1:.2f})')
+
+ax.set_title(r"Voting Weight $\alpha_t$ vs. Error Rate $\epsilon_t$", fontsize=11)
+ax.set_xlabel(r"Error $\epsilon_t$")
+ax.set_ylabel(r"Voting Power $\alpha_t$")
+ax.grid(True, linestyle='--', alpha=0.4)
+ax.legend(frameon=True)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Brain Teaser: What If a Student Gets 100% Wrong? {background-color="#f8fafc"}
+
+::: {.incremental}
+- What happens if someone submits a classifier with $\epsilon = 1.0$ (0% accuracy)?
+- Looking at the equation:
+  $$\alpha = \frac{1}{2}\ln\left(\frac{1 - 1.0}{1.0}\right) \to -\infty$$
+- **The Takeaway:** A classifier that is *always wrong* is just as informative as one that is always right!
+- Invert its vote ($-\alpha$) and it becomes a perfect predictor. The only truly useless classifier is $\epsilon = 0.5$ ($\alpha = 0$).
+:::
+
+---
+
+## Step 4: The Visual Weight Update Rule
+
+Samples that were misclassified have their weights **boosted**:
+
+$$w_i^{(t+1)} = \frac{w_i^{(t)} \exp\left(-\alpha_t y_i h_t(x_i)\right)}{Z_t}$$
+
+```{python}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 3.8
+# Update weights
+w_next = w * np.exp(-alpha_stump1 * y * preds)
+w_next /= np.sum(w_next)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3.8))
+
+# Before reweighting (sizes masked to match filtered points)
+ax1.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=w[y==-1]*2000, edgecolors='#991b1b', lw=1.5)
+ax1.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=w[y==1]*2000, edgecolors='#0369a1', lw=1.5)
+ax1.axvline(3.5, color='#0f172a', linestyle='--', lw=2)
+ax1.set_title("Round 1: Equal Weights", fontsize=10, fontweight='bold')
+ax1.grid(True, linestyle='--', alpha=0.4)
+
+# After reweighting (sizes masked to match filtered points)
+ax2.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=w_next[y==-1]*2000, edgecolors='#991b1b', lw=1.5)
+ax2.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=w_next[y==1]*2000, edgecolors='#0369a1', lw=1.5)
+ax2.set_title("Round 2: Mistake Bubble Explodes!", fontsize=10, fontweight='bold', color='#b91c1c')
+ax2.grid(True, linestyle='--', alpha=0.4)
+
+plt.tight_layout()
+plt.show()
+```
+
+Point 5 misclassified $\Rightarrow$ its weight jumps from **$0.125 \to 0.467$**!
+
+---
+
+## Complete 12-Line Python Training Loop
+
+Here is the exact NumPy code that fits subsequent rounds:
+
+```{python}
+class SimpleStump:
+    def __init__(self, feat, thresh, polarity):
+        self.feat, self.thresh, self.polarity = feat, thresh, polarity
+    def predict(self, X):
+        return np.where(self.polarity * (X[:, self.feat] - self.thresh) >= 0, 1, -1)
+
+# Fit Round 2 and Round 3 manually to illustrate
+stump2 = SimpleStump(feat=1, thresh=3.0, polarity=1)
+preds2 = stump2.predict(X)
+eps2 = np.sum(w_next[preds2 != y])
+alpha2 = 0.5 * np.log((1 - eps2) / max(eps2, 1e-10))
+
+print(f"Stump 2 Error on new weights: {eps2:.3f}")
+print(f"Stump 2 Voting Power Alpha:   {alpha2:.3f}")
+```
+
+---
+
+## The Finale: The Ensemble Decision Boundary
+
+Every stump votes with weight $\alpha_t$. The sign gives the final prediction:
+
+$$H(x) = \text{sign}\left( \sum_{t=1}^T \alpha_t h_t(x) \right)$$
+
+```{python}
+#| echo: false
+#| fig-width: 7
+#| fig-height: 3.8
+# Create a 2D mesh to visualize the committee boundary
+xx, yy = np.meshgrid(np.linspace(0, 9, 200), np.linspace(0.5, 5.5, 200))
+grid = np.c_[xx.ravel(), yy.ravel()]
+
+# Stump 1
+h1_grid = np.where(grid[:, 0] > 3.5, 1, -1)
+# Stump 2
+h2_grid = np.where(grid[:, 1] > 3.0, 1, -1)
+# Stump 3
+h3_grid = np.where(grid[:, 0] > 1.5, 1, -1)
+alpha3 = 0.85
+
+# Sum weighted votes
+committee_votes = alpha_stump1 * h1_grid + alpha2 * h2_grid + alpha3 * h3_grid
+Z = np.sign(committee_votes).reshape(xx.shape)
+
+fig, ax = plt.subplots(figsize=(7, 3.8))
+ax.contourf(xx, yy, Z, levels=[-1, 0, 1], alpha=0.2, colors=['#ef4444', '#0284c7'])
+ax.contour(xx, yy, Z, levels=[0], colors='#0f172a', linewidths=2.5)
+ax.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=120, edgecolors='#991b1b', lw=1.5, label='Class -1')
+ax.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=120, edgecolors='#0369a1', lw=1.5, label='Class +1')
+ax.set_title("Combined Committee: Non-Linear Boundary from 1D Cuts!", fontsize=11, fontweight='bold')
+ax.legend(frameon=True, loc='upper left')
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Sabotage Challenge: Breaking AdaBoost {background-color="#fef2f2"}
+
+::: {.columns}
+
+::: {.column width="50%"}
+### The Vulnerability
+What happens if we add **one mislabeled outlier** into the corner of the dataset?
+
+Because the sample weight formula is **exponential**:
+$$w \propto \exp(\alpha)$$
+
+AdaBoost will multiply the outlier's weight endlessly until the entire committee becomes obsessed with fitting noise!
+:::
+
+::: {.column width="50%"}
+```{python}
+#| echo: false
+#| fig-width: 4.8
+#| fig-height: 4
+fig, ax = plt.subplots(figsize=(4.8, 4))
+ax.scatter(X[y==-1, 0], X[y==-1, 1], color='#ef4444', s=80)
+ax.scatter(X[y==1, 0], X[y==1, 1], color='#0284c7', s=80)
+# Corrupted Outlier
+ax.scatter([8.0], [1.0], color='#ef4444', s=280, marker='X', label='Noisy Outlier (-1 in +1 zone)')
+ax.set_title("Outlier forces weight explosion", fontsize=10)
+ax.legend(frameon=True, fontsize=8)
+ax.grid(True, linestyle='--', alpha=0.4)
+plt.tight_layout()
+plt.show()
+```
+:::
+
+::::
+
+---
+
+## 3 Core Rules to Remember {background-color="#0f172a"}
+
+::: {.incremental}
+1. **Weight the Samples:** Hard samples get larger weights; easy samples shrink.
+2. **Weight the Learners:** Accurate classifiers get massive voting authority $\alpha$; random guessers get zero.
+3. **Compound by Majority:** The final prediction is a weighted linear sum of weak hypotheses passed through a sign function.
+:::

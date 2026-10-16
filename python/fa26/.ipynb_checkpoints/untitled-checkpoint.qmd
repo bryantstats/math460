@@ -1,0 +1,244 @@
+---
+title: "Foundations of AdaBoost"
+subtitle: "From Decision Stumps to Strong Classifiers"
+author: "Mathematical Machine Learning"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    code-line-numbers: true
+    chalkboard: true
+    transition: slide
+    fig-align: center
+    embed-resources: true
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## The Core Boosting Intuition
+
+Boosting builds an ensemble sequentially rather than in parallel.
+
+::: {.incremental}
+- **Iterative Refinement:** Each base learner specializes in fixing the errors of the preceding ensemble.
+- **Reweighting:** Difficult training samples accumulate larger weights; correctly classified samples have their weights discounted.
+- **Weighted Majority Vote:** Learners with low weighted training error receive higher voting weight ($\alpha_t$) in the final decision.
+:::
+
+---
+
+## The Decision Stump
+
+The standard weak learner for AdaBoost is a **decision stump**: an axis-aligned single-threshold split.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+For feature vector $x \in \mathbb{R}^d$, a stump is defined by a coordinate index $j$, a threshold $\theta$, and a polarity $s \in \{-1, +1\}$:
+
+$$h(x) = s \cdot \text{sign}(x_j - \theta)$$
+
+A stump cannot capture complex boundaries alone, but it guarantees an error rate $\epsilon_t < 0.5$ under mild conditions.
+:::
+
+::: {.column width="50%"}
+```{python}
+#| echo: false
+#| fig-width: 5
+#| fig-height: 4
+import matplotlib.pyplot as plt
+import numpy as np
+
+np.random.seed(42)
+X = np.array([[1, 2], [2, 3], [3, 1], [4, 4], [5, 2], [6, 5], [7, 3], [8, 4]])
+y = np.array([-1, -1, -1, 1, -1, 1, 1, 1])
+
+plt.figure(figsize=(5, 4))
+plt.scatter(X[y==-1, 0], X[y==-1, 1], color='#e74c3c', s=100, label='-1', edgecolors='k')
+plt.scatter(X[y==1, 0], X[y==1, 1], color='#2ecc71', s=100, label='+1', edgecolors='k')
+plt.axvline(x=3.5, color='#2c3e50', linestyle='--', linewidth=2, label='Split: $x_1 = 3.5$')
+plt.title("Depth-1 Decision Stump", fontsize=11)
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.legend(frameon=True, fontsize=8)
+plt.tight_layout()
+plt.show()
+```
+:::
+
+::::
+
+---
+
+## AdaBoost Algorithm: Step-by-Step
+
+Let the training dataset be $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N$ with labels $y_i \in \{-1, +1\}$.
+
+1. **Initialize Sample Weights:**
+   $$w_i^{(1)} = \frac{1}{N}, \quad \forall i \in \{1, \dots, N\}$$
+
+2. **Iterate for $t = 1, \dots, T$:**
+   - Fit weak classifier $h_t(x)$ minimizing weighted error:
+     $$\epsilon_t = \sum_{i=1}^N w_i^{(t)} \mathbb{I}(y_i \neq h_t(x_i))$$
+
+---
+
+## Weighting Classifier & Updating Samples
+
+3. **Compute Classifier Voting Power ($\alpha_t$):**
+   $$\alpha_t = \frac{1}{2} \ln\left( \frac{1 - \epsilon_t}{\epsilon_t} \right)$$
+
+4. **Update Sample Weights:**
+   $$w_i^{(t+1)} = \frac{w_i^{(t)} \exp\left(-\alpha_t y_i h_t(x_i)\right)}{Z_t}$$
+   where $Z_t = \sum_{i=1}^N w_i^{(t)} \exp\left(-\alpha_t y_i h_t(x_i)\right)$ ensures $\sum_i w_i^{(t+1)} = 1$.
+
+5. **Final Aggregation:**
+   $$H(x) = \text{sign}\left( \sum_{t=1}^T \alpha_t h_t(x) \right)$$
+
+---
+
+## Behavior of Classifier Weight $\alpha(\epsilon)$
+
+The metric $\alpha_t$ scales monotonically with classification accuracy.
+
+```{python}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 3.5
+eps = np.linspace(0.01, 0.99, 500)
+alpha = 0.5 * np.log((1 - eps) / eps)
+
+plt.figure(figsize=(8, 3.5))
+plt.plot(eps, alpha, color='#2980b9', lw=2.5)
+plt.axhline(0, color='gray', linestyle=':')
+plt.axvline(0.5, color='#c0392b', linestyle='--', label='Random Guessing ($\epsilon = 0.5, \alpha = 0$)')
+plt.title(r"Learner Weight $\alpha_t$ vs. Weighted Error $\epsilon_t$", fontsize=12)
+plt.xlabel(r"Weighted Error $\epsilon_t$")
+plt.ylabel(r"Voting Weight $\alpha_t$")
+plt.grid(True, alpha=0.3)
+plt.legend(frameon=True)
+plt.tight_layout()
+plt.show()
+```
+
+- When $\epsilon_t \to 0$, $\alpha_t \to \infty$ (learner dominates the vote).
+- When $\epsilon_t = 0.5$, $\alpha_t = 0$ (learner has zero vote weight).
+
+---
+
+## Python Implementation: Weak Stump
+
+A vectorized NumPy implementation of an exhaustive 1D decision stump:
+
+```{python}
+class DecisionStump:
+    def __init__(self):
+        self.polarity = 1
+        self.feature_idx = None
+        self.threshold = None
+        self.alpha = None
+
+    def fit(self, X, y, sample_weight):
+        n_samples, n_features = X.shape
+        min_error = float('inf')
+        
+        for feature_i in range(n_features):
+            thresholds = np.unique(X[:, feature_i])
+            for threshold in thresholds:
+                for polarity in [1, -1]:
+                    predictions = np.ones(n_samples)
+                    if polarity == 1:
+                        predictions[X[:, feature_i] < threshold] = -1
+                    else:
+                        predictions[X[:, feature_i] > threshold] = -1
+                    
+                    # Weighted classification error
+                    error = np.sum(sample_weight[y != predictions])
+                    if error < min_error:
+                        min_error = error
+                        self.polarity = polarity
+                        self.threshold = threshold
+                        self.feature_idx = feature_i
+        return min_error
+
+    def predict(self, X):
+        n_samples = X.shape[0]
+        preds = np.ones(n_samples)
+        if self.polarity == 1:
+            preds[X[:, self.feature_idx] < self.threshold] = -1
+        else:
+            preds[X[:, self.feature_idx] > self.threshold] = -1
+        return preds
+```
+
+---
+
+## Training Loop: Updating Weights in NumPy
+
+```{python}
+def train_adaboost(X, y, n_estimators=3):
+    n_samples = X.shape[0]
+    weights = np.ones(n_samples) / n_samples
+    clfs = []
+
+    for t in range(n_estimators):
+        stump = DecisionStump()
+        eps = stump.fit(X, y, weights)
+        
+        # Prevent division by zero
+        eps = np.clip(eps, 1e-10, 1 - 1e-10)
+        
+        # Compute alpha
+        alpha = 0.5 * np.log((1.0 - eps) / eps)
+        stump.alpha = alpha
+        
+        # Update and normalize sample weights
+        preds = stump.predict(X)
+        weights *= np.exp(-alpha * y * preds)
+        weights /= np.sum(weights)
+        
+        clfs.append(stump)
+        print(f"Round {t+1}: Error={eps:.3f}, Alpha={alpha:.3f}")
+    return clfs
+```
+
+---
+
+## Step-by-Step Execution on Synthetic Data
+
+```{python}
+#| fig-width: 9
+#| fig-height: 3.5
+clfs = train_adaboost(X, y, n_estimators=3)
+
+# Ensemble prediction function
+def predict_ensemble(clfs, X):
+    stump_preds = [clf.alpha * clf.predict(X) for clf in clfs]
+    return np.sign(np.sum(stump_preds, axis=0))
+
+final_preds = predict_ensemble(clfs, X)
+training_accuracy = np.mean(final_preds == y) * 100
+print(f"Final Ensemble Training Accuracy: {training_accuracy:.1f}%")
+```
+
+::: {.callout-note}
+Even with 3 simple stumps on 8 points, the ensemble achieves zero classification error by combining hypotheses with positive weights.
+:::
+
+---
+
+## Minimum Rigor: Training Error Bound
+
+Why does AdaBoost minimize empirical error exponentially fast?
+
+**Theorem (Freund & Schapire, 1997):**  
+Let $\gamma_t = \frac{1}{2} - \epsilon_t$ represent the edge of classifier $h_t$ over random guessing. The training error of $H(x)$ satisfies:
+
+$$\frac{1}{N} \sum_{i=1}^N \mathbb{I}(H(x_i) \neq y_i) \le \prod_{t=1}^T Z_t \le \exp\left( -2 \sum_{t=1}^T \gamma_t^2 \right)$$
+
+::: {.incremental}
+- Each normalization factor satisfies $Z_t = 2\sqrt{\epsilon_t(1 - \epsilon_t)} = \sqrt{1 - 4\gamma_t^2}$.
+- Using $1 - x \le e^{-x}$, training error drops exponentially with ensemble size $T$ as long as each weak learner has $\gamma_t \ge \gamma > 0$.
+:::

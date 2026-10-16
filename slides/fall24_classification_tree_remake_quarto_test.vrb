@@ -1,0 +1,9 @@
+\frametitle{Code}
+\phantomsection\label{code}
+When you click the \textbf{Render} button a presentation will be
+generated that includes both content and the output of embedded code.
+You can embed code like this:
+
+\begin{verbatim}
+[1] 2
+\end{verbatim}
