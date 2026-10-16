@@ -1,22 +1,16 @@
 ---
 title: "Math 460: Applied Data Mining"
-subtitle: "Course materials: slides, notebooks, assignments and exams"
 pagetitle: "Math 460: Applied Data Mining"
 format:
   html:
-    theme: cosmo
+    theme: none
+    minimal: true
     css: styles.css
-    toc: false
-    page-layout: full
-    smooth-scroll: true
-title-block-banner: "#16324f"
-title-block-banner-color: "#ffffff"
 tbl-colwidths: false
 ---
 
 ::: {.quick-links}
-[Syllabus](m460syllabus.html){.btn .btn-primary}
-[Data](data.html){.btn .btn-outline-primary}
+[Syllabus](m460syllabus.html) · [Data](data.html)
 :::
 
 ::: {.schedule}

@@ -1,182 +1,93 @@
-/* ---------- Math 460 course page ---------- */
+/* Math 460 — minimal course page */
 
 :root {
-  --m460-navy: #16324f;
-  --m460-accent: #2b6cb0;
-  --m460-accent-soft: #e8f0fa;
-  --m460-section: #f4efe3;
-  --m460-section-text: #7a5a12;
-  --m460-border: #e3e6ea;
-  --m460-muted: #8a939e;
-  --m460-row-hover: #f8fafc;
+  --text: #1a1a1a;
+  --muted: #9a9a9a;
+  --line: #e6e6e6;
+  --link: #1a1a1a;
 }
 
-/* Title banner */
-.quarto-title-banner {
-  padding-top: 2.25rem;
-  padding-bottom: 2rem;
-  margin-bottom: 0 !important;
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 1.25rem 5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: #fff;
 }
 
-.quarto-title-banner .title,
-.quarto-title-banner .subtitle {
-  color: #ffffff !important;
-}
+/* Title */
+#title-block-header { margin: 0 0 0.5rem; }
 
-.quarto-title-banner .title {
-  font-weight: 700;
+h1.title {
+  font-size: 1.75rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
+  margin: 0;
 }
 
-.quarto-title-banner .subtitle {
-  opacity: 0.85;
-  font-weight: 400;
-  margin-top: 0.35rem;
+/* Links */
+a {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: #c8c8c8;
+  text-underline-offset: 3px;
 }
+a:hover { text-decoration-color: var(--text); }
 
-/* Hide the empty author/date block under the banner */
-#title-block-header .quarto-title-meta {
-  display: none;
-}
-
-/* Small, even gap between banner and content */
-#title-block-header {
-  margin-bottom: 1.5rem !important;
-}
-
-main.content > *:first-child,
-#quarto-document-content > *:first-child {
-  margin-top: 0 !important;
-}
-
-/* Keep the page a comfortable reading width */
-main.content {
-  max-width: 1150px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Quick-link buttons */
 .quick-links {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin: 0.5rem 0 1.75rem;
+  margin-bottom: 3rem;
+  color: var(--muted);
 }
 
-.quick-links .btn {
-  border-radius: 999px;
-  padding: 0.4rem 1.2rem;
-  font-weight: 500;
-}
-
-/* ---------- Schedule table ---------- */
-
-.schedule {
-  overflow-x: auto;
-  border: 1px solid var(--m460-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
-}
+/* Table */
+.schedule { overflow-x: auto; }
 
 .schedule table {
   width: 100%;
-  margin: 0;
   border-collapse: collapse;
-  font-size: 0.95rem;
 }
 
-/* Let the browser size columns to their content */
-.schedule table col {
-  width: auto !important;
-}
+.schedule col { width: auto !important; }
 
-.schedule thead th {
-  background: var(--m460-navy);
-  color: #fff;
-  font-weight: 600;
+.schedule th {
+  text-align: left;
+  font-weight: 500;
   font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.8rem 1rem;
-  border: none;
+  color: var(--muted);
+  padding: 0 1.25rem 0.6rem 0;
+  border-bottom: 1px solid var(--text);
   white-space: nowrap;
 }
 
-.schedule tbody td {
-  padding: 0.7rem 1rem;
+.schedule td {
   vertical-align: top;
-  border-top: 1px solid var(--m460-border);
-  border-bottom: none;
-  line-height: 1.9;
-  color: var(--m460-muted); /* unlinked items = coming soon */
+  padding: 0.6rem 1.25rem 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);          /* unlinked items read as "coming soon" */
 }
 
-/* Topic column: darker and never squeezed */
-.schedule tbody td:first-child {
-  color: #1f2933;
-  font-weight: 500;
-  min-width: 11rem;
-}
+.schedule td:first-child { color: var(--text); }
+.schedule td a { white-space: nowrap; }
 
-.schedule tbody tr:hover td {
-  background: var(--m460-row-hover);
+/* Section rows: just bold text with breathing room above */
+.schedule tr:has(td:first-child > strong) td {
+  padding-top: 2rem;
+  border-bottom: 1px solid var(--text);
 }
+.schedule td strong { font-weight: 600; }
 
-/* Links as small chips */
-.schedule tbody td a {
-  display: inline-block;
-  padding: 0 0.6rem;
-  border-radius: 6px;
-  background: var(--m460-accent-soft);
-  color: var(--m460-accent);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.88rem;
-  line-height: 1.7;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.schedule tbody td a:hover {
-  background: var(--m460-accent);
-  color: #fff;
-}
-
-/* Section rows ("Part 1. ...") become full-width bands */
-.schedule tbody tr:has(td:first-child > strong) td {
-  background: var(--m460-section);
-  border-top: 2px solid #e6dcc4;
-  padding-top: 0.55rem;
-  padding-bottom: 0.55rem;
-}
-
-.schedule tbody tr:has(td:first-child > strong) td:first-child {
-  color: var(--m460-section-text);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.82rem;
-}
-
-/* Remove Bootstrap's striping so the bands stand out */
-.schedule .table > :not(caption) > * > * {
-  box-shadow: none;
-}
-
-/* Footnote under the table */
 .legend {
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--m460-muted);
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
-/* Phones */
 @media (max-width: 640px) {
-  .schedule tbody td,
-  .schedule thead th {
-    padding: 0.55rem 0.7rem;
-  }
-  .schedule tbody td:first-child {
-    min-width: 8.5rem;
-  }
+  body { padding-top: 2.5rem; }
+  .schedule td, .schedule th { padding-right: 0.9rem; }
 }
