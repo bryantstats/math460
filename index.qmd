@@ -10,7 +10,7 @@ tbl-colwidths: false
 ---
 
 ::: {.quick-links}
-[Syllabus](m460syllabus.html) · [Data](data.html)
+[Syllabus](m460syllabus.html)   ·   [New Page](index.html)
 :::
 
 ::: {.schedule}
