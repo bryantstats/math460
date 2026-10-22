@@ -15,7 +15,7 @@ format:
 
 This assignment is a class Kaggle competition. You will predict whether a patient has heart disease from routine screening measurements, using **tree-based models**. 
 
-- **Competition link:** <https://www.kaggle.com/competitions/cardiovascular-disease-prediction-competition>
+- **Competition link:** <https://www.kaggle.com/t/7bbaea06c4944162b739eeb02e0b37b9>
 - **Team size:** Groups of up to 2 students
 - **Presentations:** October 29, 2026. 
 
