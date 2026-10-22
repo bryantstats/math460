@@ -1,0 +1,126 @@
+---
+title: "Assignment 7: Heart Disease Prediction Kaggle Competition"
+format:
+  html:
+    toc: true
+    number-sections: true
+    embed-resources: true
+  pdf:
+    toc: true
+    number-sections: true
+---
+
+## Overview
+
+This assignment is a class Kaggle competition. You will predict whether a patient has heart disease from routine screening measurements, using **tree-based models**. 
+
+- **Competition link:** <https://www.kaggle.com/competitions/cardiovascular-disease-prediction-competition>
+- **Team size:** Groups of up to 2 students
+- **Presentations:** October 29, 2026. 
+
+The goal is not just a high leaderboard score. It is to show that you can build, tune, and justify a model carefully, the way you would in a real project.
+
+## Getting Started
+
+1. Create a free Kaggle account (or sign in) at <https://www.kaggle.com>.
+2. Open the competition link above and click **Join Competition**. Accept the rules.
+3. If you are working in a team, create or join your team on the **Team** tab **before** making your first submission.
+   - Use a team name that identifies you, e.g. `Smith_Lee`.
+4. Download the data from the **Data** tab and read the data description carefully.
+
+## The Data
+
+| File | Description |
+|---|---|
+| `train.csv` | Training data with the target column `heart_disease` (0 = no, 1 = yes) |
+| `test.csv` | Test data without the target |
+| `sample_submission.csv` | Example of the required submission format |
+
+Your submission must be a CSV file with two columns, `patient_id` and `heart_disease`, with one row for every patient in `test.csv`. Predictions must be 0 or 1. Submissions are scored by **accuracy**.
+
+::: {.callout-note}
+This dataset was adapted from a public dataset and **modified for this class**: it is partly synthetic. Do not draw real medical conclusions from it. The original public dataset will not help you on the leaderboard.
+:::
+
+Be aware that the data contains **missing values** and some **recording errors**. Deciding how to handle them is part of the assignment.
+
+## What You Need to Do
+
+1. **Explore and clean the data.** Look at distributions, missing values, and implausible values. Decide how to handle each problem, and be able to explain why.
+2. **Try several tree-based models.** For example: decision tree, bagging, random forest, extra trees, AdaBoost, or gradient boosting.
+3. **Tune your models properly.**
+   - Use only `train.csv` for tuning, with a hold-out validation set, cross-validation, or both.
+   - Keep track of every hyperparameter range you search.
+4. **Choose and train a final model**, then predict `test.csv`.
+5. **Submit to Kaggle.**
+6. **Present your work** in class (see below).
+
+## Deliverables
+
+Submit the following on Canvas
+
+| Deliverable | Format |
+|---|---|
+| Code | One Jupyter notebook (`.ipynb`) |
+| Final submission | The CSV file you submitted to Kaggle |
+| Slides | PDF of your presentation slides |
+| AI-use statement | A short paragraph (see the policy below) |
+
+## Final Presentation
+
+Each team gives a presentation of about **[5] minutes**, followed by questions. It must cover these five points.
+
+### Handling missing data
+
+- Which columns had missing values, and how many?
+- What did you do with them (e.g., drop rows, impute the median/mode, add a missing-value indicator, or use a model that handles missing values natively)?
+- Why did you choose that approach?
+- *Optional:* how did you handle recording errors, such as impossible blood-pressure values?
+
+### Models you tried
+
+- List every model you tried, including ones that did not work well.
+- Give a one-line reason for trying each one.
+
+### How you partitioned the data for tuning
+
+- How did you split `train.csv` (train/validation split, k-fold cross-validation, or both)?
+- What proportions did you use, and did you stratify by `heart_disease`?
+- Which metric did you use to choose the best settings?
+- How did you make sure the validation data was never used to train the model it was evaluating?
+
+### Hyperparameter tuning tables
+
+For **each model you compared**, include a table like this:
+
+| Hyperparameter | Values / range searched | Best value |
+|---|---|---|
+| e.g. `max_depth` | 3, 5, 7, 10, None | 7 |
+| e.g. `n_estimators` | 100 – 500 | 300 |
+
+Also state:
+
+- The search method (grid search, random search, or manual) and how many combinations you tried.
+- The validation score of the best setting for each model.
+
+### Training the final model
+
+- Which model did you choose for your final submission, and why?
+- Which data was the final model trained on (only the training split, or all of `train.csv` after tuning)?
+- How does your validation score compare with your public leaderboard score? If they differ, why might that be?
+
+## Rules
+
+- **One Kaggle account per person.** Making extra submissions through other accounts is not allowed.
+- **Do not share code or predictions** between teams. You may discuss general ideas.
+- **No hand-labeling** of the test data, and no using external copies of the data.
+- **AI policy:** You may use AI tools (e.g., ChatGPT, Claude, Copilot). However:
+  - Include a short statement describing how you used them, and anything they got wrong that you had to fix.
+
+## Tips
+
+- Your public leaderboard score is computed on only part of the test set. The final ranking uses the other part (the private leaderboard). Don't over-tune to the public score; trust your validation results.
+- Small differences in accuracy (e.g., 0.002) are often just noise. Think about whether a "better" model is really better.
+- Check your feature importances. Not every column is useful.
+- Start early: tuning ensemble models can take a while.
+
