@@ -28,7 +28,7 @@ tbl-colwidths: false
 | AdaBoost | [Classification](gganimate/adaboost.html) <br> [Note](gganimate/Adaboost_fa26.pdf) <br> [Regression](python/fa26/adaboost/adaboost_regression_claude.html) | | [Learning Rate](python/fa26/adaboost_demonstrate_fa26.html) <br> [Classification](python/fa23/adaboost_classification.html) <br> [Regression](python/fa23/adaboost_regression.html) | | |
 | Gradient Boosting | [Slides](slides/gradient_descent_to_boosting_slides.html)  | | [Classification](python/fa23/gb_classification.html), <br> [Regression](python/fa23/gb_regression.html)   | [Assignment 5](assignments/assignment5_fa25.html) | [Exam 2 Practice](exams/Exam2/Exam2_sol.html) |
 | Handwritten Digit Recognition | | | [Forest](python/digits/fa23/image_recognition_rf.html) | [Assignment 6](assignments/assignment6_fa23.html) | |
-| Heart Disease Prediction Kaggle Competition|  | |  | [Kaggle Competition](assignments/extra_credit_kaggle.html) | |
+| Heart Disease Prediction Kaggle Competition|  | |  | [Kaggle Competition](assignments/assignment_kaggle.html) | |
 | **Part 2. Linear Models and Neural Networks** | | | | | |
 | Linear Models and LASSO | Note | | Regression <br> Classification | | |
 | Neural Network | Notes | | | Assignment | |
