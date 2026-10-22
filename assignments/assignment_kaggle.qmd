@@ -5,6 +5,7 @@ format:
     toc: true
     number-sections: true
     embed-resources: true
+    format-links: false
   pdf:
     toc: true
     number-sections: true
