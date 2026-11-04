@@ -1,0 +1,59 @@
+---
+title: "Assignment 8: Linear Models and LASSO"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In this assignment you will see how a penalty on the coefficients changes a linear model. You will work one LASSO problem by hand, then use Python to compare linear regression, LASSO and Ridge on the NBA salary data, and logistic regression with and without an L1 penalty on the breast cancer data.
+
+## What to Submit
+
+Submit the following on Canvas:
+
+| Deliverable | Format |
+|---|---|
+| Problem 1 (by hand) | Word document, or photos/scans of your written work |
+| Problems 2–3 | The completed notebook `assignment8_student.ipynb`, with all cells run |
+
+## Problem 1 (by hand)
+
+Consider a regression **without an intercept**, $y = \beta x$, and the training data below.
+
+| $x$ | $y$ |
+|:----|:----|
+| 1   | 1   |
+| 2   | 3   |
+| 3   | 2   |
+
+a.  Find the ordinary least squares estimate $\hat\beta_{OLS} = \dfrac{\sum x_i y_i}{\sum x_i^2}$.
+
+b.  The LASSO estimate minimizes $L(\beta) = \sum (y_i - \beta x_i)^2 + \lambda |\beta|$. Write $L(\beta)$ as a function of $\beta$ for this data. Assuming $\hat\beta > 0$, take the derivative, set it to 0, and find $\hat\beta$ for $\lambda = 4$.
+
+c.  Find the smallest $\lambda$ for which the LASSO estimate is exactly $\hat\beta = 0$.
+
+d.  In one or two sentences, explain what parts (a)–(c) show about how LASSO differs from ordinary least squares.
+
+## Problem 2 (Python): Predicting NBA salaries
+
+Open `assignment8_student.ipynb` and complete **Part A** (Questions 1–5). You will:
+
+-   Fit an ordinary linear regression, LASSO and Ridge, and compare their test RMSE and $R^2$.
+-   Use cross-validation to choose the LASSO penalty, and find which predictors LASSO keeps.
+-   Plot the LASSO path and interpret it.
+
+Data: [NBA salaries](https://bryantstats.github.io/math460/data/nba_salary2.csv)
+
+## Problem 3 (Python): Breast cancer diagnosis
+
+Complete **Part B** (Questions 6–7) of the notebook. Compare logistic regression with and without an L1 (LASSO) penalty on test accuracy and on the number of predictors each model uses.
+
+Data: [Breast Cancer Wisconsin](https://bryantstats.github.io/math460/data/breast_cancer.csv)
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

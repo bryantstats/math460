@@ -1,0 +1,65 @@
+---
+title: "Assignment 13: Recommendation Systems"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+This assignment has two parts:
+
+-   **Part A (individual):** analyze a real book-ratings data set and build item-based and user-based recommendation systems with KNN.
+-   **Part B (groups of up to 5):** collect your own ratings data, build a recommendation system for items of your choice, and present it.
+
+## What to Submit
+
+| Deliverable | Format |
+|---|---|
+| Part A | The completed notebook `assignment13_student.ipynb`, with all cells run |
+| Part B | Your group's data (CSV), your notebook, and a recorded presentation (Zoom video or link) |
+
+## Part A: Book Recommendations (individual)
+
+Open `assignment13_student.ipynb` and complete Questions 1–5:
+
+| Question | Topic |
+|---|---|
+| 1 | How sparse is the ratings matrix? |
+| 2 | Item-based recommendations with Euclidean distance vs. cosine similarity |
+| 3 | Recommendations for books of your choice |
+| 4 | User-based recommendations: recommend what similar users liked |
+| 5 | Limitations: the cold start problem |
+
+Data: [Book ratings](https://bryantstats.github.io/math460/assignments/books_rating.csv) (746 books × 734 users; a 0 means "not rated")
+
+## Part B: Your Own Recommendation System (groups of up to 5)
+
+### Step 1. Collect the data
+
+-   Decide what kind of items your system will recommend, for example math courses at Bryant, restaurants near campus, movies, games or songs.
+-   Ask friends, classmates or family to rate the items from **1 to 10** (how much do you like it?). Record **0** if a person does not know the item.
+-   Your data should have **at least 15 items (rows) and 20 raters (columns)**. More is better.
+-   Save it as a CSV file with the item names in the first column.
+
+### Step 2. Build the system
+
+-   Build an **item-based** recommender with `NearestNeighbors(metric="cosine")`, as in Part A.
+-   Build a **user-based** recommender for at least two of your raters, as in Part A, Question 4.
+
+### Step 3. Update the system
+
+-   Collect more ratings (new items, new raters or both), retrain, and compare the recommendations before and after the update.
+
+### Step 4. Present (about 5 minutes)
+
+-   Describe how you collected the data, and show it. How sparse is it?
+-   Show some recommendations from each system. Do they make sense? Which surprised you?
+-   Compare the recommendations before and after the update.
+-   What would you need to turn this into a real app (more data, cold start, ...)?
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix. **Do not use AI to generate ratings:** all ratings must come from real people.

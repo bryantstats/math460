@@ -1,0 +1,557 @@
+---
+title: "How an LLM Works"
+title-slide-attributes:
+  data-background-color: "#1B2333"
+subtitle: "Building a tiny language model, step by step, from one 10-word sentence"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    menu: true
+    backgroundcolor: "#F7F5F0"
+    footer: "How an LLM works"
+    include-in-header:
+      text: |
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+          .reveal { font-family: 'DM Sans', Arial, sans-serif; color: #1B2333; }
+          .reveal h1, .reveal h2, .reveal h3 { font-family: 'DM Sans', Arial, sans-serif; color: #1B2333; text-transform: none; }
+          #title-slide .title { color: #F7F5F0; font-size: 2.2em; }
+          #title-slide .subtitle { color: #C9D1DE; }
+          #title-slide .author { color: #F2A25C; }
+          .reveal .slides section h2 { font-size: 1.3em; margin-bottom: 0.5em; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal .kicker { font-size: 0.45em; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #A84E15; margin: 0; }
+          .reveal .mono, .reveal code { font-family: 'JetBrains Mono', monospace; }
+          .reveal .muted { color: #4A5568; }
+          .reveal .blue { color: #2A5F9E; }
+          .reveal .rust { color: #A84E15; }
+          .reveal .card { background: #FFFDF9; border: 1px solid #DDD6CA; border-radius: 14px; padding: 0.6em 0.8em; }
+          .reveal .cardtitle { display: block; font-size: 1.2em; font-weight: 600; margin-bottom: 0.3em; }
+          .reveal .divider h2 { color: #F7F5F0; font-size: 2em; }
+          .reveal .dark { background: #1B2333; color: #F7F5F0; }
+          .reveal .pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.5em; background: #1B2333; color: #F7F5F0; padding: 0.25em 0.9em; border-radius: 999px; margin-top: 0.4em; }
+          .reveal table { font-size: 0.55em; border-collapse: collapse; margin: 0.3em 0; }
+          .reveal table th { background: #E9E3D8; }
+          .reveal table th, .reveal table td { padding: 0.3em 0.7em; border-bottom: 1px solid #DDD6CA; }
+          .reveal table tr.total td { background: #F3DCC9; font-weight: 700; }
+          .reveal .tokens { display: flex; gap: 10px; margin: 0.6em 0; }
+          .reveal .tokens div { flex: 1; text-align: center; background: #FFFDF9; border: 1px solid #DDD6CA; border-radius: 10px; padding: 0.4em 0; }
+          .reveal .tokens .w { font-family: 'JetBrains Mono', monospace; font-size: 0.75em; }
+          .reveal .tokens .n { font-size: 0.45em; color: #5B6270; }
+          .reveal .flow { display: flex; align-items: center; gap: 12px; margin: 0.8em 0; }
+          .reveal .flow .box { flex: 1; text-align: center; border-radius: 14px; padding: 0.6em 0.3em; background: #FFFDF9; border: 1px solid #DDD6CA; font-size: 0.55em; font-weight: 600; }
+          .reveal .flow .box.dark { background: #1B2333; color: #F7F5F0; border: none; }
+          .reveal .flow .box.accent { background: #A84E15; color: #F7F5F0; border: none; }
+          .reveal .flow .box span { display: block; font-family: 'JetBrains Mono', monospace; font-weight: 400; margin-top: 0.3em; }
+          .reveal .flow .arrow { color: #5B6270; font-size: 0.8em; }
+          .reveal .bars { font-family: 'JetBrains Mono', monospace; }
+          .reveal .bar { display: flex; align-items: center; gap: 14px; margin: 4px 0; font-size: 0.5em; }
+          .reveal .bar .lab { width: 5em; }
+          .reveal .bar .fill { height: 22px; background: #2A5F9E; border-radius: 4px; }
+          .reveal .bar .fill.hi { background: #E07A2F; }
+          .reveal .bar .val { color: #5B6270; }
+          .reveal .statement h2, .reveal .statement p { color: #F7F5F0; }
+          .reveal .recap h2, .reveal .recap p { color: #F7F5F0; }
+          .reveal .recap .card { background: #26304A; border: none; }
+          .reveal .recap .num { font-size: 1.1em; font-weight: 700; color: #F2A25C; }
+        </style>
+---
+
+## An LLM has one job: predict the next word
+
+[The big idea]{.kicker}
+
+<div class="flow" style="font-size:1.6em">
+<span class="mono">the cat sat on the</span>
+<span style="display:inline-block;width:160px;height:80px;border:4px dashed #5B6270;border-radius:14px"></span>
+<span class="arrow">→</span>
+<span class="mono" style="background:#A84E15;color:#F7F5F0;padding:0.1em 0.6em;border-radius:14px">mat</span>
+</div>
+
+[Chatting, translating, writing code: all of it comes from repeating this one step, one word at a time.]{.muted}
+
+Our training text for the whole deck: [“the cat sat on the mat and the cat slept”]{.mono .rust}
+
+::: notes
+Before any details: an LLM is a next-word predictor. Give it some words, it guesses the next one. To write a whole answer, it adds its guess to the input and predicts again, over and over. Everything that follows is about how it makes that guess.
+:::
+
+## Photos are numbers. Words are not.
+
+[The problem]{.kicker}
+
+:::: {.columns}
+::: {.column width="48%"}
+::: card
+[A photo]{.cardtitle}
+
+[Each pixel is a light measurement from the camera: 0 is black, 255 is bright. A CNN can use these numbers directly.]{.muted}
+
+[pixel = (255, 0, 0) → red]{.mono .blue}
+:::
+:::
+::: {.column width="4%"}
+:::
+::: {.column width="48%"}
+::: card
+[A word]{.cardtitle}
+
+[“cat” is a symbol. It measures nothing, so the network has to learn its own numbers for it.]{.muted}
+
+[“cat” = ?]{.mono .rust}
+:::
+:::
+::::
+
+So an LLM starts by turning words into useful numbers. After that, it’s ordinary deep learning.
+
+::: notes
+If you know CNNs, you know images arrive as numbers for free. Text doesn’t. The next four steps turn our sentence into a grid of numbers, which is the same kind of input a CNN gets.
+:::
+
+## Turning a sentence into numbers {.divider .center background-color="#1B2333"}
+
+## Split the text into tokens
+
+[Step 1 · Tokenize]{.kicker}
+
+<div class="tokens">
+<div><p class="w">the</p><p class="n">1</p></div>
+<div><p class="w">cat</p><p class="n">2</p></div>
+<div><p class="w">sat</p><p class="n">3</p></div>
+<div><p class="w">on</p><p class="n">4</p></div>
+<div><p class="w">the</p><p class="n">5</p></div>
+<div><p class="w">mat</p><p class="n">6</p></div>
+<div><p class="w">and</p><p class="n">7</p></div>
+<div><p class="w">the</p><p class="n">8</p></div>
+<div><p class="w">cat</p><p class="n">9</p></div>
+<div><p class="w">slept</p><p class="n">10</p></div>
+</div>
+
+**Our whole training text: 10 tokens.**
+
+[Real LLMs often split words into smaller pieces (“playing” → “play” + “ing”). Whole words keep our example simple.]{.muted}
+
+::: notes
+A token is the unit the model reads. Here, one token is one word. The small numbers underneath are positions in the sentence; we’ll use them again in step 4.
+:::
+
+## Give each unique token an ID
+
+[Step 2 · Number]{.kicker}
+
+:::: {.columns}
+::: {.column width="30%"}
+| ID | Token |
+|:--:|:------|
+| 1 | the |
+| 2 | cat |
+| 3 | sat |
+| 4 | on |
+| 5 | mat |
+| 6 | and |
+| 7 | slept |
+:::
+::: {.column width="70%"}
+::: card
+[Our sentence becomes]{.muted}
+
+[[1, 2, 3, 4, 1, 5, 6, 1, 2, 7]]{.mono .blue}
+:::
+
+**7 unique words: vocabulary size V = 7**
+
+[IDs are only labels, like jersey numbers. “slept” = 7 is not “bigger” than “cat” = 2, so the network can’t use these numbers directly.]{.muted}
+:::
+::::
+
+::: notes
+Our 10 tokens contain only 7 different words, because “the” appears three times and “cat” twice. The list of unique words is the vocabulary. Key point: an ID is a name tag, not a measurement. That’s why we need the next step.
+:::
+
+## Look up a vector for each token
+
+[Step 3 · Embed]{.kicker}
+
+:::: {.columns}
+::: {.column width="52%"}
+<table class="mono">
+<tr><th>Token</th><th>d1</th><th>d2</th><th>d3</th><th>d4</th></tr>
+<tr><td>the</td><td>0.12</td><td>-0.40</td><td>0.33</td><td>0.05</td></tr>
+<tr class="total"><td>cat</td><td>0.42</td><td>-0.17</td><td>0.88</td><td>-0.05</td></tr>
+<tr><td>sat</td><td>-0.23</td><td>0.51</td><td>0.10</td><td>-0.66</td></tr>
+<tr><td>on</td><td>0.07</td><td>0.29</td><td>-0.48</td><td>0.31</td></tr>
+<tr><td>mat</td><td>-0.55</td><td>0.02</td><td>0.36</td><td>0.14</td></tr>
+<tr><td>and</td><td>0.61</td><td>-0.33</td><td>-0.09</td><td>0.27</td></tr>
+<tr><td>slept</td><td>-0.18</td><td>0.44</td><td>0.72</td><td>-0.30</td></tr>
+</table>
+:::
+::: {.column width="48%"}
+The embedding table is a **7 × 4 weight matrix**: one row of 4 numbers per word.
+
+[Looking up “cat” (ID 2) just means reading row 2.]{.muted}
+
+[The values start random. Training adjusts them like any other weight.]{.muted}
+
+[7 × 4 = 28 parameters]{.pill}
+:::
+::::
+
+::: notes
+This is the key step. Each word gets its own row of numbers, here 4 numbers per word. These numbers are parameters of the network, exactly like the filters in a CNN. The values shown are random starting values. Stack the rows for our sentence and you get a 10 × 4 grid: a picture-like input the network can process.
+:::
+
+## Training gives the vectors meaning
+
+[Step 3 · Embed]{.kicker}
+
+:::: {.columns}
+::: {.column width="48%"}
+::: card
+[Before training: random]{.cardtitle}
+
+| | |
+|:--|:--|
+| cat | `[ 0.4, -0.2,  0.9, -0.1]` |
+| dog | `[-0.6,  0.3, -0.1,  0.8]` |
+| car | `[ 0.4, -0.2,  0.8,  0.0]` |
+
+[“car” looks like “cat” purely by chance.]{.muted}
+:::
+:::
+::: {.column width="4%"}
+:::
+::: {.column width="48%"}
+::: card
+[After training: meaningful]{.cardtitle}
+
+| | |
+|:--|:--|
+| cat | `[ 0.8,  0.1,  0.9,  0.2]` |
+| [dog]{.blue} | `[ 0.8,  0.2,  0.9,  0.3]` |
+| [car]{.rust} | `[ 0.1,  0.9,  0.0,  0.8]` |
+
+[“dog” is now close to “cat”; “car” is far away.]{.muted}
+:::
+:::
+::::
+
+Words used in similar sentences (“I fed my \_\_\_”) get pushed toward similar numbers. Nobody tells the model that cats and dogs are alike.
+
+[Illustration uses a larger vocabulary.]{.muted style="font-size:0.45em"}
+
+::: notes
+Here I’ve borrowed “dog” and “car” from a bigger vocabulary to show the effect. Each time the model makes a mistake, backpropagation nudges the vectors of the words involved. Over millions of sentences, words that fit the same blanks drift together.
+:::
+
+## Add where each word sits
+
+[Step 4 · Add position]{.kicker}
+
+:::: {.columns}
+::: {.column width="48%"}
+::: card
+[dog bites man]{.mono style="font-size:1.2em"}
+
+[Everyday news]{.muted}
+:::
+:::
+::: {.column width="4%"}
+:::
+::: {.column width="48%"}
+::: card
+[man bites dog]{.mono style="font-size:1.2em"}
+
+[Front-page headline]{.muted}
+:::
+:::
+::::
+
+[Same words, different meaning. So each of the 10 positions also gets its own learned vector of 4 numbers.]{.muted}
+
+[input = word vector + position vector]{.mono .blue}
+
+[10 × 4 = 40 parameters]{.pill}
+
+::: notes
+Without position information, the model would see a bag of words. Adding a position vector means “the” at position 1 and “the” at position 5 look slightly different to the network. The position table is also learned: 10 positions times 4 numbers.
+:::
+
+## Inside the model {.divider .center background-color="#1B2333"}
+
+## Each word looks at earlier words
+
+[Step 5 · Attention]{.kicker}
+
+:::: {.columns}
+::: {.column width="45%"}
+[How much “slept” attends to each word (illustrative)]{.muted style="font-size:0.45em"}
+
+<div class="bars">
+<div class="bar"><span class="lab">the</span><span class="fill" style="width:40px"></span><span class="val">0.04</span></div>
+<div class="bar"><span class="lab"><b>cat</b></span><span class="fill hi" style="width:300px"></span><span class="val">0.30</span></div>
+<div class="bar"><span class="lab">sat</span><span class="fill" style="width:100px"></span><span class="val">0.10</span></div>
+<div class="bar"><span class="lab">on</span><span class="fill" style="width:20px"></span><span class="val">0.02</span></div>
+<div class="bar"><span class="lab">the</span><span class="fill" style="width:30px"></span><span class="val">0.03</span></div>
+<div class="bar"><span class="lab">mat</span><span class="fill" style="width:50px"></span><span class="val">0.05</span></div>
+<div class="bar"><span class="lab">and</span><span class="fill" style="width:60px"></span><span class="val">0.06</span></div>
+<div class="bar"><span class="lab">the</span><span class="fill" style="width:50px"></span><span class="val">0.05</span></div>
+<div class="bar"><span class="lab"><b>cat</b></span><span class="fill hi" style="width:250px"></span><span class="val">0.25</span></div>
+<div class="bar"><span class="lab">slept</span><span class="fill" style="width:100px"></span><span class="val">0.10</span></div>
+</div>
+:::
+::: {.column width="55%"}
+Each word asks: **which earlier words matter to me?** “slept” learns to look at “cat”, the one doing the sleeping.
+
+[It uses four 4 × 4 weight matrices:]{.muted}
+
+- **Query**: what am I looking for?
+- **Key**: what do I contain?
+- **Value**: what do I pass on?
+- **Output**: mix the result back in.
+
+[4 × (4 × 4) = 64 parameters]{.pill}
+:::
+::::
+
+[Weights shown are made up for illustration.]{.muted style="font-size:0.45em"}
+
+::: notes
+Attention is what makes transformers special. Every word compares itself with the words before it and takes a weighted mix of their information. The weights always add up to 1. A word may only look backward, never at future words, because the future word is exactly what the model is trying to predict.
+:::
+
+## Then each word goes through a small network
+
+[Step 6 · Feed-forward]{.kicker}
+
+<div class="flow" style="justify-content:center;font-size:1.3em">
+<div class="box" style="flex:0 0 auto;padding:0.5em 1em;border:2px solid #2A5F9E">4<span>numbers in</span></div>
+<span class="arrow">— 4 × 16 = 64 →</span>
+<div class="box dark" style="flex:0 0 auto;padding:1.2em 1.2em">16<span>hidden neurons</span></div>
+<span class="arrow">— 16 × 4 = 64 →</span>
+<div class="box" style="flex:0 0 auto;padding:0.5em 1em;border:2px solid #2A5F9E">4<span>numbers out</span></div>
+</div>
+
+[A plain 2-layer neural network, applied to every word on its own. Attention mixes information *between* words; feed-forward processes *each* word.]{.muted}
+
+[64 + 64 = 128 parameters]{.pill}
+
+::: notes
+This is the kind of network you already know: fully connected layers. The hidden layer is usually 4 times wider than the embedding, so 4 becomes 16. Attention plus feed-forward together form one transformer block. Our toy has one block; real LLMs stack dozens.
+:::
+
+## Turn the final vector into a guess
+
+[Step 7 · Predict]{.kicker}
+
+:::: {.columns}
+::: {.column width="42%"}
+::: card
+[Final vector for “cat”]{.muted}
+
+[[0.3, -1.2, 0.8, 0.4]]{.mono}
+:::
+
+[↓]{.blue}
+
+::: card
+[Output layer: 4 × 7 weights]{.muted}
+
+one score per vocabulary word
+:::
+
+[↓]{.blue}
+
+::: card
+[Softmax]{.muted}
+
+scores become probabilities
+:::
+:::
+::: {.column width="58%"}
+[Next word after “the cat” (illustrative)]{.muted style="font-size:0.45em"}
+
+<div class="bars">
+<div class="bar"><span class="lab"><b>sat</b></span><span class="fill hi" style="width:460px"></span><span class="val">46%</span></div>
+<div class="bar"><span class="lab"><b>slept</b></span><span class="fill hi" style="width:380px"></span><span class="val">38%</span></div>
+<div class="bar"><span class="lab">mat</span><span class="fill" style="width:50px"></span><span class="val">5%</span></div>
+<div class="bar"><span class="lab">the</span><span class="fill" style="width:40px"></span><span class="val">4%</span></div>
+<div class="bar"><span class="lab">on</span><span class="fill" style="width:30px"></span><span class="val">3%</span></div>
+<div class="bar"><span class="lab">and</span><span class="fill" style="width:20px"></span><span class="val">2%</span></div>
+<div class="bar"><span class="lab">cat</span><span class="fill" style="width:20px"></span><span class="val">2%</span></div>
+</div>
+
+[“sat” and “slept” both followed “the cat” in our text, so the model splits its bet.]{.muted}
+
+[4 × 7 = 28 parameters]{.pill}
+:::
+::::
+
+[Probabilities shown are made up for illustration.]{.muted style="font-size:0.45em"}
+
+::: notes
+The output layer is the embedding step in reverse: from 4 numbers back to one score for each of the 7 words. Softmax turns the scores into probabilities that add up to 100%. To generate text, the model picks a word from this distribution, adds it to the input, and repeats.
+:::
+
+## The whole model, end to end
+
+[Putting it together]{.kicker}
+
+<div class="flow">
+<div class="box">Token<br>IDs<span class="blue">[1, 2]</span></div>
+<span class="arrow">→</span>
+<div class="box">Embed +<br>position<span>28 + 40</span></div>
+<span class="arrow">→</span>
+<div class="box dark">Atten-<br>tion<span>64</span></div>
+<span class="arrow">→</span>
+<div class="box dark">Feed-<br>forward<span>128</span></div>
+<span class="arrow">→</span>
+<div class="box">Output<br>layer<span>28</span></div>
+<span class="arrow">→</span>
+<div class="box accent">Next<br>token<span>“sat”</span></div>
+</div>
+
+The two dark boxes form one **transformer block**. Our toy has 1; GPT-2 small stacks 12.
+
+[Numbers under each box are its parameters. Small layer-norm steps (24 more) keep values stable.]{.muted}
+
+::: notes
+Follow “the cat” through the model: IDs 1 and 2 are looked up, position is added, attention lets the words share information, feed-forward processes each one, and the output layer scores every word in the vocabulary. The top guess is “sat”.
+:::
+
+## Counting and training {.divider .center background-color="#1B2333"}
+
+## Every parameter in our tiny LLM
+
+[Counting]{.kicker}
+
+<table style="width:100%">
+<tr><th style="text-align:left">Part</th><th style="text-align:left">Calculation</th><th style="text-align:right">Parameters</th></tr>
+<tr><td>Token embedding</td><td>7 × 4</td><td style="text-align:right">28</td></tr>
+<tr><td>Position embedding</td><td>10 × 4</td><td style="text-align:right">40</td></tr>
+<tr><td>Attention (Q, K, V, O)</td><td>4 × (4 × 4)</td><td style="text-align:right">64</td></tr>
+<tr><td>Feed-forward</td><td>4 × 16 + 16 × 4</td><td style="text-align:right">128</td></tr>
+<tr><td>Layer norm</td><td>scale + shift</td><td style="text-align:right">24</td></tr>
+<tr><td>Output layer</td><td>4 × 7</td><td style="text-align:right">28</td></tr>
+<tr class="total"><td>Total</td><td></td><td style="text-align:right">≈ 312</td></tr>
+</table>
+
+[All 312 start random, and all 312 are updated by backpropagation. Biases are left out to keep the arithmetic simple.]{.muted}
+
+::: notes
+Every number here comes straight from the sizes we chose: vocabulary 7, embedding size 4, context length 10, hidden size 16, one block. The embeddings are counted as parameters, exactly like CNN filters.
+:::
+
+## Guess the next word, fix, repeat
+
+[Training]{.kicker}
+
+:::: {.columns}
+::: {.column width="45%"}
+| Model sees | Must predict |
+|:-----------|:-------------|
+| `the` | `cat` |
+| `the cat` | `sat` |
+| `the cat sat` | `on` |
+| `the cat sat on` | `the` |
+| `… sat on the` | `mat` |
+| `… on the mat` | `and` |
+| `… the mat and` | `the` |
+| `… mat and the` | `cat` |
+| `… and the cat` | `slept` |
+:::
+::: {.column width="55%"}
+10 tokens give **9 training examples**. For each one, the usual loop:
+
+1. **Forward**: predict the next word
+2. **Loss**: how wrong was the guess?
+3. **Backprop**: blame each of the 312 weights
+4. **Update**: nudge them, then repeat
+
+::: card
+With only 10 tokens, the model simply **memorizes** this sentence. Real LLMs train on trillions of tokens, so they learn general patterns instead.
+:::
+:::
+::::
+
+::: notes
+Nothing new here if you’ve trained a CNN: forward pass, loss, backpropagation, update. The only twist is where the labels come from. The text labels itself, because the correct answer is always just the next word. That’s why LLMs can learn from huge amounts of raw text without anyone labelling it.
+:::
+
+## The architecture sets how many parameters. The data sets their values. {.statement background-color="#A84E15"}
+
+[Key idea]{.kicker style="color:#F7E3D3"}
+
+Train on 10 tokens or 10 trillion: our model has 312 parameters either way.
+
+::: notes
+This is the most common confusion. More data doesn’t add parameters. You choose the sizes up front: vocabulary, embedding size, layers. Training only changes what the numbers are.
+:::
+
+## From the toy model to real LLMs {.divider .center background-color="#1B2333"}
+
+## Same recipe, bigger numbers
+
+[Scaling up]{.kicker}
+
+| Setting | Our toy model | GPT-2 small |
+|:--------|--------------:|------------:|
+| Vocabulary | 7 | 50,257 |
+| Embedding size | 4 | 768 |
+| Context length | 10 | 1,024 |
+| Transformer blocks | 1 | 12 |
+| **Parameters** | **≈ 312** | **≈ 124 million** |
+
+[Today’s largest LLMs use these same building blocks (embeddings, attention, feed-forward, output layer) with hundreds of billions of parameters.]{.muted}
+
+::: notes
+Nothing about the design changes as models grow. You widen the vectors, add more blocks, grow the vocabulary and train on vastly more text. GPT-2 small, from 2019, is a well-documented example of the full-size version of what we built.
+:::
+
+## An LLM in four steps {.recap background-color="#1B2333"}
+
+[Recap]{.kicker style="color:#F2A25C"}
+
+:::: {.columns}
+::: {.column width="48%"}
+::: card
+[1]{.num}
+
+Text is split into tokens, and each token gets an ID.
+:::
+
+::: card
+[3]{.num}
+
+Attention and feed-forward layers process the vectors.
+:::
+:::
+::: {.column width="4%"}
+:::
+::: {.column width="48%"}
+::: card
+[2]{.num}
+
+IDs become learned vectors. Embeddings are ordinary weights.
+:::
+
+::: card
+[4]{.num}
+
+The output layer predicts the next token. Training works like any network.
+:::
+:::
+::::
+
+::: notes
+If you remember one thing: once text is turned into numbers, an LLM is trained with the same forward pass, loss, backprop and update loop as any CNN.
+:::

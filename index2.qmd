@@ -1,0 +1,65 @@
+---
+title: "Math 460: Applied Data Mining"
+pagetitle: "Math 460: Applied Data Mining"
+format:
+  html:
+    theme: none
+    minimal: true
+    css: styles.css
+tbl-colwidths: false
+---
+
+::: {.quick-links}
+[Syllabus](m460syllabus.html)   ·   [Current Page](index.html)
+:::
+
+
+```{=html}
+<style>
+.schedule td:nth-child(-n+3) { color: var(--text); }
+.schedule td:nth-child(2) { white-space: nowrap; }
+.schedule td, .schedule th { padding-right: 0.9rem; }
+.schedule tr:has(td > strong) td { padding-top: 2rem; border-bottom: 1px solid var(--text); }
+.schedule td em { color: var(--muted); }
+</style>
+```
+
+::: {.schedule}
+
+| Week | Date | Topics | Slides/Notes | SAS | Python | Assignments | Exams |
+|:-----|:-----|:-------|:-------------|:----|:-------|:------------|:------|
+| 1 | 8/31 | An Overview of Data Mining | [Slides](slides/intro.html) | | | | |
+| 1 | 9/3 | Overfitting and Tuning | [Slides](slides/overfitting.pdf) | | | | |
+| 2 | 9/7 | *No class: Labor Day* | | | | | |
+| 2 | 9/10 | Model Evaluation | [Slides](slides/measuring_performance.pdf) <br> [Notes](slides/measuring_performance_notes.pdf) | | | [Assignment 1](assignments/Math460_Assignment1.html) | |
+|  |  | **Part 1. Tree-Based Models** | | | | | |
+| 3–4 | 9/14 <br> 9/17 <br> 9/21 | Classification Trees | [Slides](slides/classification_tree2_original_fa26.pdf) | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=59129bd3-7152-4f94-9988-b36001446e0f) | [Notebook](python/fa23/tree_classification.html) | [Assignment 2](assignments/assignment2_fa26.html) <br> [Assignment 3](assignments/assignment3_fa26.html) | [Exam 1 Practice](exams/Exam1/Exam1_fall24_practice_problem.pdf) |
+| 4–5 | 9/24 <br> 9/28 | Regression Trees | Note | | [Notebook](python/fa23/tree_regression.html) | [Assignment 4](assignments/assignment4_fa26.html) | |
+| 5–6 | 10/1 <br> 10/5 | Random Forest | [Slides](slides/rf.pdf) <br> [Forest vs. Trees](python/fa26/forest_vs_tree.html) | | [Classification](python/fa23/rf_classification.html) <br> [Regression](python/fa23/rf_regression.html) | | |
+| 6 | 10/8 | Ensemble Method | [Slides](gganimate/boosting3.html) | | | | |
+| 7 | 10/12 | *No class (holiday); meets Tue 10/13* | | | | | |
+| 7 | 10/13 (Tue) <br> 10/15 | AdaBoost | [Classification](gganimate/adaboost.html) <br> [Note](gganimate/Adaboost_fa26.pdf) <br> [Regression](python/fa26/adaboost/adaboost_regression_claude.html) | | [Learning Rate](python/fa26/adaboost_demonstrate_fa26.html) <br> [Classification](python/fa23/adaboost_classification.html) <br> [Regression](python/fa23/adaboost_regression.html) | | |
+| 8 | 10/19 <br> 10/22 | Gradient Boosting | [Slides](slides/gradient_descent_to_boosting_slides.html)  | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=ee838c52-d785-40c9-8a2a-b37c01468094) | [Classification](python/fa23/gb_classification.html), <br> [Regression](python/fa23/gb_regression.html)   | [Assignment 5](assignments/assignment5_fa25.html) | [Exam 2 Practice](exams/Exam2/Exam2_sol.html) |
+| 9 | 10/26 | Handwritten Digit Recognition | | | [Forest](python/digits/fa23/image_recognition_rf.html) | [Assignment 6](assignments/assignment6_fa23.html) | |
+| 9 | 10/29 | Heart Disease Prediction Kaggle Competition|  | |  | [Kaggle Competition](assignments/assignment_kaggle.html) | |
+|  |  | **Part 2. Linear Models and Neural Networks** | | | | | |
+| 10 | 11/2 | Linear Models and LASSO | Note | | Regression <br> Classification | [Assignment 8](assignments/fa26_drafts/a08_linear_lasso/assignment8.html) <br> [Notebook](assignments/fa26_drafts/a08_linear_lasso/assignment8_student.html) | |
+| 10–11 | 11/5 <br> 11/9 | Neural Network | Notes | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cfb3a288-cf3f-4c18-ac81-b0b201372c17) | | [Assignment 9](assignments/fa26_drafts/a09_neural_network/assignment9.html) <br> [Notebook](assignments/fa26_drafts/a09_neural_network/assignment9_student.html) | |
+| 11 | 11/12 | Deep Learning | Slides | | Codes | [Assignment 10](assignments/fa26_drafts/a10_deep_learning/assignment10.html) <br> [Notebook](assignments/fa26_drafts/a10_deep_learning/assignment10_student.html) | |
+| 12 | 11/16 | Image Recognition | | | Codes | [Assignment 11](assignments/fa26_drafts/a11_image_recognition/assignment11.html) <br> [Notebook](assignments/fa26_drafts/a11_image_recognition/assignment11_student.html) | |
+|  |  | **Part 3. KNN and Recommendation Systems** | | | | | |
+| 12 | 11/19 | KNN | 1 | | Notebook | [Assignment 12](assignments/fa26_drafts/a12_knn/assignment12.html) <br> [Notebook](assignments/fa26_drafts/a12_knn/assignment12_student.html) | |
+| 13 | 11/23 | Recommendation System | 1 <br> 2 | | | [Assignment 13](assignments/fa26_drafts/a13_recommendation/assignment13.html) <br> [Notebook](assignments/fa26_drafts/a13_recommendation/assignment13_student.html) | Exam 3 |
+| 13 | 11/26 | *No class: Thanksgiving* | | | | | |
+|  |  | **Part 4. Large Language Models** | | | | | |
+| 14 | 11/30 | Pre-training | [Notes](llm/how_an_llm_works.html) | | [Small LLM](llm/tiny_llm_from_scratch.html) <br> [TinyStories LLM](llm/tiny_llm_tinystories.html) | [Assignment 14](assignments/fa26_drafts/a14_llm_pretraining/assignment14.html) <br> [Notebook](assignments/fa26_drafts/a14_llm_pretraining/assignment14_student.html) | |
+| 14 | 12/3 | Instruction Tuning | | | Large LLM | [Assignment 15](assignments/fa26_drafts/a15_llm_instruction_tuning/assignment15.html) <br> [Notebook](assignments/fa26_drafts/a15_llm_instruction_tuning/assignment15_student.html) | |
+| 15 | 12/7 | Preference Tuning | | | | [Assignment 16](assignments/fa26_drafts/a16_llm_preference_tuning/assignment16.html) <br> [Notebook](assignments/fa26_drafts/a16_llm_preference_tuning/assignment16_student.html) | |
+| | | **Final Project** | Project | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257) | | | |
+| 15 | 12/10 | | Final Project Presentation | | | | |
+
+:::
+
+::: {.legend}
+Linked items are clickable. Items in grey are coming soon. Class meets Monday and Thursday; dates follow the Bryant Fall 2026 academic calendar.
+:::

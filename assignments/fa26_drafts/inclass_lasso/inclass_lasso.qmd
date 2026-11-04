@@ -13,20 +13,16 @@ Can LASSO predict a student's final math grade better than ordinary linear regre
 
 ## What to Submit
 
-Download the notebook [inclass_lasso_student.ipynb](inclass_lasso_student.ipynb){download="inclass_lasso_student.ipynb"}, complete it, and submit it on Canvas before the end of class, with all cells run.
-
 Your notebook must contain these six parts:
 
 | Part | What it must show |
-|:------------------|:----------------------------------------------------|
+|:-------------------|:---------------------------------------------------|
 | 1\. Introduce the dataset | What a row is, the target, the inputs, and anything unusual |
 | 2\. Explain the testing procedure | Number and size of splits, how $\alpha$ is tuned, how the models are scored, and why |
 | 3\. OLS and LASSO on one split | OLS results; the process of tuning $\alpha$; plots of the LASSO coefficients |
 | 4\. OLS vs. tuned LASSO | The comparison over all 50 splits: a table and a plot |
 | 5\. Summary of the variables | Which variables each model uses, and how the coefficients compare |
 | 6\. Why LASSO works better | Your explanation, with numbers from your own output as evidence |
-
-The notebook gives you the data loading and preprocessing code, so you can focus on the models and on explaining the results. Everything runs in a few seconds.
 
 ## Data
 
@@ -35,7 +31,7 @@ The notebook gives you the data loading and preprocessing code, so you can focus
 **Target:** `G3`, the final grade, from 0 to 20.
 
 | Variable | Meaning |
-|:------------------|:----------------------------------------------------|
+|:-------------------|:---------------------------------------------------|
 | `G1`, `G2` | First- and second-period grades (0 to 20) |
 | `school` | School: `GP` or `MS` |
 | `sex`, `age` | Student's sex and age |

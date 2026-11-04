@@ -1,0 +1,60 @@
+---
+title: "Assignment 11: Image Recognition with CNNs and Transfer Learning"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In Assignment 6 you recognized images with a random forest on raw pixel values. In this assignment you will use the two ideas behind modern image recognition:
+
+-   **Part A, convolutional neural networks (CNNs):** build a CNN in PyTorch, compare it with a fully connected network on Fashion-MNIST, and look inside its first layer.
+-   **Part B, transfer learning:** reuse ResNet-18, a large CNN already trained on 1.2 million photos, to recognize **your own categories of images** from only a few dozen examples per category.
+
+## What to Submit
+
+Submit the following on Canvas:
+
+| Deliverable | Format |
+|---|---|
+| Notebook | The completed `assignment11_student.ipynb`, with all cells run |
+| Your images | A zip file of your image folder (or a link to it) |
+
+The easiest way to run the notebook is [Google Colab](https://colab.research.google.com), where PyTorch and torchvision are already installed (upload your image folder to Colab or to Google Drive). On your laptop, install them with `pip install torch torchvision`. Part A takes about 2–4 minutes on a laptop CPU.
+
+## Part A: CNNs on Fashion-MNIST (Questions 1–5)
+
+| Question | Topic |
+|---|---|
+| 1 | Train a fully connected network (MLP) as a baseline |
+| 2 | Build and train a CNN with two convolutional layers |
+| 3 | Compare accuracy and parameters; count the parameters of a convolutional layer by hand |
+| 4 | Visualize the learned filters and feature maps |
+| 5 | Find which classes the CNN confuses with a confusion matrix |
+
+## Part B: Transfer Learning on Your Own Images (Questions 6–8)
+
+1.  Choose **2 to 4 categories** of images you want to recognize, for example dogs vs cats, kinds of food, cars vs trucks, or Bryant buildings.
+2.  Collect **at least 30 images per category**. Search engines work well.
+3.  Put the images in one folder with **one subfolder per category**:
+
+```
+my_images/
+    category_1/   img1.jpg, img2.png, ...
+    category_2/   ...
+```
+
+The notebook reads `.jpg`, `.jpeg`, `.png`, `.jfif`, `.webp` and `.bmp` files. Images saved from Google are often `.jfif` or `.webp`.
+
+| Question | Topic |
+|---|---|
+| 6 | Turn every image into 512 features with a pretrained ResNet-18 |
+| 7 | Train a classifier on the features; compare it with a random forest on raw pixels |
+| 8 | Look at the images the model gets wrong and explain why |
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

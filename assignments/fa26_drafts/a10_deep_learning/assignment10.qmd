@@ -1,0 +1,36 @@
+---
+title: "Assignment 10: Deep Learning with PyTorch"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In Assignment 9, scikit-learn trained the neural networks for you. In this assignment you will use **PyTorch**, the library behind most modern deep learning, and write the training loop yourself. You will then use it to study the two things that matter most when training a deep network: the **learning rate** and **overfitting**.
+
+The data is scikit-learn's built-in handwritten digits (1,797 images of 8×8 pixels), so nothing needs to be downloaded.
+
+## What to Submit
+
+Submit the completed notebook `assignment10_student.ipynb` on Canvas, with all cells run.
+
+You can run the notebook on your laptop (install PyTorch with `pip install torch`) or on [Google Colab](https://colab.research.google.com), where PyTorch is already installed. The whole notebook runs in under a minute on a laptop CPU.
+
+## The Questions
+
+| Question | Topic |
+|---|---|
+| 1 | Split the data into training/validation/test sets and create a `DataLoader` |
+| 2 | Define a network with two hidden layers in PyTorch |
+| 3 | Write the training loop: forward pass, loss, zero the gradients, backpropagation, update |
+| 4 | Epochs, mini-batches and weight updates |
+| 5 | Compare learning rates 0.001, 0.01, 0.1 and 1.0 |
+| 6 | Overfitting on a small training set; dropout, weight decay and early stopping |
+| 7 | Train a final model and evaluate it once on the test set |
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.
