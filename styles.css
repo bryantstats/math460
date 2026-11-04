@@ -84,15 +84,18 @@ a:focus-visible {
   color: var(--muted);          /* unlinked items read as "coming soon" */
 }
 
-.schedule td:first-child { color: var(--text); }
+.schedule td:nth-child(-n+3) { color: var(--text); }   /* week, dates, topic */
+.schedule td:nth-child(-n+2) { white-space: nowrap; }
 .schedule td a { white-space: nowrap; }
 
 /* Section rows: just bold text with breathing room above */
-.schedule tr:has(td:first-child > strong) td {
+.schedule tr:has(td:nth-child(3) > strong) td {
   padding-top: 2rem;
   border-bottom: 1px solid var(--text);
 }
 .schedule td strong { font-weight: 600; }
+.schedule td em { color: var(--muted); }
+.schedule td, .schedule th { padding-right: 0.9rem; }
 
 .legend {
   margin-top: 1.5rem;

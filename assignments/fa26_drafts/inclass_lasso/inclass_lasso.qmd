@@ -1,0 +1,59 @@
+---
+title: "In-Class Assignment: LASSO vs. Linear Regression"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+Can LASSO predict a student's final math grade better than ordinary linear regression (OLS), using only the original inputs (no squares or interactions)? You will test both models on the same data and write up the result as a short report.
+
+## What to Submit
+
+Download the notebook [inclass_lasso_student.ipynb](inclass_lasso_student.ipynb){download="inclass_lasso_student.ipynb"}, complete it, and submit it on Canvas before the end of class, with all cells run.
+
+Your notebook must contain these six parts:
+
+| Part | What it must show |
+|:------------------|:----------------------------------------------------|
+| 1\. Introduce the dataset | What a row is, the target, the inputs, and anything unusual |
+| 2\. Explain the testing procedure | Number and size of splits, how $\alpha$ is tuned, how the models are scored, and why |
+| 3\. OLS and LASSO on one split | OLS results; the process of tuning $\alpha$; plots of the LASSO coefficients |
+| 4\. OLS vs. tuned LASSO | The comparison over all 50 splits: a table and a plot |
+| 5\. Summary of the variables | Which variables each model uses, and how the coefficients compare |
+| 6\. Why LASSO works better | Your explanation, with numbers from your own output as evidence |
+
+The notebook gives you the data loading and preprocessing code, so you can focus on the models and on explaining the results. Everything runs in a few seconds.
+
+## Data
+
+[Student Performance (math course)](https://bryantstats.github.io/math460/data/student_performance.csv): 395 students at two Portuguese secondary schools (Cortez & Silva, 2008, [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/320/student+performance)).
+
+**Target:** `G3`, the final grade, from 0 to 20.
+
+| Variable | Meaning |
+|:------------------|:----------------------------------------------------|
+| `G1`, `G2` | First- and second-period grades (0 to 20) |
+| `school` | School: `GP` or `MS` |
+| `sex`, `age` | Student's sex and age |
+| `address` | Home: `U` urban, `R` rural |
+| `famsize` | Family size: `LE3` three or fewer, `GT3` more than three |
+| `Pstatus` | Parents: `T` together, `A` apart |
+| `Medu`, `Fedu` | Mother's and father's education (0 none to 4 higher education) |
+| `Mjob`, `Fjob` | Mother's and father's job |
+| `reason` | Reason for choosing this school |
+| `guardian` | Student's guardian |
+| `traveltime`, `studytime` | Travel time to school and weekly study time (1 low to 4 high) |
+| `failures` | Number of past class failures |
+| `schoolsup`, `famsup`, `paid` | Extra support from school; support from family; paid extra classes (yes/no) |
+| `activities`, `nursery`, `higher`, `internet`, `romantic` | Activities; attended nursery school; wants higher education; internet at home; in a relationship (yes/no) |
+| `famrel`, `freetime`, `goout`, `health` | Family relationships, free time, going out with friends, health (1 low to 5 high) |
+| `Dalc`, `Walc` | Workday and weekend alcohol use (1 low to 5 high) |
+| `absences` | Number of school absences |
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.
