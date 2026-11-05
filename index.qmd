@@ -37,7 +37,7 @@ tbl-colwidths: false
 | 11 | 11/12 | Deep Learning | Slides | | Codes | | |
 | 12 | 11/16 | Image Recognition | | | Codes | Assignment | |
 |  |  | **Part 3. KNN and Recommendation Systems** | | | | | |
-| 12 | 11/19 | KNN and Recommendation System | KNN <br> Recommendation 1 <br> Recommendation 2 | | Notebook | Assignment | |
+| 12 | 11/19 | KNN and Recommendation System | | | Notebook | Assignment | |
 | 13 | 11/23 | **Exam 3** | | | | | Exam 3 |
 | 13 | 11/26 | *No class: Thanksgiving* | | | | | |
 |  |  | **Part 4. Large Language Models** | | | | | |
@@ -46,6 +46,7 @@ tbl-colwidths: false
 | 15 | 12/7 | Preference Tuning | | | | | |
 |  |  | **Final Project** | Project | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257) | | | |
 | 15 | 12/10 |  | Final Project Presentation | | | | |
+| 15 | Sat 12/12 <br> 3:00pm | **Final Exam Presentation** | | | | | |
 
 :::
 
