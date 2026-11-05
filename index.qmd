@@ -44,8 +44,7 @@ tbl-colwidths: false
 | 14 | 11/30 | Pre-training | Notes | | Small LLM | | |
 | 14 | 12/3 | Instruction Tuning | | | Large LLM | Assignment | |
 | 15 | 12/7 | Preference Tuning | | | | | |
-|  |  | **Final Project** | Project | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257) | | | |
-| 15 | 12/10 |  | Final Project Presentation | | | | |
+| 15 | 12/10 | **Final Project** | Project | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257) | | | |
 | 15 | Sat 12/12 <br> 3:00pm | **Final Exam Presentation** | | | | | |
 
 :::
