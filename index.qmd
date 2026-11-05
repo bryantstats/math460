@@ -33,7 +33,7 @@ tbl-colwidths: false
 | 9 | 10/29 | Heart Disease Prediction Kaggle Competition |  | |  | [Kaggle Competition](assignments/assignment_kaggle.html) | |
 |  |  | **Part 2. Linear Models and Neural Networks** | | | | | |
 | 10 | 11/2 | Linear Models and LASSO | Note | | Regression <br> Classification | | |
-| 10–11 | 11/5 <br> 11/9 | Neural Network | Notes | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cfb3a288-cf3f-4c18-ac81-b0b201372c17) | | Assignment | |
+| 10–11 | 11/5 <br> 11/9 | Neural Network | Notes | Video | | Assignment | |
 | 11 | 11/12 | Deep Learning | Slides | | Codes | | |
 | 12 | 11/16 | Image Recognition | | | Codes | Assignment | |
 |  |  | **Part 3. KNN and Recommendation Systems** | | | | | |
