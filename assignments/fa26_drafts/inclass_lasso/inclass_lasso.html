@@ -2314,9 +2314,14 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#deliverables" id="toc-deliverables" class="nav-link active" data-scroll-target="#deliverables">Deliverables</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#part-i-student-performance" id="toc-part-i-student-performance" class="nav-link" data-scroll-target="#part-i-student-performance">Part I: Student Performance</a>
+  <ul class="collapse">
   <li><a href="#what-to-submit" id="toc-what-to-submit" class="nav-link" data-scroll-target="#what-to-submit">What to Submit</a></li>
   <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">Data</a></li>
+  </ul></li>
+  <li><a href="#part-ii-find-your-own-dataset" id="toc-part-ii-find-your-own-dataset" class="nav-link" data-scroll-target="#part-ii-find-your-own-dataset">Part II: Find Your Own Dataset</a></li>
   <li><a href="#ai-policy" id="toc-ai-policy" class="nav-link" data-scroll-target="#ai-policy">AI Policy</a></li>
   </ul>
 </nav>
@@ -2342,21 +2347,31 @@ window.Quarto = {
 </header>
 
 
+<section id="deliverables" class="level2">
+<h2 class="anchored" data-anchor-id="deliverables">Deliverables</h2>
+<ul>
+<li><strong>Notebook:</strong> one Jupyter notebook covering both parts of this assignment.</li>
+<li><strong>5-minute sharing:</strong> share your answers and results with the class in 5 minutes.</li>
+</ul>
+</section>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>Can LASSO predict a student’s final math grade better than ordinary linear regression (OLS), using only the original inputs (no squares or interactions)? You will test both models on the same data and write up the result as a short report.</p>
+<p>Can LASSO predict a student’s final math grade better than ordinary linear regression (OLS), using only the original inputs (no squares or interactions)? You will test both models on the same data and write up the computation and results in a Jupyter notebook. The notebook should be self-contained, with all code and output included.</p>
+<p>The assignment has two parts. In Part I, you compare the two models on the student performance data. In Part II, you find your own dataset where LASSO beats OLS and repeat the analysis.</p>
 </section>
-<section id="what-to-submit" class="level2">
-<h2 class="anchored" data-anchor-id="what-to-submit">What to Submit</h2>
-<p>Your notebook must contain these six parts:</p>
+<section id="part-i-student-performance" class="level2">
+<h2 class="anchored" data-anchor-id="part-i-student-performance">Part I: Student Performance</h2>
+<section id="what-to-submit" class="level3">
+<h3 class="anchored" data-anchor-id="what-to-submit">What to Submit</h3>
+<p>Your notebook must contain these five sections:</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 27%">
-<col style="width: 72%">
+<col style="width: 29%">
+<col style="width: 70%">
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">Part</th>
+<th style="text-align: left;">Section</th>
 <th style="text-align: left;">What it must show</th>
 </tr>
 </thead>
@@ -2370,32 +2385,28 @@ window.Quarto = {
 <td style="text-align: left;">Number and size of splits, how <span class="math inline">\(\alpha\)</span> is tuned, how the models are scored, and why</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">3. OLS and LASSO on one split</td>
-<td style="text-align: left;">OLS results; the process of tuning <span class="math inline">\(\alpha\)</span>; plots of the LASSO coefficients</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">4. OLS vs. tuned LASSO</td>
+<td style="text-align: left;">3. OLS vs. tuned LASSO</td>
 <td style="text-align: left;">The comparison over all 50 splits: a table and a plot</td>
 </tr>
-<tr class="odd">
-<td style="text-align: left;">5. Summary of the variables</td>
+<tr class="even">
+<td style="text-align: left;">4. Summary of the variables</td>
 <td style="text-align: left;">Which variables each model uses, and how the coefficients compare</td>
 </tr>
-<tr class="even">
-<td style="text-align: left;">6. Why LASSO works better</td>
+<tr class="odd">
+<td style="text-align: left;">5. Why LASSO works better</td>
 <td style="text-align: left;">Your explanation, with numbers from your own output as evidence</td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="data" class="level2">
-<h2 class="anchored" data-anchor-id="data">Data</h2>
+<section id="data" class="level3">
+<h3 class="anchored" data-anchor-id="data">Data</h3>
 <p><a href="https://bryantstats.github.io/math460/data/student_performance.csv">Student Performance (math course)</a>: 395 students at two Portuguese secondary schools (Cortez &amp; Silva, 2008, <a href="https://archive.ics.uci.edu/dataset/320/student+performance">UCI Machine Learning Repository</a>).</p>
 <p><strong>Target:</strong> <code>G3</code>, the final grade, from 0 to 20.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 27%">
-<col style="width: 72%">
+<col style="width: 29%">
+<col style="width: 70%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -2474,6 +2485,20 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
+</section>
+</section>
+<section id="part-ii-find-your-own-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="part-ii-find-your-own-dataset">Part II: Find Your Own Dataset</h2>
+<p>Find a dataset where LASSO predicts better than OLS, then repeat all five sections from Part I on it. Use the same testing procedure, and include a link to the data in Section 1.</p>
+<p>Your dataset must meet these requirements:</p>
+<ul>
+<li><strong>Public:</strong> anyone can download it from the source you link to.</li>
+<li><strong>New:</strong> it is not the student performance data or any other dataset used in this course.</li>
+<li><strong>Numeric target:</strong> this is a regression problem, as in Part I.</li>
+<li><strong>Original inputs only:</strong> do not add squares, interactions, or made-up columns such as random noise.</li>
+</ul>
+<p><strong>LASSO works</strong> if, over the 50 splits, it has the higher median test <span class="math inline">\(R^2\)</span> and the higher test <span class="math inline">\(R^2\)</span> on more than half of the splits.</p>
+<p><strong>Tip:</strong> LASSO tends to help when there are many inputs relative to the number of rows and many of those inputs add little. If your first dataset does not work, try another, and name the datasets you ruled out in Section 1.</p>
 </section>
 <section id="ai-policy" class="level2">
 <h2 class="anchored" data-anchor-id="ai-policy">AI Policy</h2>

@@ -7,31 +7,39 @@ format:
 editor: visual
 ---
 
+## Deliverables
+
+-   **Notebook:** one Jupyter notebook covering both parts of this assignment.
+-   **5-minute sharing:** share your answers and results with the class in 5 minutes.
+
 ## Overview
 
-Can LASSO predict a student's final math grade better than ordinary linear regression (OLS), using only the original inputs (no squares or interactions)? You will test both models on the same data and write up the result as a short report.
+Can LASSO predict a student's final math grade better than ordinary linear regression (OLS), using only the original inputs (no squares or interactions)? You will test both models on the same data and write up the computation and results in a Jupyter notebook. The notebook should be self-contained, with all code and output included.
 
-## What to Submit
+The assignment has two parts. In Part I, you compare the two models on the student performance data. In Part II, you find your own dataset where LASSO beats OLS and repeat the analysis.
 
-Your notebook must contain these six parts:
+## Part I: Student Performance
 
-| Part | What it must show |
-|:-------------------|:---------------------------------------------------|
+### What to Submit
+
+Your notebook must contain these five sections:
+
+| Section | What it must show |
+|:--------------------|:--------------------------------------------------|
 | 1\. Introduce the dataset | What a row is, the target, the inputs, and anything unusual |
 | 2\. Explain the testing procedure | Number and size of splits, how $\alpha$ is tuned, how the models are scored, and why |
-| 3\. OLS and LASSO on one split | OLS results; the process of tuning $\alpha$; plots of the LASSO coefficients |
-| 4\. OLS vs. tuned LASSO | The comparison over all 50 splits: a table and a plot |
-| 5\. Summary of the variables | Which variables each model uses, and how the coefficients compare |
-| 6\. Why LASSO works better | Your explanation, with numbers from your own output as evidence |
+| 3\. OLS vs. tuned LASSO | The comparison over all 50 splits: a table and a plot |
+| 4\. Summary of the variables | Which variables each model uses, and how the coefficients compare |
+| 5\. Why LASSO works better | Your explanation, with numbers from your own output as evidence |
 
-## Data
+### Data
 
 [Student Performance (math course)](https://bryantstats.github.io/math460/data/student_performance.csv): 395 students at two Portuguese secondary schools (Cortez & Silva, 2008, [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/320/student+performance)).
 
 **Target:** `G3`, the final grade, from 0 to 20.
 
 | Variable | Meaning |
-|:-------------------|:---------------------------------------------------|
+|:--------------------|:--------------------------------------------------|
 | `G1`, `G2` | First- and second-period grades (0 to 20) |
 | `school` | School: `GP` or `MS` |
 | `sex`, `age` | Student's sex and age |
@@ -49,6 +57,21 @@ Your notebook must contain these six parts:
 | `famrel`, `freetime`, `goout`, `health` | Family relationships, free time, going out with friends, health (1 low to 5 high) |
 | `Dalc`, `Walc` | Workday and weekend alcohol use (1 low to 5 high) |
 | `absences` | Number of school absences |
+
+## Part II: Find Your Own Dataset
+
+Find a dataset where LASSO predicts better than OLS, then repeat all five sections from Part I on it. Use the same testing procedure, and include a link to the data in Section 1.
+
+Your dataset must meet these requirements:
+
+-   **Public:** anyone can download it from the source you link to.
+-   **New:** it is not the student performance data or any other dataset used in this course.
+-   **Numeric target:** this is a regression problem, as in Part I.
+-   **Original inputs only:** do not add squares, interactions, or made-up columns such as random noise.
+
+**LASSO works** if, over the 50 splits, it has the higher median test $R^2$ and the higher test $R^2$ on more than half of the splits.
+
+**Tip:** LASSO tends to help when there are many inputs relative to the number of rows and many of those inputs add little. If your first dataset does not work, try another, and name the datasets you ruled out in Section 1.
 
 ## AI Policy
 
