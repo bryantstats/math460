@@ -1,11 +1,15 @@
 ---
-title: "In-Class Assignment: LASSO vs. Linear Regression"
+title: "Assignment 8: LASSO vs. Linear Regression"
 format:
   html:
     toc: true
     embed-resources: true
 editor: visual
 ---
+
+::: {style="color: #b00020; background-color: #fde8e8; border: 2px solid #b00020; border-radius: 6px; padding: 10px 14px; font-weight: bold;"}
+Presentation/Sharing Results is in-class on Monday, Nov 9.
+:::
 
 ## Deliverables
 

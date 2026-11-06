@@ -32,7 +32,7 @@ tbl-colwidths: false
 | 9 | 10/26 | Handwritten Digit Recognition | | | [Forest](python/digits/fa23/image_recognition_rf.html) | [Assignment 6](assignments/assignment6_fa23.html) | |
 | 9 | 10/29 | Heart Disease Prediction Kaggle Competition |  | |  | [Kaggle Competition](assignments/assignment_kaggle.html) | |
 |  |  | **Part 2. Linear Models and Neural Networks** | | | | | |
-| 10 | 11/2 <br> 11/5 | Linear Models and LASSO | Note | | [LASSO vs. OLS](python/fa26/lasso_vs_ols_ames_fa26.html) <br> [Many Noise Inputs](python/fa26/lasso_vs_ols_sparse_fa26.html) | [In-Class Assignment](assignments/fa26_drafts/inclass_lasso/inclass_lasso.html) <br> [Practice Problem](assignments/fa26_drafts/lasso_problem/lasso_problem.html) | |
+| 10 | 11/2 <br> 11/5 | Linear Models and LASSO | Note | | [LASSO vs. OLS](python/fa26/lasso_vs_ols_ames_fa26.html) <br> [Many Noise Inputs](python/fa26/lasso_vs_ols_sparse_fa26.html) | [Assignment 8](assignments/fa26_drafts/inclass_lasso/inclass_lasso.html) <br> [Practice Problem](assignments/fa26_drafts/lasso_problem/lasso_problem.html) | |
 | 10–11 | 11/5 <br> 11/9 | Neural Network | Notes | Video | | Assignment | |
 | 11 | 11/12 | Deep Learning | Slides | | Codes | | |
 | 12 | 11/16 | Image Recognition | | | Codes | Assignment | |
