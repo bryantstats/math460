@@ -33,7 +33,7 @@ tbl-colwidths: false
 | 9 | 10/29 | Heart Disease Prediction Kaggle Competition |  | |  | [Assignment 7](assignments/assignment_kaggle.html) | |
 |  |  | **Part 2. Linear Models and Neural Networks** | | | | | |
 | 10 | 11/2 <br> 11/5 | Linear Models and LASSO | Note | | [LASSO vs. OLS](python/fa26/lasso_vs_ols_ames_fa26.html) <br> [Many Noise Inputs](python/fa26/lasso_vs_ols_sparse_fa26.html) | [Assignment 8](assignments/fa26_drafts/inclass_lasso/inclass_lasso.html) <br> [Practice Problem](assignments/fa26_drafts/lasso_problem/lasso_problem.html) | |
-| 11 | 11/9 | Neural Network | Notes | Video | | Assignment | |
+| 11 | 11/9 | Neural Network | [Slides](slides/neural_network_fa26.html) <br> Notes | [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=cfb3a288-cf3f-4c18-ac81-b0b201372c17) | | Assignment <br> [Practice Problem](slides/neural_network_fa26.html#/problem-calculate-the-output) | |
 | 11 | 11/12 | Deep Learning | Slides | | Codes | | |
 | 12 | 11/16 | Image Recognition | | | Codes | Assignment | |
 |  |  | **Part 3. KNN and Recommendation Systems** | | | | | |
