@@ -1,0 +1,63 @@
+---
+title: "Assignment 12: K-Nearest Neighbors"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+K-nearest neighbors (KNN) predicts from the $k$ most similar training observations. In this assignment you will compute KNN by hand to see why scaling matters, then use Python to choose $k$, study what irrelevant predictors do to KNN, and compare KNN regression with LASSO.
+
+## What to Submit
+
+Submit the following on Canvas:
+
+| Deliverable | Format |
+|---|---|
+| Problem 1 (by hand) | Word document, or photos/scans of your written work |
+| Problem 2 | The completed notebook `assignment12_student.ipynb`, with all cells run |
+
+## Problem 1 (by hand)
+
+A car dealer wants to predict whether a customer will buy an extended warranty (Yes/No) from the customer's age and income (in thousands of dollars).
+
+| Customer | Age | Income | Bought warranty |
+|:---------|:----|:-------|:----------------|
+| A        | 25  | 40     | No              |
+| B        | 35  | 60     | Yes             |
+| C        | 45  | 80     | Yes             |
+| D        | 20  | 20     | No              |
+| E        | 40  | 30     | No              |
+| F        | 30  | 75     | Yes             |
+
+A new customer is 28 years old with an income of 52. Round your answers to 3 decimals.
+
+a.  Compute the Euclidean distance from the new customer to each of the six customers, using the raw values.
+
+b.  Predict the new customer's class with $k = 1$ and with $k = 3$.
+
+c.  Now apply **min-max scaling** to both predictors, $x' = \dfrac{x - \min}{\max - \min}$, using the minimum and maximum of the six training customers. Scale the new customer the same way and recompute the six distances.
+
+d.  Predict the new customer's class again with $k = 1$ and $k = 3$.
+
+e.  Did any prediction change? Explain why in two or three sentences.
+
+## Problem 2 (Python)
+
+Open `assignment12_student.ipynb` and complete Questions 1–4:
+
+| Question | Topic |
+|---|---|
+| 1 | KNN on the breast cancer data with and without scaling |
+| 2 | Choose $k$ by cross-validation; overfitting and underfitting |
+| 3 | The curse of dimensionality: what noise predictors do to KNN |
+| 4 | KNN regression on the NBA salary data, compared with LASSO from Assignment 8 |
+
+Data: [Breast Cancer Wisconsin](https://bryantstats.github.io/math460/data/breast_cancer.csv), [NBA salaries](https://bryantstats.github.io/math460/data/nba_salary2.csv)
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

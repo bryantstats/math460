@@ -1,0 +1,885 @@
+---
+title: "AdaBoost for Regression"
+subtitle: "AdaBoost.R2 with one input variable"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1280
+    height: 800
+    embed-resources: true
+    menu: true
+    footer: "AdaBoost for Regression"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.6em; font-size: 1.5em;
+          }
+          .reveal table.tbl { font-size: 0.5em; border-collapse: collapse; margin: 0 auto; }
+          .reveal table.tbl th, .reveal table.tbl td { padding: 2px 10px; text-align: center; border-bottom: 1px solid #ddd; }
+          .reveal table.tbl th { border-bottom: 2px solid #333; }
+          .reveal table.small { font-size: 0.42em; }
+          .reveal p, .reveal li { font-size: 0.8em; }
+          .reveal .note { font-size: 0.65em; color: #555; }
+          .reveal .goal { background:#fff4e6; border-left:6px solid #E8833A; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.8em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.8em; }
+          .reveal .flow { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:0.4em; margin:0.8em 0; }
+          .reveal .flow .box { background:#FAC18A; color:#222; border-radius:10px; padding:0.6em 0.8em; font-size:0.62em; text-align:center; width:11em; }
+          .reveal .flow .arrow { font-size:1.2em; color:#555; }
+          .reveal .answer { color:#1a7f37; font-weight:bold; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+fig-format: png
+fig-dpi: 150
+---
+
+```{python}
+#| label: setup
+import numpy as np
+import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
+from IPython.display import display, HTML, Markdown
+
+plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                     "axes.spines.right": False})
+BLUE, ORANGE, GREY = "#1f4fd8", "#E8833A", "#888888"
+
+# ------------------------------------------------------------------
+# Data: one input variable x, a noisy 3-step response y
+# ------------------------------------------------------------------
+x = np.arange(1, 11).astype(float)
+y = np.array([0.9, 1.2, 1.3, 2.9, 2.4, 3.8, 2.8, 5.0, 5.0, 4.8])
+n = len(x)
+XX = np.linspace(0.5, 10.5, 1000)          # grid for drawing step functions
+
+# ------------------------------------------------------------------
+# Regression stump: choose the split with the lowest weighted SSE
+# ------------------------------------------------------------------
+def candidate_splits(x, y, w):
+    rows = []
+    xs = np.unique(x)
+    for t in (xs[:-1] + xs[1:]) / 2:
+        l = x <= t
+        r = ~l
+        ml = np.average(y[l], weights=w[l])
+        mr = np.average(y[r], weights=w[r])
+        sse = (w[l] * (y[l] - ml) ** 2).sum() + (w[r] * (y[r] - mr) ** 2).sum()
+        rows.append((t, ml, mr, sse))
+    return pd.DataFrame(rows, columns=["t", "left", "right", "sse"])
+
+def fit_stump(x, y, w):
+    c = candidate_splits(x, y, w)
+    b = c.loc[c["sse"].idxmin()]
+    return b["t"], b["left"], b["right"]
+
+# ------------------------------------------------------------------
+# AdaBoost.R2 (square loss), learning rate eta
+# ------------------------------------------------------------------
+def adaboost_r2(x, y, M=3, eta=1.0):
+    w = np.ones(len(x)) / len(x)
+    rounds = []
+    for m in range(M):
+        t, ml, mr = fit_stump(x, y, w)
+        pred = np.where(x <= t, ml, mr)
+        resid = np.abs(y - pred)
+        D = resid.max()
+        L = (resid / D) ** 2
+        Lbar = (w * L).sum()
+        if Lbar >= 0.5:                      # weak learner no better than "chance"
+            break
+        beta = Lbar / (1 - Lbar)
+        alpha = eta * np.log(1 / beta)
+        w_raw = w * beta ** (eta * (1 - L))
+        w_next = w_raw / w_raw.sum()
+        rounds.append(dict(w=w, t=t, ml=ml, mr=mr, pred=pred, resid=resid,
+                           D=D, L=L, Lbar=Lbar, beta=beta, alpha=alpha,
+                           w_raw=w_raw, w_next=w_next))
+        w = w_next
+    return rounds
+
+def stump_predict(rd, xq):
+    return np.where(xq <= rd["t"], rd["ml"], rd["mr"])
+
+def ensemble_predict(rounds, xq, upto=None):
+    """Weighted median of the stump predictions (weights = voting power alpha)."""
+    rs = rounds[:upto]
+    P = np.array([stump_predict(r, xq) for r in rs])      # (T, len(xq))
+    A = np.array([r["alpha"] for r in rs])
+    out = np.empty(P.shape[1])
+    for j in range(P.shape[1]):
+        o = np.argsort(P[:, j])
+        cum = np.cumsum(A[o])
+        out[j] = P[o, j][np.searchsorted(cum, 0.5 * cum[-1])]
+    return out
+
+R = adaboost_r2(x, y, M=3)
+r1, r2, r3 = R
+R_long = adaboost_r2(x, y, M=15, eta=0.5)   # for the learning-curve slide
+
+# ------------------------------------------------------------------
+# Plot helpers
+# ------------------------------------------------------------------
+def plot_stump(ax, rd=None, w=None, title=None, resid=False, step=True):
+    w = rd["w"] if (w is None and rd is not None) else w
+    if w is None:
+        w = np.ones(n) / n
+    if rd is not None and step:
+        ax.plot(XX, stump_predict(rd, XX), color=ORANGE, lw=2.5, zorder=1)
+        if resid:
+            for xi, yi, pi in zip(x, y, rd["pred"]):
+                ax.plot([xi, xi], [yi, pi], color=GREY, ls="--", lw=1, zorder=1)
+    ax.scatter(x, y, s=3000 * w, color=BLUE, alpha=0.85, zorder=2,
+               edgecolor="white")
+    ax.set_xlabel("x"); ax.set_ylabel("y")
+    ax.set_xlim(0.3, 10.7); ax.set_ylim(0, 6.3)
+    ax.set_xticks(range(1, 11))
+    if title:
+        ax.set_title(title)
+
+def show_table(df, small=False):
+    cls = "tbl small" if small else "tbl"
+    display(HTML(df.to_html(index=False, classes=cls, border=0, escape=False)))
+
+def base_df(rd, t):
+    return pd.DataFrame({"Row": range(n), "x": x.astype(int), "y": y,
+                         f"Weight {t}": rd["w"].round(4)})
+
+def md(s):
+    display(Markdown(s))
+```
+
+## What you will learn
+
+::: {.goal}
+By the end of this session you can:
+:::
+
+::: {.incremental}
+1. Explain **why** combining many weak learners can beat one strong-looking learner
+2. Run **one round** of AdaBoost.R2 by hand: weights → stump → loss → voting power → new weights
+3. Say what the learning rate $\eta$ does
+4. Build the final prediction as a **weighted median** of the stumps
+5. Spot when AdaBoost.R2 stops or struggles (e.g. $\bar L \ge 0.5$, outliers)
+:::
+
+::: {.notes}
+Tell students: we will do ONE small dataset (10 points) completely by hand, so every number on a later slide can be traced back.
+Press "o" for the slide overview and "s" for speaker view; redo a calculation on a whiteboard if students get lost.
+:::
+
+## Why boosting? One stump is too simple
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.6
+w0 = np.ones(n) / n
+t0, ml0, mr0 = fit_stump(x, y, w0)
+fig, axs = plt.subplots(1, 2, figsize=(12, 3.6), sharey=True)
+axs[0].scatter(x, y, s=70, color=BLUE, zorder=2)
+axs[0].set_title("The data: three noisy steps (low, middle, high)")
+axs[0].set_xlabel("x"); axs[0].set_ylabel("y"); axs[0].set_xticks(range(1, 11)); axs[0].set_ylim(0, 6.3)
+axs[1].scatter(x, y, s=70, color=BLUE, zorder=2)
+axs[1].plot(XX, np.where(XX <= t0, ml0, mr0), color=ORANGE, lw=2.5)
+mse_one = np.mean((y - np.where(x <= t0, ml0, mr0)) ** 2)
+axs[1].set_title(f"Best single stump (MSE {mse_one:.2f}): can only capture one jump")
+axs[1].set_xlabel("x"); axs[1].set_xticks(range(1, 11))
+plt.tight_layout(); plt.show()
+```
+
+- A stump is a **weak learner**: two flat pieces, easy to fit, clearly too simple
+- **Boosting idea:** fit a stump, look at where it is wrong, then build the next stump to *care more* about those points
+
+::: {.check}
+**Think:** where would you put a second stump so that the two together capture all three steps? &nbsp; (Hold that thought. AdaBoost will answer it for us.)
+:::
+
+## Idea Behind AdaBoost
+
+- Examples of **high weight** are shown more often at later rounds
+- In classification, "high weight" means *misclassified*. In regression there is no right/wrong, so **high weight = large error**
+- Regression problem: predict a continuous $y$ from a single input $x$
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.3
+fig, axs = plt.subplots(1, 3, figsize=(12, 3.3), sharey=True)
+for a, rd, k in zip(axs, R, (1, 2, 3)):
+    plot_stump(a, rd, title=f"Round {k}: point size = weight", resid=True)
+plt.tight_layout()
+plt.show()
+```
+
+- Dashed lines are the errors of that round's stump. The bigger the error, the bigger the point in the next round
+
+::: {.notes}
+Point out: in round 2 the big points are the ones with the longest dashed lines in round 1.
+:::
+
+## The big picture: one loop, repeated
+
+::: {.flow}
+<div class="box"><b>1. Weights</b><br>start equal: 1/n</div><div class="arrow">→</div>
+<div class="box"><b>2. Fit a stump</b><br>using the weights</div><div class="arrow">→</div>
+<div class="box"><b>3. Measure errors</b><br>loss L<sub>i</sub> between 0 and 1</div><div class="arrow">→</div>
+<div class="box"><b>4. Voting power α</b><br>small avg loss ⇒ big α</div><div class="arrow">→</div>
+<div class="box"><b>5. Update weights</b><br>hard rows get relatively more</div><div class="arrow">↺</div>
+:::
+
+. . .
+
+- After $M$ rounds we keep **all** stumps. Prediction = **weighted median** of their outputs, where trustworthy stumps (large $\alpha$) count more
+
+## Classification vs. Regression
+
+| | AdaBoost (classification) | AdaBoost.R2 (regression) |
+|---|---|---|
+| Weak learner | Stump predicting $\pm 1$ | Regression stump (predicts a mean) |
+| Split criterion | Weighted Gini index | Weighted sum of squared errors |
+| Mistake? | Wrong class: yes / no | Size of the error: $0 \le L_i \le 1$ |
+| Total error | Sum of weights of the wrong rows | Weighted average loss $\bar L=\sum w_iL_i$ |
+| Final model | Sign of weighted vote | **Weighted median** of the stump predictions |
+
+. . .
+
+- Assumption: there is always a weak learner that is better than "chance", i.e. $\bar L < 0.5$
+
+## The AdaBoost.R2 Algorithm
+
+Start with $w_i = 1/n$. For rounds $m = 1, \dots, M$:
+
+1. Fit a stump $h_m$ using the weights $w_i$ (weighted SSE)
+2. Largest error: $D_m = \max_i |y_i - h_m(x_i)|$
+3. Loss of each row (square loss): $L_i = \left(\dfrac{|y_i - h_m(x_i)|}{D_m}\right)^2 \in [0,1]$
+4. Average loss: $\bar L_m = \sum_i w_i L_i$  (stop if $\bar L_m \ge 0.5$)
+5. $\beta_m = \dfrac{\bar L_m}{1-\bar L_m}$, voting power $\alpha_m = \eta \cdot \ln\dfrac{1}{\beta_m}$  ($\eta$ is the learning rate)
+6. New weights: $w_i \leftarrow w_i\,\beta_m^{\,\eta(1-L_i)}$, then divide by the total so they sum to 1
+
+Final model: $H(x) = $ weighted median of $h_1(x),\dots,h_M(x)$ with weights $\alpha_1,\dots,\alpha_M$
+
+## Reading the formulas: three pictures
+
+```{python}
+#| fig-width: 12.5
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 3, figsize=(12.5, 3.6))
+# (a) residual -> loss
+rr = np.linspace(0, 1, 100)
+axs[0].plot(rr, rr ** 2, color=ORANGE, lw=2.5)
+axs[0].set_xlabel("|y − ŷ| / D  (relative error)"); axs[0].set_ylabel("loss L")
+axs[0].set_title("(a) Loss: small errors count little")
+# (b) alpha vs Lbar
+Lb = np.linspace(0.01, 0.99, 200)
+axs[1].plot(Lb, np.log((1 - Lb) / Lb), color=ORANGE, lw=2.5)
+axs[1].axhline(0, color=GREY, lw=1); axs[1].axvline(0.5, color=GREY, ls="--", lw=1)
+for k, rd in enumerate(R, 1):
+    axs[1].scatter(rd["Lbar"], rd["alpha"], color=BLUE, zorder=3)
+    axs[1].annotate(f"$\\alpha_{k}$", (rd["Lbar"], rd["alpha"]), textcoords="offset points", xytext=(6, 4))
+axs[1].set_ylim(-2, 4); axs[1].set_xlabel("average loss  L̄"); axs[1].set_ylabel("voting power α  (η = 1)")
+axs[1].set_title("(b) Lower L̄ ⇒ bigger say; L̄ ≥ 0.5 ⇒ stop")
+# (c) weight multiplier
+LL = np.linspace(0, 1, 100)
+for k, (rd, c) in enumerate(zip(R, (BLUE, ORANGE, "#2a9d4b")), 1):
+    axs[2].plot(LL, rd["beta"] ** (1 - LL), color=c, lw=2.2, label=f"round {k}")
+axs[2].set_xlabel("row's loss L"); axs[2].set_ylabel("multiplier  β^(1−L)")
+axs[2].set_title("(c) Weight multiplier before normalizing")
+axs[2].legend(frameon=False); axs[2].set_ylim(0, 1.05)
+plt.tight_layout(); plt.show()
+```
+
+::: {.incremental}
+- (a) A row with the **largest** error has $L=1$; others are scaled relative to it
+- (b) $\alpha$ is the log-odds of being "good": $\ln\frac{1-\bar L}{\bar L}$
+- (c) Every multiplier is $\le 1$, but **bad rows keep more** of their weight ($L=1 \Rightarrow$ multiplier 1). After normalizing, bad rows go **up**
+:::
+
+::: {.notes}
+Students often ask "why do all the multipliers shrink?" Answer: normalization. Only relative sizes matter.
+:::
+
+## Adaboost, Clearly Explained
+
+Demonstration by StatQuest
+
+Link (add the video link of your choice here)
+
+# Calculation Example {background-color="#6b6a6b"}
+
+## Calculation Example
+
+Data
+
+::::: {.columns}
+::: {.column width="30%"}
+```{python}
+show_table(pd.DataFrame({"x": x.astype(int), "y": y}))
+```
+:::
+::: {.column width="70%"}
+```{python}
+#| fig-width: 7.5
+#| fig-height: 4.6
+fig, ax = plt.subplots(figsize=(7.5, 4.6))
+ax.scatter(x, y, s=90, color=BLUE, zorder=2)
+ax.set_xlabel("x"); ax.set_ylabel("y")
+ax.set_xticks(range(1, 11)); ax.set_ylim(0, 6.3)
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+## Adaboost in a nutshell
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 3, figsize=(12, 3.6), sharey=True)
+for a, rd, k in zip(axs, R, (1, 2, 3)):
+    plot_stump(a, rd, title=f"Stump {k}", resid=True)
+plt.tight_layout(); plt.show()
+```
+
+- Each stump is a step function with 2 levels
+- Later stumps focus on the points the earlier stumps fit poorly
+
+## Make Stump 1
+
+```{python}
+#| fig-width: 6
+#| fig-height: 4
+fig, ax = plt.subplots(figsize=(6, 4))
+plot_stump(ax, r1, resid=True)
+plt.tight_layout(); plt.show()
+```
+
+## Make Stump 2
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.8
+fig, axs = plt.subplots(1, 2, figsize=(12, 3.8), sharey=True)
+plot_stump(axs[0], r1, title="Stump 1", resid=True)
+plot_stump(axs[1], r2, title="Stump 2 (point size = new weight)", resid=True)
+plt.tight_layout(); plt.show()
+```
+
+## Make Stump 3
+
+```{python}
+#| fig-width: 12.5
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 3, figsize=(12.5, 3.6), sharey=True)
+for a, rd, k in zip(axs, R, (1, 2, 3)):
+    plot_stump(a, rd, title=f"Stump {k}", resid=True)
+plt.tight_layout(); plt.show()
+md("**Voting power:** &nbsp; $\\alpha_1 = %.3f$ &nbsp;&nbsp;&nbsp; $\\alpha_2 = %.3f$ &nbsp;&nbsp;&nbsp; $\\alpha_3 = %.3f$"
+   % (r1["alpha"], r2["alpha"], r3["alpha"]))
+md("Final model: $H(x) = \\text{weighted median}\\,[\\,h_1(x),\\,h_2(x),\\,h_3(x)\\,]$ with weights $\\alpha_1,\\alpha_2,\\alpha_3$")
+```
+
+## Combine the Stumps
+
+```{python}
+#| fig-width: 7.5
+#| fig-height: 4.6
+fig, ax = plt.subplots(figsize=(7.5, 4.6))
+ax.scatter(x, y, s=90, color=BLUE, zorder=2, label="data")
+ax.plot(XX, ensemble_predict(R, XX), color=ORANGE, lw=2.5, label="AdaBoost.R2 (3 stumps)")
+ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_xticks(range(1, 11)); ax.set_ylim(0, 6.3)
+ax.legend(frameon=False)
+plt.tight_layout(); plt.show()
+```
+
+# Detail Calculation {background-color="#6b6a6b"}
+
+## Make the first stump
+
+Assign weights for each row. Every row has the same weight in the first step: $w_i = 1/n = 0.1$
+
+```{python}
+d = base_df(r1, 1)
+show_table(d)
+```
+
+## Make the first stump
+
+- Evaluate **every candidate split** (midpoints between consecutive $x$ values)
+- In each child the prediction is the **weighted mean** of $y$; the impurity is the **weighted sum of squared errors** (SSE)
+- The split with the lowest SSE is the best split
+
+```{python}
+c = candidate_splits(x, y, r1["w"])
+c.columns = ["Split: x ≤", "Left mean", "Right mean", "Weighted SSE"]
+c = c.round(4)
+c["Weighted SSE"] = [f"<b>{v}</b>" if v == c["Weighted SSE"].min() else v for v in c["Weighted SSE"]]
+show_table(c, small=True)
+```
+
+::: {.note}
+NOTE: You are not required to make the stump. The stump will be given to you!
+:::
+
+## Make the first stump
+
+::::: {.columns}
+::: {.column width="45%"}
+Stump 1: split at the best threshold; predict the left mean on the left and the right mean on the right
+
+```{python}
+md("- If $x \\le %.1f$, predicts $%.3f$\n- Otherwise, predicts $%.3f$" % (r1["t"], r1["ml"], r1["mr"]))
+```
+:::
+::: {.column width="55%"}
+```{python}
+#| fig-width: 6.5
+#| fig-height: 4.2
+fig, ax = plt.subplots(figsize=(6.5, 4.2))
+plot_stump(ax, r1, resid=True)
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+## Prediction of Stump 1
+
+```{python}
+d = base_df(r1, 1)
+d["Stump 1 Predicts"] = r1["pred"].round(3)
+show_table(d)
+```
+
+## Error of the first stump
+
+Unlike classification there is no right/wrong. We measure **how far** each prediction is from $y$.
+
+```{python}
+d = base_df(r1, 1)
+d["Stump 1 Predicts"] = r1["pred"].round(3)
+res = r1["resid"].round(3).astype(str)
+res[int(np.argmax(r1["resid"]))] += " &larr; D"
+d["|y − ŷ|"] = res
+show_table(d)
+```
+
+## Error of the first stump
+
+```{python}
+md("The largest error is $D_1 = \\max_i |y_i - \\hat y_i| = %.3f$ (row %d). Loss of each row:" % (r1["D"], int(np.argmax(r1["resid"]))))
+md("$$L_i = \\left(\\frac{|y_i - \\hat y_i|}{D_1}\\right)^2$$")
+d = base_df(r1, 1)
+d["|y − ŷ|"] = r1["resid"].round(3)
+d["Loss L"] = r1["L"].round(4)
+d["w · L"] = (r1["w"] * r1["L"]).round(5)
+show_table(d, small=True)
+```
+
+## Total error and voting power of Stump 1
+
+```{python}
+md("Average loss (the analogue of $\\epsilon_1$): $$\\bar L_1 = \\sum_i w_i L_i = %.4f$$" % r1["Lbar"])
+md("$$\\beta_1 = \\frac{\\bar L_1}{1-\\bar L_1} = %.4f$$" % r1["beta"])
+md("Voting power ($\\eta$ is the learning rate, in this example $\\eta=1$): $$\\alpha_1 = \\eta \\cdot \\ln\\frac{1}{\\beta_1} = %.3f$$" % r1["alpha"])
+```
+
+::: {.note}
+Since $\bar L_1 < 0.5$ the stump is better than chance, so $\alpha_1 > 0$.
+:::
+
+## Pause and predict
+
+::: {.check}
+Before we compute the new weights: looking at the residual plot of Stump 1, **which rows do you expect to gain weight?** Which lose?
+:::
+
+```{python}
+#| fig-width: 6.5
+#| fig-height: 3.6
+fig, ax = plt.subplots(figsize=(6.5, 3.6))
+plot_stump(ax, r1, w=np.ones(n) / n, resid=True)
+plt.tight_layout(); plt.show()
+```
+
+. . .
+
+::: {.answer}
+Rows with the longest dashed lines (largest error) should gain weight; rows sitting on the orange line should lose weight.
+:::
+
+## Calculating the new weights
+
+$$w_{new} = w_{old} \cdot \beta_1^{\,\eta\,(1 - L_i)}$$
+
+```{python}
+i_big = int(np.argmax(r1["L"])); i_small = int(np.argmin(r1["L"]))
+md("- Row %d (largest loss, $L=%.3f$): $%.4f \\cdot %.4f^{(1-%.3f)} = %.4f$" %
+   (i_big, r1["L"][i_big], r1["w"][i_big], r1["beta"], r1["L"][i_big], r1["w_raw"][i_big]))
+md("- Row %d (smallest loss, $L=%.3f$): $%.4f \\cdot %.4f^{(1-%.3f)} = %.4f$" %
+   (i_small, r1["L"][i_small], r1["w"][i_small], r1["beta"], r1["L"][i_small], r1["w_raw"][i_small]))
+d = base_df(r1, 1)
+d["Loss L"] = r1["L"].round(4)
+d["Weight 2 (raw)"] = r1["w_raw"].round(4)
+show_table(d, small=True)
+```
+
+::: {.note}
+Rows that are fit well are multiplied by about $\beta_1<1$ (shrink). A row with $L=1$ is multiplied by $\beta^0 = 1$ (unchanged), so after normalizing it gains relative weight.
+:::
+
+## Calculating the new weights
+
+The total weights have to be 1. We divide the weights by the total to achieve this.
+
+```{python}
+tot = r1["w_raw"].sum()
+md("Total of raw Weight 2 $= %.4f$ &nbsp;→ divide Weight 2 by $%.4f$" % (tot, tot))
+d = base_df(r1, 1)
+d["Weight 2 (raw)"] = r1["w_raw"].round(4)
+d["Weight 2"] = r1["w_next"].round(4)
+show_table(d)
+```
+
+::: {.note}
+Notice how the weights increase for rows with large errors and decrease otherwise.
+:::
+
+# Repeat the process to make the second Stump {background-color="#6b6a6b"}
+
+## Data to make the second stump
+
+```{python}
+d = base_df(r2, 2)
+show_table(d)
+```
+
+## Make the second stump
+
+- Use weighted SSE to evaluate all candidate splits, using **Weight 2**
+- The split with the lowest weighted SSE is the best split
+
+::::: {.columns}
+::: {.column width="50%"}
+```{python}
+c = candidate_splits(x, y, r2["w"])
+c.columns = ["Split: x ≤", "Left mean", "Right mean", "Weighted SSE"]
+c = c.round(4)
+c["Weighted SSE"] = [f"<b>{v}</b>" if v == c["Weighted SSE"].min() else v for v in c["Weighted SSE"]]
+show_table(c, small=True)
+```
+:::
+::: {.column width="50%"}
+```{python}
+#| fig-width: 6
+#| fig-height: 4
+fig, ax = plt.subplots(figsize=(6, 4))
+plot_stump(ax, r2, resid=True)
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+## Error of the second stump
+
+```{python}
+d = base_df(r2, 2)
+d["Stump 2 Predicts"] = r2["pred"].round(3)
+d["|y − ŷ|"] = r2["resid"].round(3)
+d["Loss L"] = r2["L"].round(4)
+show_table(d, small=True)
+md("$D_2 = %.3f$ &nbsp;&nbsp; $\\bar L_2 = \\sum_i w_iL_i = %.4f$ &nbsp;&nbsp; $\\beta_2 = %.4f$" % (r2["D"], r2["Lbar"], r2["beta"]))
+md("Voting power: $\\alpha_2 = \\eta\\ln\\dfrac{1}{\\beta_2} = %.3f$" % r2["alpha"])
+```
+
+## Calculating the new weights (Stump 2)
+
+$$w_{new} = w_{old} \cdot \beta_2^{\,\eta\,(1 - L_i)} \qquad\text{then normalize}$$
+
+```{python}
+d = base_df(r2, 2)
+d["Loss L"] = r2["L"].round(4)
+d["Weight 3 (raw)"] = r2["w_raw"].round(5)
+d["Weight 3"] = r2["w_next"].round(5)
+show_table(d, small=True)
+md("Total of raw Weight 3 $= %.6f$" % r2["w_raw"].sum())
+```
+
+# Repeat the process to make the third Stump {background-color="#6b6a6b"}
+
+## Data to make the third stump
+
+```{python}
+d = base_df(r3, 3)
+show_table(d)
+```
+
+## Make the third stump
+
+- Use weighted SSE to evaluate all candidate splits, using **Weight 3**
+- The split with the lowest weighted SSE is the best split
+
+::::: {.columns}
+::: {.column width="50%"}
+```{python}
+c = candidate_splits(x, y, r3["w"])
+c.columns = ["Split: x ≤", "Left mean", "Right mean", "Weighted SSE"]
+c = c.round(4)
+c["Weighted SSE"] = [f"<b>{v}</b>" if v == c["Weighted SSE"].min() else v for v in c["Weighted SSE"]]
+show_table(c, small=True)
+```
+:::
+::: {.column width="50%"}
+```{python}
+#| fig-width: 6
+#| fig-height: 4
+fig, ax = plt.subplots(figsize=(6, 4))
+plot_stump(ax, r3, resid=True)
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+## Error of the third stump
+
+```{python}
+d = base_df(r3, 3)
+d["Stump 3 Predicts"] = r3["pred"].round(3)
+d["|y − ŷ|"] = r3["resid"].round(3)
+d["Loss L"] = r3["L"].round(4)
+show_table(d, small=True)
+md("$D_3 = %.3f$ &nbsp;&nbsp; $\\bar L_3 = \\sum_i w_iL_i = %.4f$ &nbsp;&nbsp; $\\beta_3 = %.4f$" % (r3["D"], r3["Lbar"], r3["beta"]))
+md("Voting power: $\\alpha_3 = \\eta\\ln\\dfrac{1}{\\beta_3} = %.3f$" % r3["alpha"])
+```
+
+## Summarise the results
+
+```{python}
+S = pd.DataFrame({"Row": range(n), "x": x.astype(int), "y": y})
+for k, rd in enumerate(R, 1):
+    S[f"Weight {k}"] = rd["w"].round(4)
+    S[f"Stump {k} Predicts"] = rd["pred"].round(3)
+show_table(S, small=True)
+md("$\\alpha_1 = %.3f$ &nbsp;&nbsp; $\\alpha_2 = %.3f$ &nbsp;&nbsp; $\\alpha_3 = %.3f$" % (r1["alpha"], r2["alpha"], r3["alpha"]))
+```
+
+## How the weights evolve
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.8
+W = np.array([r1["w"], r2["w"], r3["w"], r3["w_next"]])
+fig, ax = plt.subplots(figsize=(12, 3.8))
+bw = 0.2
+cols = ["#bbbbbb", BLUE, ORANGE, "#2a9d4b"]
+for k in range(4):
+    ax.bar(np.arange(n) + (k - 1.5) * bw, W[k], width=bw, color=cols[k], label=f"Weight {k+1}")
+ax.set_xticks(range(n)); ax.set_xticklabels([f"row {i}\n(x={int(x[i])})" for i in range(n)], fontsize=9)
+ax.set_ylabel("weight"); ax.legend(frameon=False, ncol=4)
+plt.tight_layout(); plt.show()
+```
+
+- Rows that no stump fits well keep growing; rows that every stump fits shrink
+- Rows near the step edges (hard to fit with one split) end up with the most weight
+
+## Combining three Stumps
+
+- Let's say we stop making new stumps here
+- Final model $H(x)$ = **weighted median** of the stump predictions, using the voting powers $\alpha_m$ as weights
+
+. . .
+
+**Recipe for one input value $x_0$:**
+
+1. Get the three predictions $h_1(x_0), h_2(x_0), h_3(x_0)$
+2. Sort them from smallest to largest
+3. Add up the voting powers in that order until the running total reaches half of $\alpha_1+\alpha_2+\alpha_3$
+4. The prediction at which that happens is $H(x_0)$
+
+## Combining three Stumps: example
+
+```{python}
+ex = 6
+preds = np.array([stump_predict(rd, np.array([x[ex]]))[0] for rd in R])
+alphas = np.array([rd["alpha"] for rd in R])
+o = np.argsort(preds)
+cum = np.cumsum(alphas[o])
+half = alphas.sum() / 2
+E = pd.DataFrame({"Sorted prediction": preds[o].round(3),
+                  "From stump": [f"Stump {k+1}" for k in o],
+                  "Voting power": alphas[o].round(3),
+                  "Cumulative": cum.round(3)})
+md("Take row %d: $x = %d$ (true $y = %.1f$). Half of the total voting power is $%.3f$." % (ex, x[ex], y[ex], half))
+show_table(E)
+H_ex = ensemble_predict(R, np.array([x[ex]]))[0]
+md("First cumulative value $\\ge %.3f$ → $H(%d) = %.3f$" % (half, x[ex], H_ex))
+```
+
+## Combining three Stumps: all rows
+
+```{python}
+H = ensemble_predict(R, x)
+F = pd.DataFrame({"Row": range(n), "x": x.astype(int), "y": y})
+for k, rd in enumerate(R, 1):
+    F[f"Stump {k}"] = rd["pred"].round(3)
+F["H(x)"] = H.round(3)
+F["y − H(x)"] = (y - H).round(3)
+show_table(F, small=True)
+mse1 = np.mean((y - r1["pred"]) ** 2)
+mseH = np.mean((y - H) ** 2)
+md("MSE of Stump 1 alone: $%.3f$ &nbsp;&nbsp;→&nbsp;&nbsp; MSE of the 3-stump model: $%.3f$" % (mse1, mseH))
+```
+
+## Combining three Stumps
+
+```{python}
+#| fig-width: 12.5
+#| fig-height: 3.8
+fig, axs = plt.subplots(1, 4, figsize=(12.5, 3.8), sharey=True)
+for a, rd, k in zip(axs[:3], R, (1, 2, 3)):
+    plot_stump(a, rd, title=f"Stump {k}  ($\\alpha_{k}$={rd['alpha']:.3f})", resid=False)
+axs[3].scatter(x, y, s=60, color=BLUE, zorder=2)
+axs[3].plot(XX, ensemble_predict(R, XX), color=ORANGE, lw=2.5)
+axs[3].set_title("Final model H(x)")
+axs[3].set_xlabel("x"); axs[3].set_xticks(range(1, 11))
+plt.tight_layout(); plt.show()
+```
+
+## Adding stumps one at a time
+
+```{python}
+#| fig-width: 12.5
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 3, figsize=(12.5, 3.6), sharey=True)
+for a, k in zip(axs, (1, 2, 3)):
+    a.scatter(x, y, s=60, color=BLUE, zorder=2)
+    a.plot(XX, ensemble_predict(R, XX, upto=k), color=ORANGE, lw=2.5)
+    a.set_title(f"After {k} stump" + ("s" if k > 1 else ""))
+    a.set_xlabel("x"); a.set_xticks(range(1, 11)); a.set_ylim(0, 6.3)
+axs[0].set_ylabel("y")
+plt.tight_layout(); plt.show()
+```
+
+## More stumps = better fit?
+
+```{python}
+#| fig-width: 12
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 2, figsize=(12, 3.6))
+Ms = range(1, len(R_long) + 1)
+mses = [np.mean((y - ensemble_predict(R_long, x, upto=m)) ** 2) for m in Ms]
+axs[0].plot(list(Ms), mses, "o-", color=ORANGE)
+axs[0].set_xlabel("number of stumps  (η = 0.5)"); axs[0].set_ylabel("training MSE")
+axs[0].set_title("Training error vs. number of stumps")
+axs[1].scatter(x, y, s=60, color=BLUE, zorder=2)
+axs[1].plot(XX, ensemble_predict(R_long, XX), color=ORANGE, lw=2.5)
+axs[1].set_title(f"Final model with {len(R_long)} stumps")
+axs[1].set_xlabel("x"); axs[1].set_xticks(range(1, 11)); axs[1].set_ylim(0, 6.3)
+plt.tight_layout(); plt.show()
+```
+
+- Training error drops quickly in the first few rounds, then levels off (it can wobble, because the weighted median can switch which stump it follows)
+- With many stumps an ensemble can **overfit**: choose the number of stumps and $\eta$ with a validation set
+
+## Learning rate
+
+- The learning rate $\eta$ scales both the voting power and the weight update:
+$$\alpha_m = \eta\ln\frac{1}{\beta_m}, \qquad w_i \leftarrow w_i\,\beta_m^{\,\eta(1-L_i)}$$
+- A smaller $\eta$ changes the weights more slowly, so you need **more stumps**
+
+```{python}
+#| fig-width: 12.5
+#| fig-height: 3.6
+fig, axs = plt.subplots(1, 3, figsize=(12.5, 3.6), sharey=True)
+for a, (eta, M) in zip(axs, [(1.0, 3), (0.5, 10), (0.1, 30)]):
+    Rm = adaboost_r2(x, y, M=M, eta=eta)
+    a.scatter(x, y, s=60, color=BLUE, zorder=2)
+    a.plot(XX, ensemble_predict(Rm, XX), color=ORANGE, lw=2.5)
+    mse = np.mean((y - ensemble_predict(Rm, x)) ** 2)
+    a.set_title(f"$\\eta$={eta}, {len(Rm)} stumps (MSE {mse:.2f})")
+    a.set_xlabel("x"); a.set_xticks(range(1, 11)); a.set_ylim(0, 6.3)
+axs[0].set_ylabel("y")
+plt.tight_layout(); plt.show()
+```
+
+## Common pitfalls
+
+::: {.incremental}
+- **$\bar L_m \ge 0.5$:** the stump is no better than "chance" ⇒ $\alpha \le 0$, so we **stop** boosting
+- **One outlier:** its error is huge, so it keeps gaining weight and later stumps chase it. AdaBoost.R2 is sensitive to outliers (the loss is scaled by $D$, the maximum error)
+- **Weights only matter relatively:** raw weights shrink every round; the normalization step is what makes them comparable
+- **Median, not mean:** the weighted median is robust to one bad stump; a weighted average is not
+:::
+
+## Check your understanding
+
+::: {.check}
+**Q1.** A stump has average loss $\bar L = 0.5$. What are $\beta$ and $\alpha$? What should we do?
+:::
+
+. . .
+
+```{python}
+md('<span class="answer">$\\beta = 0.5/0.5 = 1$, $\\alpha=\\ln 1 = 0$.</span> The stump has no voting power; we stop.')
+```
+
+::: {.check}
+**Q2.** In round 2 a row has loss $L=1$ (the worst row). By what factor is its **raw** weight multiplied before normalizing?
+:::
+
+. . .
+
+```{python}
+md('<span class="answer">$\\beta^{\\eta(1-L)} = \\beta^{0} = 1$</span>: unchanged, but everything else shrinks, so after normalizing it goes **up**.')
+```
+
+## Practice problem (do it by hand)
+
+A stump has average loss $\bar L = 0.2$ (learning rate $\eta=1$).
+
+1. Compute $\beta$ and $\alpha$.
+2. A row currently has weight $0.10$ and loss $L=0.25$. What is its raw new weight?
+3. Three stumps predict $2,\ 3,\ 5$ at some $x_0$ with voting powers $0.5,\ 1.0,\ 0.4$. What is $H(x_0)$?
+
+. . .
+
+```{python}
+Lb_ex = 0.2
+b_ex = Lb_ex / (1 - Lb_ex); a_ex = np.log(1 / b_ex)
+raw_ex = 0.10 * b_ex ** (1 - 0.25)
+md('<span class="answer">1.</span> $\\beta = 0.2/0.8 = %.2f$, &nbsp; $\\alpha = \\ln 4 = %.3f$' % (b_ex, a_ex))
+md('<span class="answer">2.</span> $0.10 \\cdot %.2f^{0.75} = %.4f$' % (b_ex, raw_ex))
+md('<span class="answer">3.</span> Sorted: $2\\,(0.5),\\ 3\\,(1.0),\\ 5\\,(0.4)$. Half of $1.9$ is $0.95$; cumulative $0.5,\\ 1.5$ ⇒ $H(x_0)=3$')
+```
+
+## Cheat sheet
+
+| Step | Formula |
+|---|---|
+| Start | $w_i = 1/n$ |
+| Stump | split minimizing weighted SSE; leaf value = weighted mean of $y$ |
+| Max error | $D = \max_i \lvert y_i-\hat y_i\rvert$ |
+| Loss | $L_i = (\lvert y_i-\hat y_i\rvert / D)^2$ |
+| Average loss | $\bar L = \sum_i w_iL_i$ (need $<0.5$) |
+| Ratio | $\beta = \bar L / (1-\bar L)$ |
+| Voting power | $\alpha = \eta \ln(1/\beta)$ |
+| New weights | $w_i \leftarrow w_i\,\beta^{\eta(1-L_i)}$, then normalize |
+| Prediction | weighted median of the stumps, weights $\alpha_m$ |
+
+## Summary
+
+- AdaBoost.R2 builds a sequence of regression stumps; each one is fit on **re-weighted** data
+- Rows with a **large error** get relatively more weight in the next round
+- Each stump's **voting power** $\alpha_m=\eta\ln\frac{1}{\beta_m}$ depends on its average loss $\bar L_m$
+- The final prediction is the **weighted median** of all stumps
+- Smaller learning rate ⇒ slower learning, more stumps needed
+
+::: {.note}
+Implementation note: this deck fits each stump directly with sample weights. `sklearn.ensemble.AdaBoostRegressor` follows Drucker's original recipe and instead draws a weighted bootstrap sample each round, so its numbers will differ slightly.
+:::

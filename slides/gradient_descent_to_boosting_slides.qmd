@@ -1,0 +1,900 @@
+---
+title: "🦇 From Gradient Descent to Gradient Boosting"
+subtitle: "Loss functions, two ways to minimize them, AdaBoost and beyond"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    menu: true
+    footer: "Gradient descent and gradient boosting"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.6em; font-size: 1.2em;
+          }
+          .reveal table.tbl { font-size: 0.42em; border-collapse: collapse; margin: 0 auto; }
+          .reveal table.tbl th, .reveal table.tbl td { padding: 2px 10px; text-align: center; border-bottom: 1px solid #ddd; }
+          .reveal table.tbl th { border-bottom: 2px solid #333; }
+          .reveal table.small { font-size: 0.42em; }
+          .reveal p, .reveal li { font-size: 0.62em; margin: 0.25em 0; }
+          .reveal .slides section img { max-height: 520px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal .columns img { max-height: 430px !important; }
+          .reveal h1 { font-size: 1.6em; }
+          .reveal .katex-display, .reveal mjx-container[display="true"] { font-size: 0.8em !important; margin: 0.4em 0 !important; }
+          .reveal .katex-display > .katex { max-width: 100%; }
+          .reveal table { font-size: 0.55em; }
+          .reveal .note { font-size: 0.65em; color: #555; }
+          .reveal .goal { background:#fff4e6; border-left:6px solid #E8833A; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.62em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.62em; }
+          .reveal table.build { font-size:0.62em; width:100%; table-layout:fixed; border-collapse:collapse; } .reveal table.build th, .reveal table.build td { border-bottom:1px solid #bbb; padding:0.3em 0.5em; text-align:center; } .reveal table.build th:nth-child(1), .reveal table.build th:nth-child(2) { width:8%; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.66em; }
+          .reveal .answer { color:#1a7f37; font-weight:bold; }
+          .reveal .flow { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:0.4em; margin:0.8em 0; }
+          .reveal .flow .box { background:#FAC18A; color:#222; border-radius:10px; padding:0.6em 0.8em; font-size:0.55em; text-align:center; width:11em; }
+          .reveal .flow .arrow { font-size:1.2em; color:#555; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+fig-format: png
+fig-dpi: 150
+---
+
+```{python}
+#| label: setup
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor
+from IPython.display import display, HTML, Markdown
+
+plt.rcParams.update({"font.size": 11, "axes.spines.top": False, "axes.spines.right": False})
+BLUE, ORANGE, GREY, RED, GREEN, PURPLE = "#1f4fd8", "#E8833A", "#888888", "#d62728", "#1a7f37", "#8e44ad"
+
+def md(s):
+    display(Markdown(s))
+
+def show_table(df, small=False):
+    cls = "tbl small" if small else "tbl"
+    display(HTML(df.to_html(index=False, classes=cls, border=0, escape=False)))
+
+def sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+# ------------------------------------------------------------------
+# Regression stump on one input (used for the hand-calculation examples)
+# ------------------------------------------------------------------
+def candidate_splits(x, t):
+    rows = []
+    for s in (x[:-1] + x[1:]) / 2:
+        l = x <= s
+        ml, mr = t[l].mean(), t[~l].mean()
+        sse = ((t[l] - ml) ** 2).sum() + ((t[~l] - mr) ** 2).sum()
+        rows.append((s, ml, mr, sse))
+    return pd.DataFrame(rows, columns=["split", "left", "right", "sse"])
+
+def fit_stump(x, t):
+    c = candidate_splits(x, t)
+    b = c.loc[c["sse"].idxmin()]
+    return (float(b["split"]), float(b["left"]), float(b["right"]))
+
+def stump_predict(s, xq):
+    return np.where(xq <= s[0], s[1], s[2])
+
+def boost_squared(x, y, M, nu=1.0):
+    # gradient boosting, squared loss, stumps (hand-calculation version)
+    F0 = y.mean(); F = np.full(len(y), F0); rounds = []
+    for _ in range(M):
+        r = y - F
+        s = fit_stump(x, r)
+        h = stump_predict(s, x)
+        Fn = F + nu * h
+        rounds.append(dict(F_prev=F, r=r, s=s, h=h, F=Fn, nu=nu, mse=np.mean((y - Fn) ** 2)))
+        F = Fn
+    return F0, rounds
+
+def predict_rounds(F0, rounds, xq, upto=None):
+    out = np.full(len(xq), F0, dtype=float)
+    for rd in rounds[:upto]:
+        out += rd["nu"] * stump_predict(rd["s"], xq)
+    return out
+
+# ------------------------------------------------------------------
+# General gradient boosting with small trees and several losses
+#   l2        target = y - F                 leaf = mean of residuals
+#   l1        target = sign(y - F)           leaf = median of residuals
+#   huber     target = clip(y - F, -d, d)    leaf = median + mean(clip(r - median, -d, d))
+#   quantile  target = a if r>0 else a-1    leaf = a-quantile of residuals
+#   logistic  target = y - p  (y in {0,1})   leaf = sum(r) / sum(p(1-p))
+# ------------------------------------------------------------------
+class GBM:
+    def __init__(self, loss="l2", n_estimators=100, learning_rate=0.1, max_depth=1,
+                 delta=1.0, alpha=0.5, min_samples_leaf=1):
+        self.loss, self.n_estimators, self.learning_rate = loss, n_estimators, learning_rate
+        self.max_depth, self.delta, self.alpha, self.min_samples_leaf = max_depth, delta, alpha, min_samples_leaf
+
+    def _init(self, y):
+        if self.loss == "l2":
+            return y.mean()
+        if self.loss in ("l1", "huber"):
+            return np.median(y)
+        if self.loss == "quantile":
+            return np.quantile(y, self.alpha)
+        p = np.clip(y.mean(), 1e-6, 1 - 1e-6)
+        return np.log(p / (1 - p))
+
+    def _target_and_leaf(self, y, F):
+        if self.loss == "l2":
+            r = y - F
+            return r, (lambda m: r[m].mean())
+        if self.loss == "l1":
+            r = y - F
+            return np.sign(r), (lambda m: np.sort(r[m])[(m.sum() - 1) // 2])
+        if self.loss == "huber":
+            r = y - F; d = self.delta
+            def leaf(m):
+                med = np.median(r[m])
+                return med + np.mean(np.clip(r[m] - med, -d, d))
+            return np.clip(r, -d, d), leaf
+        if self.loss == "quantile":
+            r = y - F; a = self.alpha
+            return np.where(r > 0, a, a - 1), (lambda m: np.quantile(r[m], a))
+        p = sigmoid(F); r = y - p
+        return r, (lambda m: r[m].sum() / max((p[m] * (1 - p[m])).sum(), 1e-9))
+
+    def fit(self, X, y):
+        X = np.asarray(X, float); X = X.reshape(len(X), -1); y = np.asarray(y, float)
+        self.F0_ = self._init(y); F = np.full(len(y), self.F0_)
+        self.trees_, self.lookups_, self.targets_ = [], [], []
+        for _ in range(self.n_estimators):
+            target, leaf = self._target_and_leaf(y, F)
+            tree = DecisionTreeRegressor(max_depth=self.max_depth, min_samples_leaf=self.min_samples_leaf,
+                                         random_state=0).fit(X, target)
+            leaves = tree.apply(X)
+            lookup = np.zeros(tree.tree_.node_count)
+            for lf in np.unique(leaves):
+                lookup[lf] = leaf(leaves == lf)
+            F = F + self.learning_rate * lookup[leaves]
+            self.trees_.append(tree); self.lookups_.append(lookup); self.targets_.append(target)
+        return self
+
+    def staged_raw(self, X):
+        X = np.asarray(X, float); X = X.reshape(len(X), -1)
+        F = np.full(len(X), self.F0_)
+        for tree, lookup in zip(self.trees_, self.lookups_):
+            F = F + self.learning_rate * lookup[tree.apply(X)]
+            yield F.copy()
+
+    def predict(self, X, n=None):
+        X = np.asarray(X, float); X = X.reshape(len(X), -1)
+        F = np.full(len(X), self.F0_)
+        for tree, lookup in list(zip(self.trees_, self.lookups_))[:n]:
+            F = F + self.learning_rate * lookup[tree.apply(X)]
+        return F
+
+    def predict_proba(self, X, n=None):
+        return sigmoid(self.predict(X, n))
+
+# ------------------------------------------------------------------
+# Two-class stumps on 2 inputs and AdaBoost (for the "AdaBoost is a special case" part)
+# ------------------------------------------------------------------
+def clf_candidates(X, y, w):
+    rows = []
+    for j in range(X.shape[1]):
+        u = np.unique(X[:, j])
+        for t in (u[:-1] + u[1:]) / 2:
+            L = X[:, j] <= t
+            gini, err, labs = 0.0, 0.0, []
+            for m in (L, ~L):
+                W = w[m].sum(); wp = w[m & (y == 1)].sum() / W
+                gini += W * 2 * wp * (1 - wp)
+                lab = 1 if wp >= 0.5 else -1
+                labs.append(lab); err += w[m & (y != lab)].sum()
+            rows.append(dict(j=j, t=t, left=labs[0], right=labs[1], gini=gini, err=err))
+    return pd.DataFrame(rows).sort_values(["err", "gini"]).reset_index(drop=True)
+
+def clf_stump_pred(s, Xq):
+    j, t, left, right = s
+    return np.where(Xq[:, j] <= t, left, right)
+
+def adaboost(X, y, M):
+    # classic AdaBoost: alpha = 1/2 ln((1-eps)/eps), w <- w*exp(-alpha*y*h), normalize
+    n = len(y); w = np.ones(n) / n; out = []
+    for _ in range(M):
+        c = clf_candidates(X, y, w).iloc[0]
+        s = (int(c["j"]), float(c["t"]), int(c["left"]), int(c["right"]))
+        h = clf_stump_pred(s, X); eps = w[h != y].sum()
+        a = 0.5 * np.log((1 - eps) / eps)
+        w_new = w * np.exp(-a * y * h); w_new = w_new / w_new.sum()
+        out.append(dict(s=s, w=w, h=h, eps=eps, alpha=a, w_next=w_new)); w = w_new
+    return out
+
+def exp_loss_boost(X, y, M):
+    # gradient boosting with the exponential loss  L = sum exp(-y F):
+    #   negative gradient = y*exp(-y F);  step size found by a numerical line search (bisection)
+    n = len(y); F = np.zeros(n); out = []
+    for _ in range(M):
+        w = np.exp(-y * F); w_norm = w / w.sum()                  # "weights" hidden in the gradient
+        c = clf_candidates(X, y, w_norm).iloc[0]
+        s = (int(c["j"]), float(c["t"]), int(c["left"]), int(c["right"]))
+        h = clf_stump_pred(s, X)
+        g = lambda a: np.sum(-y * h * np.exp(-y * (F + a * h)))      # derivative of the loss in the step size a
+        lo, hi = -5.0, 5.0
+        for _ in range(80):
+            mid = (lo + hi) / 2
+            if g(mid) > 0: hi = mid
+            else: lo = mid
+        a = (lo + hi) / 2
+        out.append(dict(s=s, h=h, w=w_norm, alpha=a, loss_before=w.sum(),
+                        loss_after=np.exp(-y * (F + a * h)).sum()))
+        F = F + a * h
+    return out
+
+
+# ------------------------------------------------------------------
+# Plot helpers (1-D regression)
+# ------------------------------------------------------------------
+def grid_for(x, pad=0.3, n=800):
+    return np.linspace(x.min() - pad, x.max() + pad, n)
+
+def plot_fit(ax, x, y, Ffun=None, Fvals=None, title=None, ylim=None, resid=True, pts=None, ptc=BLUE):
+    """Data (blue), model (orange); dashed = residuals y - F."""
+    xx = grid_for(x)
+    if Ffun is not None:
+        ax.plot(xx, Ffun(xx), color=ORANGE, lw=2.5, zorder=1)
+    if resid and Fvals is not None:
+        for xi, yi, fi in zip(x, y, Fvals):
+            ax.plot([xi, xi], [yi, fi], color=GREY, ls="--", lw=1, zorder=1)
+    ax.scatter(x, y, s=60 if pts is None else pts, color=ptc, zorder=2)
+    ax.set_xlabel("x"); ax.set_ylabel("y")
+    if ylim: ax.set_ylim(*ylim)
+    if title: ax.set_title(title)
+
+def plot_res(ax, x, r, s=None, title=None, ylim=None):
+    """Residuals (red); optionally the stump fitted to them (orange)."""
+    ax.axhline(0, color=GREY, lw=1)
+    if s is not None:
+        ax.plot(grid_for(x), stump_predict(s, grid_for(x)), color=ORANGE, lw=2.5, zorder=1)
+    ax.scatter(x, r, s=60, color=RED, zorder=2)
+    ax.set_xlabel("x"); ax.set_ylabel("residual  y − F")
+    if ylim: ax.set_ylim(*ylim)
+    if title: ax.set_title(title)
+
+def region_plot(ax, Ffun, X, y, title=None, lim=(0.5, 5.5), size=90):
+    g = np.linspace(lim[0], lim[1], 250)
+    G1, G2 = np.meshgrid(g, g)
+    Z = Ffun(np.c_[G1.ravel(), G2.ravel()]).reshape(G1.shape)
+    ax.contourf(G1, G2, Z > 0, levels=[-0.5, 0.5, 1.5], colors=["#e8a0a0", "#9ab8dc"], alpha=0.85)
+    ax.scatter(X[:, 0], X[:, 1], c=np.where(y > 0, BLUE, RED), s=size, edgecolor="white", zorder=2)
+    ax.set_xlabel("$x_1$"); ax.set_ylabel("$x_2$")
+    if title: ax.set_title(title)
+
+# ------------------------------------------------------------------
+# Example data
+# ------------------------------------------------------------------
+# Example 1: six points, easy to follow by hand
+x6 = np.arange(1, 7).astype(float)
+y6 = np.array([3.0, 5.0, 4.0, 10.0, 12.0, 11.0])
+F06, R6 = boost_squared(x6, y6, 3, nu=0.5)
+
+# Example 2: a noisy curve  y = 2 sin(x) + noise
+def sin_data(n, seed, sig=0.4):
+    r = np.random.default_rng(seed)
+    x = np.sort(r.uniform(0, 6.3, n))
+    return x, 2 * np.sin(x) + r.normal(0, sig, n)
+
+xtr, ytr = sin_data(60, 1)          # training set
+xte, yte = sin_data(300, 2)         # held-out test set
+xg = np.linspace(0, 6.3, 400)       # grid for drawing curves
+mse = lambda a, b: float(np.mean((a - b) ** 2))
+
+# Example 3: the same curve, but 5 training points are corrupted (outliers)
+_r = np.random.default_rng(5)
+xo = np.sort(_r.uniform(0, 6.3, 60)); yo = 2 * np.sin(xo) + _r.normal(0, 0.4, 60)
+_idx = _r.choice(60, 5, replace=False)
+yo[_idx] += _r.choice([10, 12, -9, 11, 9.0], 5)
+is_out = np.zeros(60, bool); is_out[_idx] = True
+rmse_truth = lambda p: float(np.sqrt(np.mean((p - 2 * np.sin(xg)) ** 2)))
+
+# Example 4: spread grows with x (for quantile regression)
+_r = np.random.default_rng(7)
+xq = np.sort(_r.uniform(0, 5, 400)); yq = xq + _r.normal(0, 1, 400) * (0.2 + 0.4 * xq)
+_rt = np.random.default_rng(8)
+xqt = np.sort(_rt.uniform(0, 5, 4000)); yqt = xqt + _rt.normal(0, 1, 4000) * (0.2 + 0.4 * xqt)
+
+# Example 5: classification, 1 input, 8 points (labels 0/1)
+x8 = np.arange(1, 9).astype(float)
+y8 = np.array([0, 0, 0, 1, 0, 1, 1, 1.0])
+
+# Example 6: two interleaved half-moons (2 inputs)
+def moons(n, seed, noise=0.2):
+    r = np.random.default_rng(seed)
+    t0 = r.uniform(0, np.pi, n); t1 = r.uniform(0, np.pi, n)
+    X = np.r_[np.c_[np.cos(t0), np.sin(t0)], np.c_[1 - np.cos(t1), 0.5 - np.sin(t1)]]
+    return X + r.normal(0, noise, X.shape), np.r_[np.zeros(n), np.ones(n)]
+Xm, ym = moons(150, 3); Xmt, ymt = moons(300, 4)
+
+# Example 7: the 10-point two-class data from the AdaBoost deck (labels -1 / +1)
+X2 = np.array([[1, 1], [1, 3], [2, 2], [2, 4], [3, 1], [3, 2], [3, 5], [4, 4], [5, 2], [5, 5]], float)
+y2 = np.array([1, 1, -1, 1, -1, -1, 1, 1, -1, -1])
+
+
+# ------------------------------------------------------------------
+# Gradient-descent helpers and the small data sets of this deck
+# ------------------------------------------------------------------
+def gd_path(grad, start, eta, n):
+    pts = [np.array(start, float)]
+    for _ in range(n):
+        pts.append(pts[-1] - eta * grad(pts[-1]))
+    return np.array(pts)
+
+f1 = lambda t: (t - 3) ** 2                    # 1-D quadratic, minimum at 3
+g1 = lambda t: 2 * (t - 3)
+f2 = lambda p: (p[0] - 3) ** 2 + 2 * (p[1] - 2) ** 2   # 2-D quadratic, minimum at (3, 2)
+g2 = lambda p: np.array([2 * (p[0] - 3), 4 * (p[1] - 2)])
+
+# four points for the linear model
+x4 = np.array([1, 2, 3, 4.0]); y4 = np.array([2, 3, 5, 4.0])
+L2_theta = lambda t0, t1, x=x4, y=y4: 0.5 * np.sum((y - t0 - t1 * x[:, None, None]) ** 2, axis=0) if np.ndim(t0) else 0.5 * np.sum((y - t0 - t1 * x) ** 2)
+def loss_grid(kind, t0, t1, x=x4, y=y4):
+    R = y[:, None, None] - t0[None] - t1[None] * x[:, None, None]
+    return 0.5 * (R ** 2).sum(0) if kind == "l2" else np.abs(R).sum(0)
+
+huber_loss = lambda r, d: np.where(np.abs(r) <= d, 0.5 * r ** 2, d * (np.abs(r) - 0.5 * d))
+pinball = lambda r, t: np.where(r >= 0, t * r, (t - 1) * r)
+r = np.linspace(-4, 4, 400)
+
+# classification data with labels -1 / +1 (for squared-vs-exponential)
+yp8 = np.where(y8 == 1, 1.0, -1.0); X8 = x8.reshape(-1, 1)
+
+# small regression data with one outlier (for the "other losses" tables)
+xs6 = np.arange(1, 7.0); ys6 = np.array([3, 5, 4, 10, 12, 40.0])
+
+def round1_table(loss, x, y, nu=0.5, **kw):
+    m = GBM(loss, n_estimators=1, learning_rate=nu, max_depth=1, **kw).fit(x, y)
+    lf = m.lookups_[0][m.trees_[0].apply(np.asarray(x, float).reshape(-1, 1))]
+    cut = m.trees_[0].tree_.threshold[0]
+    d = pd.DataFrame({"x": np.asarray(x).astype(int), "y": y, "F0": round(float(m.F0_), 2), "pseudo-residual": m.targets_[0].round(2),
+                      "leaf value": lf.round(2), "F1 = F0 + 0.5·leaf": m.predict(x).round(2)})
+    return d, m, cut
+
+t0g, t1g = np.meshgrid(np.linspace(-1, 4, 220), np.linspace(-0.5, 2, 220))
+Zl2 = loss_grid("l2", t0g, t1g); Zl1 = loss_grid("l1", t0g, t1g)
+
+```
+
+## What you will learn
+
+::: {.incremental}
+1. **Gradient descent** on simple quadratics (1-D and 2-D), with the first steps computed by hand
+2. **Loss functions** and why training a model means minimizing one
+3. **Two ways** to minimize a loss: gradient on the **parameters** (regression, neural networks) or on the **predictions** (gradient boosting)
+4. **Squared loss vs exponential loss (AdaBoost)**, step by step
+5. **More losses** for gradient boosting, with use cases
+:::
+
+# 🕷️ Part 1: Gradient descent {background-color="#6b6a6b"}
+
+## What is gradient descent?
+
+::: {.goal}
+**Goal:** find the input $\theta$ that makes a function $f(\theta)$ as **small** as possible.
+:::
+
+::: {.incremental}
+- The **gradient** $f'(\theta)$ is the slope: it points **uphill**
+- So walk the other way. Repeat:
+:::
+
+. . .
+
+$$\boxed{\;\theta_{k+1}=\theta_k-\eta\,f'(\theta_k)\;}\qquad \eta>0\ \text{is the step size (learning rate)}$$
+
+::: {.incremental}
+- Steep slope: big step. Flat slope: small step. At the minimum the slope is 0, so we stop moving
+- It works for **any** differentiable $f$, not just for squared errors. We start with the simplest case, a **quadratic**
+:::
+
+## Example 1 (one dimension): $f(\theta)=(\theta-3)^2$
+
+The minimum is at $\theta=3$. The slope is $f'(\theta)=2(\theta-3)$. Start at $\theta_0=0$ with $\eta=0.2$.
+
+```{python}
+P1 = gd_path(g1, 0.0, 0.2, 6)
+rows = []
+for k in range(6):
+    t = P1[k]
+    rows.append({"step k": k, "θ_k": round(t, 4), "slope f′(θ_k) = 2(θ_k − 3)": round(g1(t), 4),
+                 "θ_(k+1) = θ_k − 0.2·slope": round(P1[k + 1], 4), "f(θ_k)": round(f1(t), 4)})
+show_table(pd.DataFrame(rows))
+```
+
+. . .
+
+**By hand, step 1:** slope at 0 is $2(0-3)=-6$, so $\theta_1=0-0.2\cdot(-6)=1.2$. **Step 2:** slope $=2(1.2-3)=-3.6$, so $\theta_2=1.2+0.72=1.92$.
+
+## Example 1: the steps approach the minimum
+
+```{python}
+#| fig-width: 14
+#| fig-height: 4.2
+tt = np.linspace(-0.6, 6.6, 300)
+fig, axs = plt.subplots(1, 3, figsize=(14, 4.2))
+a = axs[0]
+a.plot(tt, f1(tt), color=BLUE, lw=2.3)
+a.plot(P1, f1(P1), "o-", color=ORANGE, lw=1.4, ms=7)
+for k, p in enumerate(P1[:5]):
+    a.annotate(f"θ{k}", (p, f1(p)), textcoords="offset points", xytext=(-14, 8), fontsize=9)
+a.scatter([3], [0], marker="*", s=220, color=GREEN, zorder=4)
+a.set_xlabel("θ"); a.set_ylabel("f(θ)"); a.set_title("Walking down the parabola")
+a = axs[1]
+a.plot(range(7), P1, "o-", color=ORANGE); a.axhline(3, color=GREEN, ls="--", label="minimum θ = 3")
+a.set_xlabel("step k"); a.set_ylabel("θ_k"); a.set_title("θ_k approaches 3"); a.legend(frameon=False)
+a = axs[2]
+a.semilogy(range(7), f1(P1), "o-", color=BLUE); a.set_xlabel("step k"); a.set_ylabel("f(θ_k)  (log scale)")
+a.set_title("The loss shrinks every step")
+plt.tight_layout(); plt.show()
+md("Each step multiplies the distance to the minimum by $1-2\\eta=%.1f$: the error is $3,\\;1.8,\\;1.08,\\;0.648,\\dots$" % (1 - 2 * 0.2))
+```
+
+## Why does it work? A straight-line approximation
+
+Near $\theta_k$ the curve looks like its **tangent line**: $\;f(\theta_k+\delta)\approx f(\theta_k)+f'(\theta_k)\,\delta$. The line goes down to the right if the slope is negative, so we move **right**.
+
+```{python}
+#| fig-width: 14
+#| fig-height: 4.0
+fig, axs = plt.subplots(1, 3, figsize=(14, 4.0), sharey=True)
+for k, a in enumerate(axs):
+    p = P1[k]; tt2 = np.linspace(p - 1.7, p + 1.7, 50)
+    a.plot(tt, f1(tt), color=BLUE, lw=2.2)
+    a.plot(tt2, f1(p) + g1(p) * (tt2 - p), color=RED, ls="--", lw=1.8, label="tangent line at θ_k")
+    a.scatter([p], [f1(p)], color=ORANGE, s=80, zorder=3, label=f"θ_{k} = {p:.2f}")
+    a.annotate("", xy=(P1[k + 1], f1(P1[k + 1])), xytext=(p, f1(p)), arrowprops=dict(arrowstyle="->", color=ORANGE, lw=2))
+    a.scatter([3], [0], marker="*", s=180, color=GREEN, zorder=4)
+    a.set_ylim(-1, 10); a.set_xlim(-0.6, 6.6); a.set_xlabel("θ"); a.legend(frameon=False, fontsize=9, loc="upper right")
+    a.set_title(f"Step {k + 1}: slope {g1(p):.2f}  →  θ_{k + 1} = {P1[k + 1]:.2f}")
+axs[0].set_ylabel("f(θ)")
+plt.tight_layout(); plt.show()
+```
+
+## The step size $\eta$ matters
+
+```{python}
+#| fig-width: 14
+#| fig-height: 3.8
+fig, axs = plt.subplots(1, 4, figsize=(14, 3.8), sharey=True)
+tt3 = np.linspace(-1.5, 7.5, 300)
+for a, eta, lab in zip(axs, (0.05, 0.2, 0.9, 1.05), ("too small: slow", "good", "too big: zigzag", "much too big: diverges")):
+    Pe = gd_path(g1, 0.0, eta, 8)
+    a.plot(tt3, f1(tt3), color=BLUE, lw=2); a.plot(Pe, f1(Pe), "o-", color=ORANGE, ms=5)
+    a.set_ylim(0, 25); a.set_xlim(-1.5, 7.5); a.set_xlabel("θ"); a.set_title(f"η = {eta}: {lab}", fontsize=10)
+axs[0].set_ylabel("f(θ)")
+plt.tight_layout(); plt.show()
+```
+
+- For this quadratic the update is $\theta_{k+1}-3=(1-2\eta)(\theta_k-3)$. It converges when $|1-2\eta|<1$, that is $0<\eta<1$
+- In practice $\eta$ is a **tuning knob**: the same one that appears later as the learning rate $\nu$ of gradient boosting
+
+## Example 2 (two dimensions): $f(\theta_1,\theta_2)=(\theta_1-3)^2+2(\theta_2-2)^2$
+
+Minimum at $(3,2)$. The **gradient** is the vector of slopes $\nabla f=\big(2(\theta_1-3),\;4(\theta_2-2)\big)$. Update: $\;\boldsymbol\theta\leftarrow\boldsymbol\theta-\eta\,\nabla f$. Start $(0,0)$, $\eta=0.2$.
+
+```{python}
+P2 = gd_path(g2, (0.0, 0.0), 0.2, 8)
+rows = []
+for k in range(4):
+    g = g2(P2[k])
+    rows.append({"k": k, "θ₁": round(P2[k][0], 3), "θ₂": round(P2[k][1], 3), "∂f/∂θ₁": round(g[0], 3), "∂f/∂θ₂": round(g[1], 3),
+                 "θ₁ new = θ₁ − 0.2·∂f/∂θ₁": round(P2[k + 1][0], 3), "θ₂ new = θ₂ − 0.2·∂f/∂θ₂": round(P2[k + 1][1], 3), "f": round(f2(P2[k]), 3)})
+show_table(pd.DataFrame(rows))
+```
+
+**By hand, step 1:** $\nabla f(0,0)=(2(0-3),\,4(0-2))=(-6,-8)$, so $\boldsymbol\theta_1=(0,0)-0.2(-6,-8)=(1.2,\,1.6)$.
+
+## Example 2: the path to the minimum
+
+```{python}
+#| fig-width: 14
+#| fig-height: 4.6
+g1d, g2d = np.meshgrid(np.linspace(-0.5, 4.5, 200), np.linspace(-0.5, 3.2, 200))
+Z = (g1d - 3) ** 2 + 2 * (g2d - 2) ** 2
+fig, axs = plt.subplots(1, 2, figsize=(14, 4.6), gridspec_kw={"width_ratios": [1.3, 1]})
+a = axs[0]
+a.contour(g1d, g2d, Z, levels=[0.5, 1, 2, 4, 8, 12, 16, 20], colors=BLUE, alpha=0.55)
+a.plot(P2[:, 0], P2[:, 1], "o-", color=ORANGE, lw=1.6, ms=6)
+for k in range(3):
+    a.annotate("", xy=P2[k + 1], xytext=P2[k], arrowprops=dict(arrowstyle="->", color=ORANGE, lw=2))
+    a.annotate(f"θ{k}", P2[k], textcoords="offset points", xytext=(-16, 6), fontsize=9)
+a.scatter([3], [2], marker="*", s=240, color=GREEN, zorder=4)
+a.set_xlabel("θ₁"); a.set_ylabel("θ₂"); a.set_title("Contours of f: each step goes downhill")
+a = axs[1]
+a.semilogy(range(9), [f2(p) for p in P2], "o-", color=BLUE)
+a.set_xlabel("step k"); a.set_ylabel("f(θ_k)  (log scale)"); a.set_title("The loss shrinks every step")
+plt.tight_layout(); plt.show()
+```
+
+```{python}
+md("The valley is steeper in $\\theta_2$ than in $\\theta_1$, so $\\theta_2$ settles faster. After 8 steps the distance to the minimum is $|\\theta_1-3|=%.3f$ and $|\\theta_2-2|=%.6f$." % (abs(P2[8][0] - 3), abs(P2[8][1] - 2)))
+```
+
+## Picture: a ball rolling downhill
+
+![](gd_surface.png){fig-align="center" width="62%"}
+
+::: {.incremental}
+- Think of the loss as a **landscape** and the parameters as the position of a ball. Gradient descent lets the ball roll **downhill**, step by step, toward a valley (a minimum)
+- Our quadratics have **one** valley. Real loss surfaces, like this one, can have **several**: where the ball ends up can depend on where it starts
+:::
+
+## Gradient descent in one box
+
+::: {.flow}
+<div class="box"><b>1. Pick a start</b><br>$\boldsymbol\theta_0$</div><div class="arrow">→</div>
+<div class="box"><b>2. Compute the gradient</b><br>$\nabla f(\boldsymbol\theta_k)$</div><div class="arrow">→</div>
+<div class="box"><b>3. Step downhill</b><br>$\boldsymbol\theta_{k+1}=\boldsymbol\theta_k-\eta\nabla f$</div><div class="arrow">↺</div>
+:::
+
+::: {.key}
+The function $f$ can be **anything differentiable**. In machine learning, $f$ is the **loss** and $\boldsymbol\theta$ is what we are allowed to change. The next part shows what that means.
+:::
+
+# 🕷️ Part 2: Loss functions in model training {background-color="#6b6a6b"}
+
+## Training a model = minimizing a loss
+
+::: {.incremental}
+- A model makes **predictions** $\hat y_i$ for the training data. The **loss** adds up how wrong they are: $L=\sum_i \ell(y_i,\hat y_i)$
+- Small loss = good predictions. The training algorithm's job: **find the parameters that minimize the loss**
+- Different problems and different worries (outliers, probabilities, ...) call for different loss functions $\ell$
+:::
+
+::: {.key}
+**Training = gradient descent on a loss.** Part 1 told us how to minimize any function. What remains is to say *what is being changed* and *which loss*.
+:::
+
+## Example: a linear model on 4 points
+
+The data (we will use it again later):
+
+::::: {.columns}
+::: {.column width="32%"}
+```{python}
+show_table(pd.DataFrame({"x": x4.astype(int), "y": y4.astype(int)}))
+```
+:::
+::: {.column width="68%"}
+```{python}
+#| fig-width: 7
+#| fig-height: 3.8
+fig, ax = plt.subplots(figsize=(7, 3.8))
+ax.scatter(x4, y4, s=90, color=BLUE, zorder=3)
+ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_ylim(0, 7); ax.set_xticks(range(1, 5))
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+Model: $\hat y=\theta_0+\theta_1x$ with parameters $\boldsymbol\theta=(\theta_0,\theta_1)$. Different $\boldsymbol\theta$ give different lines, and so different predictions $\hat y_i$. Next: how good is a line?
+
+## Building the squared loss, column by column
+
+Start with the data. Each click adds one column; the earlier columns stay in place.
+
+<table class="build">
+<thead><tr><th>$x$</th><th>$y$</th><th class="fragment" data-fragment-index="1">predicted $\hat y=\theta_0+\theta_1x$</th><th class="fragment" data-fragment-index="2">squared loss $\tfrac12(y-\hat y)^2$</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>2</td><td class="fragment" data-fragment-index="1">$\theta_0+\theta_1$</td><td class="fragment" data-fragment-index="2">$\tfrac12(2-\theta_0-\theta_1)^2$</td></tr>
+<tr><td>2</td><td>3</td><td class="fragment" data-fragment-index="1">$\theta_0+2\theta_1$</td><td class="fragment" data-fragment-index="2">$\tfrac12(3-\theta_0-2\theta_1)^2$</td></tr>
+<tr><td>3</td><td>5</td><td class="fragment" data-fragment-index="1">$\theta_0+3\theta_1$</td><td class="fragment" data-fragment-index="2">$\tfrac12(5-\theta_0-3\theta_1)^2$</td></tr>
+<tr><td>4</td><td>4</td><td class="fragment" data-fragment-index="1">$\theta_0+4\theta_1$</td><td class="fragment" data-fragment-index="2">$\tfrac12(4-\theta_0-4\theta_1)^2$</td></tr>
+</tbody></table>
+
+::: {.fragment data-fragment-index="3"}
+Total loss = the four entries added up:
+
+$$\begin{aligned}L(\theta_0,\theta_1)&=\tfrac12(2-\theta_0-\theta_1)^2+\tfrac12(3-\theta_0-2\theta_1)^2\\&\quad+\tfrac12(5-\theta_0-3\theta_1)^2+\tfrac12(4-\theta_0-4\theta_1)^2\end{aligned}$$
+:::
+
+## Building the absolute loss, column by column
+
+Same table, new loss: $\ell(y,\hat y)=\lvert y-\hat y\rvert$.
+
+<table class="build">
+<thead><tr><th>$x$</th><th>$y$</th><th class="fragment" data-fragment-index="1">predicted $\hat y=\theta_0+\theta_1x$</th><th class="fragment" data-fragment-index="2">absolute loss $\lvert y-\hat y\rvert$</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>2</td><td class="fragment" data-fragment-index="1">$\theta_0+\theta_1$</td><td class="fragment" data-fragment-index="2">$\lvert 2-\theta_0-\theta_1\rvert$</td></tr>
+<tr><td>2</td><td>3</td><td class="fragment" data-fragment-index="1">$\theta_0+2\theta_1$</td><td class="fragment" data-fragment-index="2">$\lvert 3-\theta_0-2\theta_1\rvert$</td></tr>
+<tr><td>3</td><td>5</td><td class="fragment" data-fragment-index="1">$\theta_0+3\theta_1$</td><td class="fragment" data-fragment-index="2">$\lvert 5-\theta_0-3\theta_1\rvert$</td></tr>
+<tr><td>4</td><td>4</td><td class="fragment" data-fragment-index="1">$\theta_0+4\theta_1$</td><td class="fragment" data-fragment-index="2">$\lvert 4-\theta_0-4\theta_1\rvert$</td></tr>
+</tbody></table>
+
+::: {.fragment data-fragment-index="3"}
+Total loss = the four entries added up:
+
+$$\begin{aligned}L(\theta_0,\theta_1)&=\lvert 2-\theta_0-\theta_1\rvert+\lvert 3-\theta_0-2\theta_1\rvert\\&\quad+\lvert 5-\theta_0-3\theta_1\rvert+\lvert 4-\theta_0-4\theta_1\rvert\end{aligned}$$
+:::
+
+## Building the Huber loss, column by column
+
+$\ell_\delta(r)=\tfrac12r^2$ if $|r|\le\delta$, else $\delta(|r|-\tfrac12\delta)$, with $r=y-\hat y$.
+
+<table class="build">
+<thead><tr><th>$x$</th><th>$y$</th><th class="fragment" data-fragment-index="1">predicted $\hat y=\theta_0+\theta_1x$</th><th class="fragment" data-fragment-index="2">Huber loss $\ell_\delta(y-\hat y)$</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>2</td><td class="fragment" data-fragment-index="1">$\theta_0+\theta_1$</td><td class="fragment" data-fragment-index="2">$\ell_\delta(2-\theta_0-\theta_1)$</td></tr>
+<tr><td>2</td><td>3</td><td class="fragment" data-fragment-index="1">$\theta_0+2\theta_1$</td><td class="fragment" data-fragment-index="2">$\ell_\delta(3-\theta_0-2\theta_1)$</td></tr>
+<tr><td>3</td><td>5</td><td class="fragment" data-fragment-index="1">$\theta_0+3\theta_1$</td><td class="fragment" data-fragment-index="2">$\ell_\delta(5-\theta_0-3\theta_1)$</td></tr>
+<tr><td>4</td><td>4</td><td class="fragment" data-fragment-index="1">$\theta_0+4\theta_1$</td><td class="fragment" data-fragment-index="2">$\ell_\delta(4-\theta_0-4\theta_1)$</td></tr>
+</tbody></table>
+
+::: {.fragment data-fragment-index="3"}
+Total loss = the four entries added up:
+
+$$\begin{aligned}L(\theta_0,\theta_1)&=\ell_\delta(2-\theta_0-\theta_1)+\ell_\delta(3-\theta_0-2\theta_1)\\&\quad+\ell_\delta(5-\theta_0-3\theta_1)+\ell_\delta(4-\theta_0-4\theta_1)\end{aligned}$$
+:::
+
+## Building the quantile loss, column by column
+
+$\rho_\tau(r)=\tau r$ if $r\ge0$, else $(\tau-1)r$, with $r=y-\hat y$.
+
+<table class="build">
+<thead><tr><th>$x$</th><th>$y$</th><th class="fragment" data-fragment-index="1">predicted $\hat y=\theta_0+\theta_1x$</th><th class="fragment" data-fragment-index="2">quantile loss $\rho_\tau(y-\hat y)$</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>2</td><td class="fragment" data-fragment-index="1">$\theta_0+\theta_1$</td><td class="fragment" data-fragment-index="2">$\rho_\tau(2-\theta_0-\theta_1)$</td></tr>
+<tr><td>2</td><td>3</td><td class="fragment" data-fragment-index="1">$\theta_0+2\theta_1$</td><td class="fragment" data-fragment-index="2">$\rho_\tau(3-\theta_0-2\theta_1)$</td></tr>
+<tr><td>3</td><td>5</td><td class="fragment" data-fragment-index="1">$\theta_0+3\theta_1$</td><td class="fragment" data-fragment-index="2">$\rho_\tau(5-\theta_0-3\theta_1)$</td></tr>
+<tr><td>4</td><td>4</td><td class="fragment" data-fragment-index="1">$\theta_0+4\theta_1$</td><td class="fragment" data-fragment-index="2">$\rho_\tau(4-\theta_0-4\theta_1)$</td></tr>
+</tbody></table>
+
+::: {.fragment data-fragment-index="3"}
+Total loss = the four entries added up:
+
+$$\begin{aligned}L(\theta_0,\theta_1)&=\rho_\tau(2-\theta_0-\theta_1)+\rho_\tau(3-\theta_0-2\theta_1)\\&\quad+\rho_\tau(5-\theta_0-3\theta_1)+\rho_\tau(4-\theta_0-4\theta_1)\end{aligned}$$
+:::
+
+## Loss functions at a glance
+
+| Loss | Formula for one point | Good for |
+|---|---|---|
+| Squared | $\tfrac12(y-\hat y)^2$ | regression, the default (estimates the mean) |
+| Absolute | $\lvert y-\hat y\rvert$ | regression with outliers (estimates the median) |
+| Huber | squared if $\lvert r\rvert\le\delta$, else linear | regression, small errors count fully, big ones are capped |
+| Quantile $\tau$ | $\tau r$ if $r\ge0$, else $(\tau-1)r$ | predicting a high or low quantile |
+| Logistic | $-[y\ln p+(1-y)\ln(1-p)]$ | classification with probabilities |
+| Exponential | $e^{-yF}$ | classification, **AdaBoost** |
+
+::: {.key}
+Whatever the loss, the task is the same: **choose the model's parameters (or predictions) to make the total loss as small as possible.**
+:::
+
+# 🕷️ Part 3: Two ways to minimize a loss {background-color="#6b6a6b"}
+
+## The two approaches
+
+The loss $L=\sum_i\ell(y_i,\hat y_i)$ depends on the predictions $\hat y_i$, and the predictions depend on the model. So there are two natural places to take the gradient:
+
+::::: {.columns}
+::: {.column width="50%"}
+**Approach 1: gradient on the parameters**
+
+::: {.fragment data-fragment-index="1"}
+$$\boldsymbol\theta\leftarrow\boldsymbol\theta-\eta\,\frac{\partial L}{\partial\boldsymbol\theta}$$
+:::
+
+::: {.fragment data-fragment-index="2"}
+The model has a **fixed form** with parameters $\boldsymbol\theta$.
+:::
+
+::: {.fragment data-fragment-index="3"}
+**How the negative gradient is used:** it tells us how to **improve the parameters** for the next round.
+:::
+:::
+::: {.column width="50%"}
+**Approach 2: gradient on the predictions**
+
+::: {.fragment data-fragment-index="1"}
+$$\hat y_i\leftarrow\hat y_i-\eta\,\frac{\partial L}{\partial\hat y_i}$$
+:::
+
+::: {.fragment data-fragment-index="2"}
+Treat each prediction as the unknown, then **build a model that follows the step**.
+:::
+
+::: {.fragment data-fragment-index="3"}
+**How the negative gradient is used:** it is the **next target**: the new model is fit to it.
+:::
+:::
+:::::
+
+::: {.fragment data-fragment-index="4"}
+::: {.key}
+In **both** approaches the loss goes **down after every step (round)**, and we keep heading toward the minimum.
+:::
+:::
+
+::: {.fragment data-fragment-index="5"}
+::: {.note}
+Both are gradient descent. They differ in *what is being changed*: parameters, or predictions (a function).
+:::
+:::
+
+::: {.fragment data-fragment-index="6"}
+**Examples.** Approach 1: linear regression, logistic regression, **neural networks**. Approach 2: **gradient boosting**.
+:::
+
+## The same 4 points, the same loss
+
+::::: {.columns}
+::: {.column width="30%"}
+```{python}
+show_table(pd.DataFrame({"x": x4.astype(int), "y": y4.astype(int)}))
+```
+:::
+::: {.column width="70%"}
+```{python}
+#| fig-width: 7
+#| fig-height: 3.6
+fig, ax = plt.subplots(figsize=(7, 3.6))
+ax.scatter(x4, y4, s=90, color=BLUE, zorder=3)
+ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_ylim(0, 7); ax.set_xticks(range(1, 5))
+plt.tight_layout(); plt.show()
+```
+:::
+:::::
+
+Squared loss in terms of the **predictions** $\hat y_1,\dots,\hat y_4$:
+
+$$L=\tfrac12\Big[(2-\hat y_1)^2+(3-\hat y_2)^2+(5-\hat y_3)^2+(4-\hat y_4)^2\Big]$$
+
+For the **linear model** $\hat y_i=\theta_0+\theta_1x_i$ the same loss in terms of the **parameters**:
+
+$$L(\theta_0,\theta_1)=\tfrac12\Big[(2-\theta_0-\theta_1)^2+(3-\theta_0-2\theta_1)^2+(5-\theta_0-3\theta_1)^2+(4-\theta_0-4\theta_1)^2\Big]$$
+
+## Step 1, written out: side by side {.smaller}
+
+::::: {.columns}
+::: {.column width="50%"}
+**Approach 1: gradient on the parameters**
+
+Form of the loss, before taking the gradient:
+
+$$\begin{aligned}L(\theta_0,\theta_1)=\tfrac12\Big[&(2-\theta_0-\theta_1)^2+(3-\theta_0-2\theta_1)^2\\&+(5-\theta_0-3\theta_1)^2+(4-\theta_0-4\theta_1)^2\Big]\end{aligned}$$
+
+Differentiate $L(\theta_0,\theta_1)$ with respect to $\theta_0$ and $\theta_1$:
+
+$$\begin{aligned}\frac{\partial L}{\partial\theta_0}=-\Big[&(2-\theta_0-\theta_1)+(3-\theta_0-2\theta_1)\\&+(5-\theta_0-3\theta_1)+(4-\theta_0-4\theta_1)\Big]\end{aligned}$$
+
+$$\begin{aligned}\frac{\partial L}{\partial\theta_1}=-\Big[&1(2-\theta_0-\theta_1)+2(3-\theta_0-2\theta_1)\\&+3(5-\theta_0-3\theta_1)+4(4-\theta_0-4\theta_1)\Big]\end{aligned}$$
+:::
+::: {.column width="50%"}
+**Approach 2: gradient on the predictions**
+
+Form of the loss, before taking the gradient:
+
+$$\begin{aligned}L(\hat y_1,\dots,\hat y_4)=\tfrac12\Big[&(2-\hat y_1)^2+(3-\hat y_2)^2\\&+(5-\hat y_3)^2+(4-\hat y_4)^2\Big]\end{aligned}$$
+
+Differentiate $L(\hat y_1,\dots,\hat y_4)$ with respect to each prediction:
+
+$$\begin{aligned}\frac{\partial L}{\partial\hat y_1}&=-(2-\hat y_1)\\\frac{\partial L}{\partial\hat y_2}&=-(3-\hat y_2)\\\frac{\partial L}{\partial\hat y_3}&=-(5-\hat y_3)\\\frac{\partial L}{\partial\hat y_4}&=-(4-\hat y_4)\end{aligned}$$
+
+These are minus the residuals: the **next targets**.
+:::
+:::::
+
+## The two approaches side by side
+
+| | **Approach 1: gradient on parameters** | **Approach 2: gradient on predictions** |
+|---|---|---|
+| What changes | parameters $\boldsymbol\theta$ | the prediction function $F(x)$ |
+| Gradient | $\partial L/\partial\boldsymbol\theta$ (chain rule) | $\partial L/\partial F_i$ (no chain rule needed) |
+| Update | $\boldsymbol\theta\leftarrow\boldsymbol\theta-\eta\,\partial L/\partial\boldsymbol\theta$ | $F\leftarrow F+\nu\,h$, where $h$ is fit to $-\partial L/\partial F$ |
+| Model form | fixed (line, network, ...) | grows: one new tree per round |
+| Examples | linear / logistic regression, neural networks | **gradient boosting**, AdaBoost |
+| Needs | a loss differentiable in $\boldsymbol\theta$ | a loss differentiable in $\hat y$ (trees need not be) |
+
+::: {.key}
+Approach 1 uses $\dfrac{\partial\ell}{\partial\hat y}\cdot\dfrac{\partial\hat y}{\partial\theta}$. Gradient boosting keeps **only the first factor** and replaces the second by "fit a tree to it". That is why the pseudo-residual $-\partial\ell/\partial\hat y$ is the heart of boosting.
+:::
+
+# 🕷️ Part 4: Squared loss vs exponential loss (AdaBoost) {background-color="#6b6a6b"}
+
+## Same data, two loss functions
+
+Both models are gradient boosting with stumps. Only the **loss** differs. Eight points, class labels $y=\pm1$:
+
+```{python}
+#| fig-width: 11
+#| fig-height: 2.8
+fig, ax = plt.subplots(figsize=(11, 2.8))
+ax.scatter(x8, yp8, s=130, color=np.where(yp8 == 1, BLUE, RED), zorder=2)
+ax.axhline(0, color=GREY, lw=1, ls=":")
+ax.set_yticks([-1, 1]); ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_ylim(-1.6, 1.6)
+plt.tight_layout(); plt.show()
+```
+
+- **Squared loss** $\tfrac12(y-F)^2$ treats the labels as numbers (a regression on $\pm1$); classify by $\operatorname{sign}(F)$
+- **Exponential loss** $e^{-yF}$ is AdaBoost's loss; classify by $\operatorname{sign}(F)$
+
+## The steps, side by side
+
+| Step | **Squared loss** | **Exponential loss (AdaBoost)** |
+|---|---|---|
+| Loss $\ell(y,F)$ | $\tfrac12(y-F)^2$ | $e^{-yF}$ |
+| 0. Start $F_0$ | mean of $y$ | $\tfrac12\ln\frac{\#(+1)}{\#(-1)}$ (here 0) |
+| 1. Pseudo-residual $-\partial\ell/\partial F$ | $y-F$ (the residual) | $y\,e^{-yF}$ = label × weight |
+| 2. Weak learner | stump fit to $r$ by least squares | stump $h\in\{-1,+1\}$ with the smallest **weighted error** $\varepsilon$ |
+| 3. Leaf value / step size | leaf = mean of $r$ in the leaf; fixed learning rate $\nu$ | $\alpha=\tfrac12\ln\frac{1-\varepsilon}{\varepsilon}$ (exact line search) |
+| 4. Update | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\alpha\,h$ |
+| 5. Prediction | $\operatorname{sign}(F)$ | $\operatorname{sign}(F)$ |
+
+## Squared vs exponential: what is different in practice?
+
+| | Squared loss | Exponential loss (AdaBoost) |
+|---|---|---|
+| Punishes a wrong point | quadratically in the error | **exponentially** in the margin |
+| A mislabeled point | pulls with strength $\propto$ its error | pulls with strength $e^{-yF}$: grows without bound |
+| Natural task | regression (numbers) | two-class classification |
+| Step size | small fixed $\nu$ | exact line search $\alpha$ |
+| Output | number, or sign for classes | score, class $=$ sign |
+
+```{python}
+mg2 = np.array([-3.0, -2, -1, 0, 1, 2])
+show_table(pd.DataFrame({"margin y·F": mg2, "squared |gradient| = |y − F| = |1 − m|": np.abs(1 - mg2).round(2), "exponential |gradient| = e^(−m)": np.exp(-mg2).round(2)}))
+```
+
+- For a badly wrong point (margin $-3$) the exponential gradient is $\approx 20$ versus $4$: **AdaBoost is more sensitive to label noise**
+
+# 🕷️ Part 5: More loss functions for gradient boosting {background-color="#6b6a6b"}
+
+## The same recipe, different losses
+
+| Step | **Squared** | **Absolute** | **Huber** | **Quantile** | **Logistic** | Exponential (**AdaBoost**) | **Poisson** |
+|---|---|---|---|---|---|---|---|
+| Loss $\ell(y,F)$ | $\tfrac12(y-F)^2$ | $\lvert y-F\rvert$ | $\tfrac12r^2$ if $\lvert r\rvert\le\delta$, else $\delta(\lvert r\rvert-\tfrac12\delta)$ | $\tau r$ if $r\ge0$, else $(\tau-1)r$, with $r=y-F$ | $-[y\ln p+(1-y)\ln(1-p)]$, $p=\frac{1}{1+e^{-F}}$, $y\in\{0,1\}$ | $e^{-yF}$, $y\in\{-1,+1\}$ | $e^{F}-yF$, $y=0,1,2,\dots$ |
+| 0. Start $F_0$ | mean of $y$ | median of $y$ | median of $y$ | $\tau$-quantile of $y$ | $\ln\frac{\bar y}{1-\bar y}$ (log-odds) | $\tfrac12\ln\frac{\#(+1)}{\#(-1)}$ | $\ln\bar y$ |
+| 1. Pseudo-residual $-\partial\ell/\partial F$ | $y-F$ (the residual) | $\operatorname{sign}(y-F)$ ($\pm1$) | $r$ clipped to $[-\delta,\delta]$ | $\tau$ if $y>F$, else $\tau-1$ | $y-p$ | $y\,e^{-yF}$ = label × weight | $y-e^{F}$ |
+| 2. Weak learner | stump fit to $r$ by least squares | stump fit to $r$ by least squares | stump fit to the clipped $r$ | stump fit to $r$ by least squares | stump fit to $r$ by least squares | stump $h\in\{-1,+1\}$ with the smallest weighted error $\varepsilon$ | stump fit to $r$ by least squares |
+| 3. Leaf value / step size | leaf = mean of $r$ in the leaf; fixed learning rate $\nu$ | leaf = **median** of the residuals in the leaf; fixed $\nu$ | leaf = median of $r$ + mean of the clipped deviations; fixed $\nu$ | leaf = $\tau$-quantile of the residuals in the leaf; fixed $\nu$ | leaf $=\sum r\,/\sum p(1-p)$ (Newton step); fixed $\nu$ | $\alpha=\tfrac12\ln\frac{1-\varepsilon}{\varepsilon}$ (exact line search) | leaf $=\sum r\,/\sum e^{F}$ (Newton step); fixed $\nu$ |
+| 4. Update | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\nu\,h$ | $F\leftarrow F+\alpha\,h$ | $F\leftarrow F+\nu\,h$ |
+| 5. Prediction | $F$ (a number) | $F$ (estimates the median) | $F$ (a number) | $F$ (estimates the $\tau$-quantile) | $p=\sigma(F)$; class 1 if $p>0.5$ | $\operatorname{sign}(F)$ | $e^{F}>0$ (expected count) |
+
+## Which loss for which problem?
+
+| Problem | Loss | Why |
+|---|---|---|
+| Regression, clean data | squared | smooth, standard, estimates the mean |
+| Regression with outliers | absolute / Huber | outliers cannot dominate |
+| Predict a range or a safe value | quantile | estimates a chosen quantile |
+| Counts, non-negative amounts | Poisson (Gamma, Tweedie) | respects the data's scale |
+| Two classes, need probabilities | logistic | calibrated probabilities |
+| Two classes, classic boosting | exponential (AdaBoost) | simple weights; sensitive to label noise |
+| Many classes | softmax | one score per class |
+
+# 🕷️ Wrap-up {background-color="#6b6a6b"}
+
+## Summary
+
+::: {.incremental}
+- **Gradient descent** minimizes any differentiable function by stepping against the slope, $\theta\leftarrow\theta-\eta f'(\theta)$
+- **Training a model** means choosing parameters (or predictions) that minimize a **loss**
+- **Approach 1:** gradient on the **parameters** (linear and logistic regression, neural networks). **Approach 2:** gradient on the **predictions**, then fit a tree to follow it (**gradient boosting**)
+- For squared loss the negative gradient on the predictions is the **residual**. **AdaBoost** is the same recipe with the exponential loss
+- Other losses (absolute, Huber, quantile, logistic, Poisson, softmax) only change the **start, pseudo-residual and leaf value**
+- Pick the loss for the problem: it defines what the model learns
+:::
+
+# Thank you! {background-color="#FAC18A"}
+

@@ -1,0 +1,467 @@
+---
+title: "Exam 3 Practice 1, Problem 2: CNN Solution"
+subtitle: "A grayscale image: two convolution windows, then ReLU, pooling, flatten, dense, and softmax"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    code-line-numbers: false
+    menu: true
+    footer: "Exam 3 practice 1: Problem 2 (CNN)"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { font-size: 1.6em; }
+          .reveal p, .reveal li { font-size: 0.72em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.62em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display { font-size: 0.9em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 600px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal .slides section .h480 img { max-height: 480px !important; }
+          .reveal .slides section .h400 img { max-height: 400px !important; }
+          .reveal .slides section .h340 img { max-height: 340px !important; }
+          .reveal .slides section .h280 img { max-height: 280px !important; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.72em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.72em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .note { font-size: 0.5em; color: #555; margin-top: 0.4em; }
+          .reveal .note p { font-size: 1em; }
+          .reveal .r-stack img { background: #ffffff; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import base64, io
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, FancyBboxPatch, Polygon
+from IPython.display import display, HTML, Markdown
+from scipy.signal import correlate2d
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 13})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def n(x, d=3):
+    s = f"{x:.{d}f}"
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s in ("-0", "") else s
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def show_fig(fig):
+    display(HTML(f'<img src="{png_uri(fig)}">'))
+
+
+def stack(figs):
+    """Figures on top of each other; each click shows the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in r) + " |" for r in rows)
+    md(s)
+
+
+def conv(x, w, b=0):
+    """Slide the filter and take inner products (no flip, as deep learning libraries do)."""
+    return b + correlate2d(np.asarray(x, float), np.asarray(w, float), mode="valid")
+
+
+def relu(z):
+    return np.maximum(0, z)
+
+
+def pool(a, s=2):
+    h, w = a.shape[0] // s, a.shape[1] // s
+    return a[:h * s, :w * s].reshape(h, s, w, s).max(axis=(1, 3))
+
+
+def out_size(n_, f, p=0, s=1):
+    return (n_ - f + 2 * p) // s + 1
+
+
+def conv_params(f, c_in, k):
+    return (f * f * c_in + 1) * k
+
+
+def fc_params(m, k):
+    return (m + 1) * k
+
+
+def canvas(size, xlim, ylim):
+    fig, ax = plt.subplots(figsize=size)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.subplots_adjust(0, 0, 1, 1)
+    return fig, ax
+
+
+def cells(ax, A, x=0, y=0, cmap=None, vmin=None, vmax=None, fs=15, text=True, face="white", title=None, tfs=14, blank=None, fmt=None):
+    """Draw matrix A with its top-left corner at (x, y). Cells where blank is True are left empty."""
+    A = np.asarray(A, float)
+    cm = plt.get_cmap(cmap) if cmap else None
+    vmin = A.min() if vmin is None else vmin
+    vmax = A.max() if vmax is None else vmax
+    for r in range(A.shape[0]):
+        for k in range(A.shape[1]):
+            fc, tc = face, INK
+            empty = blank is not None and blank[r, k]
+            if cm and not empty:
+                t = 0.5 if vmax == vmin else (A[r, k] - vmin) / (vmax - vmin)
+                fc = cm(t)
+                tc = "white" if 0.299 * fc[0] + 0.587 * fc[1] + 0.114 * fc[2] < 0.55 else INK
+            ax.add_patch(Rectangle((x + k, y - r - 1), 1, 1, fc="white" if empty else fc, ec="#999999", lw=1, zorder=2))
+            if text and not empty:
+                ax.text(x + k + 0.5, y - r - 0.5, fmt(A[r, k]) if fmt else n(A[r, k]), ha="center", va="center", fontsize=fs, color=tc, zorder=3)
+    if title:
+        ax.text(x + A.shape[1] / 2, y + 0.35, title, ha="center", va="bottom", fontsize=tfs, fontweight="bold", color="#444444", linespacing=1.3)
+
+
+def frame(ax, x, y, h, w, color=ORANGE, lw=4):
+    ax.add_patch(Rectangle((x, y - h), w, h, fc="none", ec=color, lw=lw, zorder=5))
+
+
+def arrow(ax, x0, y0, x1, y1, color="#777777", lw=1.8):
+    ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", color=color, lw=lw, shrinkA=0, shrinkB=0), zorder=4)
+
+
+def label(ax, x, y, s, fs=15, color=INK, **kw):
+    ax.text(x, y, s, ha="center", va="center", fontsize=fs, color=color, **kw)
+
+
+def color_grid(ax, A, x, y, title=None, tfs=14):
+    """Draw an 8 x 8 x 3 image (values 0-9) as colored cells with its top-left corner at (x, y)."""
+    for r in range(A.shape[0]):
+        for k in range(A.shape[1]):
+            ax.add_patch(Rectangle((x + k, y - r - 1), 1, 1, fc=A[r, k] / 9, ec="#999999", lw=0.8, zorder=2))
+    if title:
+        ax.text(x + A.shape[1] / 2, y + 0.35, title, ha="center", va="bottom", fontsize=tfs, fontweight="bold", color="#444444")
+
+
+def img_axes(ax, A, title, cmap="gray", vmin=None, vmax=None):
+    ax.imshow(A, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.set_title(title, fontsize=15)
+    ax.axis("off")
+
+BCOLS = [plt.get_cmap("tab10")(k) for k in range(9)]
+```
+
+```{python}
+#| label: by-hand-helpers
+from matplotlib.patches import Circle
+
+EAPPROX = {0: 1.00, 1: 2.72, 2: 7.39, 3: 20.09}      # values of e^z given to students
+BLOCKS4 = [(0, 0), (0, 2), (2, 0), (2, 2)]
+BNAMES = ["top-left", "top-right", "bottom-left", "bottom-right"]
+CLS, CLS_COL = ["A", "B"], [ORANGE, BLUE]
+CHN = [("R", "Reds", RED), ("G", "Greens", GREEN), ("B", "Blues", BLUE)]
+
+
+def mm(s):
+    """Use a real minus sign."""
+    return str(s).replace("-", "−")
+
+
+def make_problem(X, K, bias, W):
+    X = np.asarray(X); K = np.asarray(K)
+    if X.ndim == 2:
+        X, K = X[:, :, None], K[:, :, None]
+    parts = [conv(X[:, :, ch], K[:, :, ch]) for ch in range(X.shape[2])]
+    Z = sum(parts) + bias
+    A = relu(Z); P = pool(A); a = P.ravel()
+    W = np.asarray(W, float); s = W @ a
+    assert np.allclose(s, np.round(s)) and all(int(round(v)) in EAPPROX for v in s)
+    return dict(X=X, K=K, bias=bias, parts=parts, Z=Z, A=A, P=P, a=a, W=W, s=np.round(s).astype(int), C=X.shape[2])
+
+
+def blank_upto(shape, k_done):
+    b = np.ones(shape, bool)
+    for k in range(k_done):
+        b[k // shape[1], k % shape[1]] = False
+    return b
+
+
+def pair_text(K2, w2):
+    pairs = [(int(K2[r, c]), int(w2[r, c])) for r in range(2) for c in range(2)]
+    prods = " + ".join(f"({k})×({v})" for k, v in pairs)
+    vals = " + ".join(str(k * v) for k, v in pairs).replace("+ -", "− ")
+    return mm(prods), mm(vals), sum(k * v for k, v in pairs)
+
+
+def conv_fig(pr, i, j):
+    """One window of the convolution, with the full multiplication written out."""
+    X, K, Z, C = pr["X"], pr["K"], pr["Z"], pr["C"]
+    mq = np.abs(Z).max()
+    if C == 1:
+        fig, ax = canvas((15, 5.0), (-0.5, 27.5), (-7.6, 1.4))
+        cells(ax, X[:, :, 0], 0, 0, cmap="gray", vmin=0, vmax=4, fs=16, title="Image (5 × 5)")
+        frame(ax, j, -i, 2, 2)
+        w = X[i:i + 2, j:j + 2, 0]
+        cells(ax, w, 7.0, -1.5, cmap="gray", vmin=0, vmax=4, fs=16, title="window", tfs=13)
+        label(ax, 9.7, -2.5, "×", fs=22)
+        cells(ax, K[:, :, 0], 10.4, -1.5, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="filter", tfs=13)
+        cells(ax, Z, 15.5, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="Feature map (4 × 4)", blank=blank_upto((4, 4), i * 4 + j + 1))
+        frame(ax, 15.5 + j, -i, 1, 1)
+        arrow(ax, 13.0, -2.5, 15.2, -2.5)
+        prods, vals, _ = pair_text(K[:, :, 0], w)
+        label(ax, 13.5, -5.6, f"window (row {i + 1}, col {j + 1}):   {prods}", fs=18, color=ORANGE, fontweight="bold")
+        label(ax, 13.5, -6.8, f"=  {vals}  =  {mm(n(Z[i, j]))}", fs=18, color=ORANGE, fontweight="bold")
+        return fig
+    fig, ax = canvas((15, 6.2), (-0.5, 34.0), (-12.4, 1.4))
+    for ch, (nm, cmap, col) in enumerate(CHN):
+        x0 = ch * 9.4
+        cells(ax, X[:, :, ch], x0, 0, cmap=cmap, vmin=0, vmax=4, fs=15, title=f"Image, {nm}")
+        frame(ax, x0 + j, -i, 2, 2)
+        label(ax, x0 + 5.55, -2.5, "×", fs=18)
+        cells(ax, K[:, :, ch], x0 + 6.1, -1.5, cmap="RdBu_r", vmin=-2, vmax=2, fs=15, title=f"filter, {nm}", tfs=12)
+        if ch < 2:
+            label(ax, x0 + 8.75, -2.5, "+", fs=24, color=ORANGE, fontweight="bold")
+    cells(ax, Z, 29.4, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=15, title="Feature map", blank=blank_upto((4, 4), i * 4 + j + 1))
+    frame(ax, 29.4 + j, -i, 1, 1)
+    arrow(ax, 27.5, -2.5, 29.1, -2.5)
+    label(ax, 28.3, -1.8, "+ bias", fs=13, color=ORANGE, fontweight="bold")
+    label(ax, 31.4, -5.0, f"bias = {mm(pr['bias'])}", fs=15, color="#444444", fontweight="bold")
+    label(ax, 14.5, -6.6, f"window (row {i + 1}, col {j + 1}): filter × window, layer by layer", fs=16, color="#444444", fontweight="bold")
+    subs = []
+    for ch, (nm, cmap, col) in enumerate(CHN):
+        prods, vals, tot = pair_text(K[:, :, ch], X[i:i + 2, j:j + 2, ch])
+        subs.append(tot)
+        ax.text(0.5, -7.9 - ch * 1.25, f"{nm}:   {prods}  =  {vals}  =  {mm(tot)}", ha="left", va="center", fontsize=17, color=col, fontweight="bold")
+    total = " + ".join(f"({mm(v)})" if v < 0 else str(v) for v in subs)
+    ax.text(0.5, -11.8, f"z  =  R + G + B + bias  =  {total} + ({mm(pr['bias'])})  =  {mm(n(Z[i, j]))}",
+            ha="left", va="center", fontsize=18, color=ORANGE, fontweight="bold")
+    return fig
+
+
+def relu_fig(pr, i, j):
+    Z, A = pr["Z"], pr["A"]
+    mq = np.abs(Z).max()
+    fig, ax = canvas((15, 4.4), (-0.5, 25.5), (-6.4, 1.4))
+    cells(ax, Z, 0, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="Feature map")
+    frame(ax, j, -i, 1, 1)
+    cells(ax, A, 9, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="After ReLU", blank=blank_upto((4, 4), i * 4 + j + 1))
+    frame(ax, 9 + j, -i, 1, 1)
+    arrow(ax, 4.4, -2, 8.6, -2, color=ORANGE, lw=2.5)
+    z = Z[i, j]
+    label(ax, 19.2, -2.0, f"max(0, {mm(n(z))}) = {n(A[i, j])}", fs=20, color=ORANGE, fontweight="bold")
+    label(ax, 19.2, -3.1, "negative numbers turn to 0" if z < 0 else ("positive numbers stay the same" if z > 0 else "0 stays 0"), fs=16, color=GREY)
+    return fig
+
+
+def pool_fig(pr, step):
+    A, P, a = pr["A"], pr["P"], pr["a"]
+    top = max(A.max(), 1)
+    fig, ax = canvas((15, 4.4), (-0.5, 27.5), (-6.4, 1.4))
+    cells(ax, A, 0, 0, cmap="Oranges", vmin=0, vmax=top, fs=16, title="After ReLU")
+    for k, ((r, c), col) in enumerate(zip(BLOCKS4, BCOLS)):
+        if k <= step:
+            frame(ax, c, -r, 2, 2, color=col, lw=3.5)
+            frame(ax, 7 + c // 2, -1 - r // 2, 1, 1, color=col, lw=3.5)
+    cells(ax, P, 7, -1, cmap="Oranges", vmin=0, vmax=top, fs=16, title="Pooled", blank=blank_upto((2, 2), min(step + 1, 4)))
+    arrow(ax, 4.4, -2, 6.6, -2, color=ORANGE, lw=2.5)
+    if step < 4:
+        r, c = BLOCKS4[step]
+        v = A[r:r + 2, c:c + 2].ravel()
+        label(ax, 19.5, -2.0, f"{BNAMES[step]} block:\nmax({', '.join(n(x) for x in v)}) = {n(v.max())}", fs=19, color=ORANGE, fontweight="bold")
+    else:
+        arrow(ax, 9.4, -2, 12.6, -2, color=ORANGE, lw=2.5)
+        label(ax, 11.0, -1.4, "flatten", fs=14, color=ORANGE, fontweight="bold")
+        cells(ax, a[None, :], 13, -1.5, cmap="Oranges", vmin=0, vmax=top, fs=16, title="a")
+        for k in range(4):
+            label(ax, 13.5 + k, -3.0, f"$a_{k + 1}$", fs=15, color="#555")
+        label(ax, 22.5, -2.0, "read row by row:\ntop-left, top-right,\nbottom-left, bottom-right", fs=14, color=GREY)
+    return fig
+
+
+def node(ax, x, y, text, fc="white", ec="#666666", fs=15, r=0.75, tc=INK, lw=2):
+    ax.add_patch(Circle((x, y), r, fc=fc, ec=ec, lw=lw, zorder=4))
+    ax.text(x, y, text, ha="center", va="center", fontsize=fs, color=tc, zorder=5)
+
+
+def dense_fig(pr, step):
+    """step 0: the network; 1: compute z_A; 2: compute z_B; 3: softmax."""
+    a, W, s = pr["a"], pr["W"], pr["s"]
+    IN_Y, OUT_Y = [3.6, 1.2, -1.2, -3.6], [2.0, -2.0]
+    ez = [EAPPROX[int(v)] for v in s]
+    tot = sum(ez)
+    pr_ = [e / tot for e in ez]
+    win = int(np.argmax(s)); los = 1 - win
+    fig, ax = canvas((15, 6.0), (-2.6, 31.5), (-5.0, 5.4))
+    for k, y in enumerate(IN_Y):
+        for c, yo in enumerate(OUT_Y):
+            wgt = W[c, k]
+            if wgt == 0:
+                ax.plot([0.75, 8.25], [y, yo], color="#cccccc", lw=1.2, ls="--", zorder=1)
+                continue
+            col = CLS_COL[c] if step in (c + 1, 3) else "#888888"
+            ax.plot([0.75, 8.25], [y, yo], color=col, lw=3.2 if step == c + 1 else 2.0, zorder=2)
+            t = 0.27 if c == 0 else 0.68          # class A labels near the inputs, class B labels near z_B
+            tx, ty = 0.75 + t * 7.5, y + t * (yo - y)
+            txt = n(wgt) if step != c + 1 else f"{n(wgt)} × {n(a[k])} = {n(wgt * a[k])}"
+            ax.text(tx, ty, txt, ha="center", va="center", fontsize=13 if step != c + 1 else 14,
+                    color=col, fontweight="bold", zorder=6, bbox=dict(fc="white", ec="none", pad=1.5))
+    for k, y in enumerate(IN_Y):
+        node(ax, 0, y, f"$a_{k + 1}$\n{n(a[k])}", fc="#FDE3C8", ec=ORANGE, fs=14)
+    label(ax, 0, 5.0, "inputs a", fs=14, color="#444444", fontweight="bold")
+    label(ax, 9.0, 5.0, "dense layer (scores)", fs=14, color="#444444", fontweight="bold")
+    for c, yo in enumerate(OUT_Y):
+        node(ax, 9.0, yo, f"$z_{CLS[c]}$\n{s[c]}" if step > c else f"$z_{CLS[c]}$", fc="#dcf3e2",
+             ec=CLS_COL[c] if step == c + 1 else GREEN, fs=14, lw=3 if step == c + 1 else 2)
+    if step == 0:
+        label(ax, 17.6, 0, "each line from $a_k$ to a class\ncarries one weight;\nthe score is\nsum of (weight × input) + bias", fs=15, color="#444444")
+    if step in (1, 2):
+        c = step - 1
+        terms = " + ".join(f"{n(W[c, k])}({n(a[k])})" for k in range(4))
+        label(ax, 17.6, OUT_Y[c], f"$z_{CLS[c]}$ = {terms}\n= {s[c]}", fs=15, color=CLS_COL[c], fontweight="bold")
+        label(ax, 17.6, -4.4, "dashed edges have weight 0: they add nothing", fs=13, color=GREY)
+    if step == 3:
+        label(ax, 16.2, 5.0, "softmax", fs=14, color="#444444", fontweight="bold")
+        for c, yo in enumerate(OUT_Y):
+            arrow(ax, 9.9, yo, 14.0, yo, color=GREEN, lw=2.2)
+            label(ax, 12.0, yo + 0.5, f"$e^{{{s[c]}}}$ ≈ {ez[c]:.2f}", fs=13, color="#444444")
+            node(ax, 15.2, yo, f"$p_{CLS[c]}$\n{pr_[c]:.2f}", fc=CLS_COL[c] if c == win else "#eeeeee", ec="#999999", fs=14, r=0.9,
+                 tc="white" if c == win else INK)
+        W_, L_ = CLS[win], CLS[los]
+        sw, sl = s[win], s[los]
+        calc = [rf"$p_A = \dfrac{{e^{{z_A}}}}{{e^{{z_A}} + e^{{z_B}}}} = \dfrac{{e^{s[0]}}}{{e^{s[0]} + e^{s[1]}}} = \dfrac{{{ez[0]:.2f}}}{{{ez[0]:.2f} + {ez[1]:.2f}}} = \dfrac{{{ez[0]:.2f}}}{{{tot:.2f}}} \approx {pr_[0]:.2f}$",
+                rf"$p_B = \dfrac{{e^{s[1]}}}{{e^{s[0]} + e^{s[1]}}} = \dfrac{{{ez[1]:.2f}}}{{{tot:.2f}}} \approx {pr_[1]:.2f}$",
+                rf"2 classes: $p_{W_} = \dfrac{{1}}{{1 + e^{{-(z_{W_} - z_{L_})}}}} = \dfrac{{1}}{{1 + e^{{-({sw} - {sl})}}}} = \dfrac{{1}}{{1 + {1 / EAPPROX[sw - sl]:.2f}}} \approx {pr_[win]:.2f}$"]
+        for k, (t_, y_) in enumerate(zip(calc, [3.0, 0.6, -1.8])):
+            ax.text(17.3, y_, t_, ha="left", va="center", fontsize=15, color=INK if k < 2 else "#555555")
+        ax.text(17.3, -3.9, f"predict class {W_} (larger score, larger probability)", ha="left", va="center", fontsize=15,
+                color=CLS_COL[win], fontweight="bold")
+    return fig
+
+
+# Problem 1: a 5 x 5 grayscale image
+PR1 = make_problem([[1, 0, 3, 3, 0], [0, 1, 3, 2, 0], [0, 0, 2, 3, 1], [1, 0, 3, 3, 0], [0, 0, 1, 2, 0]],
+                   [[-1, 1], [-1, 1]], 0, [[0.2, 0, 0.2, 0], [0, 1, 0, 1]])
+
+assert list(PR1["s"]) == [2, 1]
+```
+
+```{python}
+#| label: two-blanks
+MISS = [(0, 0), (0, 1), (0, 2), (0, 3)]   # the first row of the feature map: ?1, ?2, ?3, ?4 (0-based here)
+
+
+def gap_mask(k_done):
+    """True where the feature map is still blank: the missing values not computed yet."""
+    m = np.zeros((4, 4), bool)
+    for q, (i, j) in enumerate(MISS):
+        if q >= k_done:
+            m[i, j] = True
+    return m
+
+
+def gap_fig(pr, k):
+    """k = 0: the given feature map with its first row blank; k = 1..4: compute blank k."""
+    X, K, Z = pr["X"], pr["K"], pr["Z"]
+    mq = np.abs(Z).max()
+    fig, ax = canvas((15, 5.0), (-0.5, 27.5), (-7.6, 1.4))
+    cells(ax, X[:, :, 0], 0, 0, cmap="gray", vmin=0, vmax=4, fs=16, title="Image (5 × 5)")
+    cells(ax, K[:, :, 0], 10.4, -1.5, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="filter", tfs=13)
+    cells(ax, Z, 15.5, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="Feature map (4 × 4)", blank=gap_mask(k))
+    for q, (i, j) in enumerate(MISS):
+        if q >= k:
+            label(ax, 15.5 + j + 0.5, -i - 0.5, f"?$_{q + 1}$", fs=17, color=ORANGE, fontweight="bold")
+    if k == 0:
+        for q, (i, j) in enumerate(MISS):
+            frame(ax, 15.5 + j, -i, 1, 1)
+        label(ax, 13.5, -5.6, "Rows 2–4 are given. Compute the first row: ?$_1$, ?$_2$, ?$_3$, ?$_4$.", fs=17, color="#444444", fontweight="bold")
+        label(ax, 13.5, -6.8, "Entry (row i, col j) uses the 2 × 2 window whose top-left corner is pixel (row i, col j).", fs=16, color=GREY)
+        return fig
+    i, j = MISS[k - 1]
+    frame(ax, j, -i, 2, 2)
+    w = X[i:i + 2, j:j + 2, 0]
+    cells(ax, w, 7.0, -1.5, cmap="gray", vmin=0, vmax=4, fs=16, title="window", tfs=13)
+    label(ax, 9.7, -2.5, "×", fs=22)
+    frame(ax, 15.5 + j, -i, 1, 1)
+    arrow(ax, 13.0, -2.5, 15.2, -2.5)
+    prods, vals, _ = pair_text(K[:, :, 0], w)
+    label(ax, 13.5, -5.6, f"?$_{k}$: window (rows {i + 1}–{i + 2}, cols {j + 1}–{j + 2}):   {prods}", fs=18, color=ORANGE, fontweight="bold")
+    label(ax, 13.5, -6.8, f"=  {vals}  =  {mm(n(Z[i, j]))}", fs=18, color=ORANGE, fontweight="bold")
+    return fig
+
+
+assert [int(PR1["Z"][i, j]) for i, j in MISS] == [0, 5, -1, -5]
+```
+
+## Problem 2: The Image and the Questions
+
+```{python}
+show_fig(gap_fig(PR1, 0))
+```
+
+**Present your solution the way the sample solution does:** draw the grids of squares and the network, and write each calculation next to the drawing.
+
+a. Compute the first row of the feature map, $?_1$, $?_2$, $?_3$ and $?_4$. For each one, draw the image as a grid of squares and box the $2 \times 2$ window, then write out filter × window (multiply the matching numbers and add).
+
+b. Apply ReLU to the feature map, then $2 \times 2$ max pooling to get a $2 \times 2$ map. Draw the feature map, the map after ReLU, and the pooled map as grids of squares. Outline the four $2 \times 2$ pooling blocks and write the max of each block.
+
+c. Flatten the pooled map row by row into $\mathbf{a} = (a_1, a_2, a_3, a_4)$. Draw $\mathbf{a}$ as a row of 4 squares.
+
+d. Dense layer: $z_A = 0.2a_1 + 0.2a_3$ and $z_B = a_2 + a_4$ (biases 0). Draw the network: 4 input nodes $a_1, \dots, a_4$, 2 output nodes $z_A, z_B$, and a line from each input to each output labeled with its weight (dashed for weight 0). Compute both scores.
+
+e. Softmax: compute $p_A$ and $p_B$. Use $e^1 \approx 2.72$ and $e^2 \approx 7.39$. Add the softmax step to your network drawing: an arrow from each score to its probability node. Which class is predicted?
+
+## Solution (a): The First Row, Window by Window
+
+```{python}
+stack([gap_fig(PR1, k) for k in range(len(MISS) + 1)])
+```
+
+## Solution (b): ReLU, Number by Number
+
+```{python}
+stack([relu_fig(PR1, i, j) for i in range(4) for j in range(4)])
+```
+
+## Solution (b, c): Pooling and Flatten, Block by Block
+
+```{python}
+stack([pool_fig(PR1, s) for s in range(5)])
+```
+
+## Solution (d, e): Dense Layer and Softmax
+
+```{python}
+stack([dense_fig(PR1, s) for s in range(4)])
+```

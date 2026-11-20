@@ -1,0 +1,177 @@
+---
+title: "Math 460 Final Project: Predictive Modeling with Python and SAS"
+format:
+  html:
+    toc: true
+    number-sections: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In this project you will take a real prediction problem from raw data to a final, tested model. You will do the main work in **Python**, rebuild your best models in **SAS Enterprise Miner**, and explain what you found in a report and a presentation.
+
+- **Team size:** up to 3 students. A team of 4 may be approved for a project of larger scope.
+- **Two tracks.** Choose one:
+  - **Track A: Tabular classification (default).** A binary classification problem on a table of data.
+  - **Track B: AI track.** Images, text, or a language model (see @sec-trackb).
+- **Presentations:** final exam period. The date and time will be announced on Canvas.
+
+The goal is not only a high accuracy. It is to show that you can build, tune, compare and **justify** models carefully, the way you would in a real job.
+
+## Milestones
+
+| Milestone | Due | What to submit |
+|---|---|---|
+| 1. Proposal | [date] | Team members, track, one paragraph on the problem, a link to the data, and the target variable. I will approve the dataset or suggest changes. |
+| 2. Check-in | [date] | A notebook that loads and cleans the data, and the result of a **baseline model** (see @sec-baseline). |
+| 3. Final submission | [date] | Everything listed in @sec-submit. |
+| 4. Presentation | Final exam period | Slides (@sec-presentation). |
+
+## The Dataset
+
+- **Track A:** at least **7 input variables** and **500 rows**, with a **binary target**.
+- It must be different from the datasets used in class (breast cancer, NBA salaries, heart disease, digits, book ratings, ...).
+- Cite where the data comes from, and describe each variable you use.
+- Good sources: Kaggle, the UCI Machine Learning Repository, data.gov, sports or finance sites, or data you collect yourself.
+
+::: callout-warning
+**Data leakage.** Do not use any variable that would not be known at the time of prediction, or that is just another version of the target (for example, using "discharge date" to predict "hospitalized"). A suspiciously perfect model is usually a sign of leakage.
+:::
+
+## Part 1: Python (40%)
+
+Submit one Jupyter notebook that runs from top to bottom without errors. Set random seeds so that your results can be reproduced.
+
+### Explore and clean the data
+
+- How many rows, columns, and missing values? How did you handle missing values and recording errors, and why?
+- Is the target balanced? If one class is rare, say how that affects accuracy as a metric.
+- Encode categorical variables. Scale the variables for the models that need it (KNN, LASSO, neural networks).
+
+### Split the data
+
+Split the data **once** into training (70%) and test (30%) sets, stratified on the target. Use only the training set for all tuning (with cross-validation). Use the test set **only once**, at the very end, to report the performance of your final models.
+
+**Save the split** (for example, add a column `partition` with values `train`/`test` and save the CSV). You will use the same split in SAS.
+
+### A baseline {#sec-baseline}
+
+Report the accuracy of the simplest possible model: always predicting the most common class. Every model you build must beat this number to be useful.
+
+### Train and tune models
+
+Train and tune **at least one model from each of these 6 families**:
+
+| Family | Example | Hyperparameters to tune |
+|---|---|---|
+| Decision tree | `DecisionTreeClassifier` | depth or number of leaves |
+| Random forest | `RandomForestClassifier` | number of trees, variables per split |
+| Boosting | gradient boosting or AdaBoost | number of rounds, learning rate |
+| Logistic regression with LASSO | `LogisticRegressionCV(penalty="l1")` | penalty strength |
+| K-nearest neighbors | `KNeighborsClassifier` | k, weights |
+| Neural network | `MLPClassifier` or PyTorch | layers, neurons, regularization |
+
+For each model, report the range of hyperparameters you searched and the best values found by cross-validation.
+
+### Evaluate on the test set
+
+For your tuned models, report on the test set:
+
+- misclassification rate (or accuracy), sensitivity, specificity and F1-score
+- the ROC curve (all models on one plot) and the area under the curve (AUC)
+- the confusion matrix of your final model
+
+Choose a **final model** and explain why. The best model is not always the one with the highest accuracy: consider interpretability, the cost of each type of error in your problem, and the training time.
+
+### Interpret your model
+
+- Which variables matter most? Use the variable importance of a tree-based model, or the coefficients that LASSO keeps (and the ones it removes).
+- **Error analysis:** look at 5–10 cases your final model gets wrong. Do they have anything in common?
+
+## Part 2: SAS Component (20%)
+
+Rebuild your work in SAS Enterprise Miner, using **the same training/test split** you saved in Python.
+
+1. Import the data, set the target, and use the `partition` column for the data partition.
+2. Build at least **3 models** in SAS: your best two model types from Python, plus one more.
+3. Try at least **two variable selection methods** before a model, for example stepwise/forward/backward regression, LASSO, a decision tree, principal component analysis, or the Metadata node. This video shows how: [Video](https://bryant.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=009b2ef6-5a7e-41d0-892d-b0c901424257)
+4. Report:
+   - a screenshot of your **SAS Enterprise Miner diagram**
+   - the hyperparameters of each model
+   - the model comparison (misclassification, ROC index, and F1-score, which you compute from the confusion matrix)
+5. **Compare SAS with Python** in one table (same model type, same split). Are the results close? If not, give possible reasons (default settings, how missing values are handled, randomness, tuning).
+
+## Part 3: Written Report (20%)
+
+A report of about **8–12 pages** (not counting figures and the appendix), written for a reader who knows some data mining but not your data. It should have a **title**, an **abstract**, and these sections:
+
+1. **Introduction.** What are you predicting, and who would use your model? Summarize your main findings in 3–4 sentences.
+2. **Data.** Source, variables, cleaning, and what you learned from exploring the data.
+3. **Methods.** Briefly explain only the models you used: how each model works, what its hyperparameters control, and why that matters **for your data**. Do not write a textbook chapter on every model.
+4. **Results.** Tuning results, the test-set comparison, the ROC plot, and your final model.
+5. **SAS vs. Python.** Your comparison from Part 2.
+6. **Limitations and ethics.** What could go wrong if your model were used? Who could be harmed by a false positive or a false negative? Could the model be unfair to some group? What would you need before using it in practice?
+7. **Conclusion.** What you would do with more time or more data.
+8. **References**, and an **appendix** for extra tables and figures.
+
+At the end of the report, include:
+
+- **Contribution statement:** one or two sentences on what each team member did.
+- **AI-use statement** (see @sec-ai).
+
+## Part 4: Presentation (20%) {#sec-presentation}
+
+About **10 minutes** per team, followed by questions. Every team member should speak. Cover:
+
+1. The problem and why it matters.
+2. The data, and the most important cleaning decisions.
+3. The model comparison (one slide, one table or plot) and your final model.
+4. SAS vs. Python: your diagram and how the results compared.
+5. One thing that surprised you, and the main limitation of your project.
+
+During the questions, any team member may be asked to explain any part of the code or the report.
+
+## Track B: AI Track {#sec-trackb}
+
+Instead of Track A, a team may choose one of the projects below. Parts 3 and 4 (report and presentation) are the same. Parts 1 and 2 change as described. **Talk to me before you choose this track**, and include your plan in the proposal.
+
+| Option | Python part | Comparison you must make |
+|---|---|---|
+| **B1. Image classification** | Collect your own images (at least 2 classes, at least 100 images per class). Fine-tune a pretrained CNN (e.g. ResNet-18), as in Assignment 11. | A model trained from scratch, or a random forest on the pixels |
+| **B2. Text classification** | Classify texts such as reviews, headlines or posts. Use embeddings from a pretrained language model (e.g. `sentence-transformers`), then a classifier. | TF-IDF (word counts) with logistic regression/LASSO |
+| **B3. Language model** | Train the tiny GPT from Assignments 14–16 on a new corpus of your choice, then instruction-tune it for a new task, and evaluate it with an automatic judge. | The base model vs. the fine-tuned model, and how much it forgets |
+
+**SAS component for Track B.** Export the features your neural network produces (for example, the 512 ResNet features for each image, or the text embeddings) to a CSV file, together with the label. Then build at least 3 models on that table in SAS Enterprise Miner, as in Part 2, and compare them with your Python results. (For B3, discuss with me: a short SAS analysis of your evaluation results is an option.)
+
+Grading follows the same weights. In Part 1, the 6 model families are replaced by the work and comparison in the table above.
+
+## What to Submit {#sec-submit}
+
+On Canvas, one submission per team:
+
+| Item | Format |
+|---|---|
+| Report | PDF |
+| Python notebook | `.ipynb` and an HTML export of the run notebook |
+| Data | The CSV with the `partition` column (or a link, if it is large) |
+| SAS | Screenshots of the diagram and results (in the report or appendix) |
+| Slides | PDF |
+
+In addition, each student submits a short **peer evaluation** of their teammates on Canvas.
+
+## Grading
+
+| Component | Weight | What earns full credit |
+|---|---|---|
+| Python | 40% | Clean, reproducible notebook; all 6 model families properly tuned with cross-validation; correct use of the test set; interpretation and error analysis |
+| SAS | 20% | Same split; at least 3 models and 2 variable selection methods; clear diagram; thoughtful SAS vs. Python comparison |
+| Report | 20% | Clear writing for the intended reader; methods explained for your data; honest limitations and ethics section |
+| Presentation | 20% | Clear and on time; every member speaks; good answers to questions |
+
+The peer evaluations can be used to adjust individual grades.
+
+## AI Policy {#sec-ai}
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot) for coding and writing. In your report, include a short statement of how you used them and anything they got wrong that you had to fix. You are responsible for everything you submit: you must be able to explain any line of your code and any sentence of your report during the presentation.

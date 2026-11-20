@@ -1,0 +1,12 @@
+name: Applied Data Mining
+title: null
+
+# Keep R Markdown / Quarto source files and knit leftovers out of the Jekyll build.
+# Jekyll would otherwise run them through Liquid, which breaks on R code like {{ }}.
+exclude:
+  - "*.Rmd"
+  - "*.qmd"
+  - "*.knit.md"
+  - "**/*.Rmd"
+  - "**/*.qmd"
+  - "**/*.knit.md"

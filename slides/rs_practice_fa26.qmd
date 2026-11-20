@@ -1,0 +1,544 @@
+---
+title: "Recommender Systems: Practice Problem"
+subtitle: "Podcasts: build the user's vector, retrieve, and update with feedback"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: none
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    menu: true
+    footer: "Recommender systems: practice problem"
+    code-line-numbers: false
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { color: #B8621B; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.6em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display { font-size: 0.85em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 520px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal pre code { font-size: 0.85em; line-height: 1.35; }
+          .reveal .cell-output pre code { font-size: 0.8em; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .warn { background:#fdecea; border-left:6px solid #b5302a; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .warn p { font-size: 1em; }
+          .reveal .note { font-size: 0.55em; color: #666; }
+          .reveal .practice table { font-size: 0.54em; }
+          .reveal .practice table th, .reveal .practice table td { padding: 3px 12px; white-space: nowrap; }
+          .reveal .old table th, .reveal .old table td { white-space: nowrap; }
+          .reveal .ex table { font-size: 0.48em; margin: 0.2em 0; }
+          .reveal .ex .avg { clear: both; }
+          .reveal .ex .avg .katex-display { font-size: 0.78em !important; margin: 0.2em 0 !important; text-align: left; }
+          .reveal .ex table th, .reveal .ex table td { padding: 2px 7px; white-space: nowrap; }
+          .reveal .ex p { font-size: 0.56em; margin: 0.3em 0; }
+          .reveal .ex .katex-display { font-size: 0.6em !important; }
+          .reveal .ex .slides section img, .reveal .ex img { max-height: 560px !important; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, Rectangle
+from IPython.display import Markdown, display, HTML
+import base64, io
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 14,
+                     "axes.spines.top": False, "axes.spines.right": False})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def r(x, d=3):
+    s = f"{x:.{d}f}".rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in row) + " |" for row in rows)
+    md(s)
+
+
+def show(fig, h=None):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white", bbox_inches="tight")
+    plt.close(fig)
+    style = f' style="max-height:{h}px !important"' if h else ""
+    display(HTML(f'<img src="data:image/png;base64,{base64.b64encode(b.getvalue()).decode()}"{style}>'))
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")          # fixed size: frames line up exactly
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def stack(figs, h=520):
+    """Frames on top of each other; each click shows the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}" style="max-height:{h}px !important">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}" style="max-height:{h}px !important">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def ray(ax, u, xmax, ymax, color=None):
+    """Faint dashed line continuing the user's arrow to the edge of the plot: only the direction matters."""
+    u = np.asarray(u, float)
+    t = min(xmax / u[0] if u[0] > 0 else np.inf, ymax / u[1] if u[1] > 0 else np.inf)
+    ax.plot([u[0], t * u[0]], [u[1], t * u[1]], ls=(0, (5, 4)), lw=2, color=color or ORANGE, alpha=0.45, zorder=1)
+
+
+def boxes(stages, w=3.0, gap=0.8, h=2.2, figsize=(15, 3.2), fs=15, sfs=12.5):
+    """A left-to-right chain of rounded boxes: stages = [(title, subtitle, face, edge), ...]."""
+    fig, ax = plt.subplots(figsize=figsize)
+    for k, (t, s_, fc, ec) in enumerate(stages):
+        x = k * (w + gap)
+        ax.add_patch(FancyBboxPatch((x, 0), w, h, boxstyle="round,pad=0.06", fc=fc, ec=ec, lw=2))
+        ax.text(x + w / 2, h * 0.72, t, ha="center", va="center", fontsize=fs, fontweight="bold")
+        ax.text(x + w / 2, h * 0.32, s_, ha="center", va="center", fontsize=sfs, color="#444")
+        if k < len(stages) - 1:
+            ax.annotate("", xy=(x + w + gap - 0.08, h / 2), xytext=(x + w + 0.08, h / 2), arrowprops=dict(arrowstyle="-|>", color=GREY, lw=2))
+    ax.set_xlim(-0.2, len(stages) * (w + gap) - gap + 0.2); ax.set_ylim(-0.2, h + 0.3); ax.axis("off")
+    return fig
+
+
+# ---------------- running example: 8 movies, 2 numbers each (funny, action-packed) ----------------
+CAT = {"Elf": (2.0, 0.2), "Paddington": (1.6, 0.4),                 # comedies
+       "John Wick": (0.2, 2.0), "Mad Max": (0.4, 1.6),               # action
+       "Shrek": (1.6, 1.4), "The Incredibles": (1.4, 1.8),           # both
+       "The Notebook": (0.2, 0.2), "Titanic": (0.4, 0.6)}            # neither
+KIND = {"Elf": "comedy", "Paddington": "comedy", "John Wick": "action", "Mad Max": "action",
+        "Shrek": "both", "The Incredibles": "both", "The Notebook": "neither", "Titanic": "neither"}
+KCOL = {"comedy": GREEN, "action": RED, "both": "#7b3fb5", "neither": "#6b6b6b"}
+rho = np.corrcoef([v[0] for v in CAT.values()], [v[1] for v in CAT.values()])[0, 1]
+HIST = ["Paddington", "Shrek", "Titanic"]                          # what Eve watched recently
+eve = np.mean([CAT[m] for m in HIST], axis=0)                     # Eve's embedding = average of her history
+score = {m: eve @ np.array(v) for m, v in CAT.items()}
+cands = sorted([m for m in CAT if m not in HIST], key=lambda m: -score[m])
+K = 3
+top = cands[:K]
+HELD = {"Elf", "Mad Max"}                                         # what Eve actually watched next week
+assert abs(rho) < 0.3 and np.allclose(eve, [1.2, 0.8])
+assert len({round(score[m], 6) for m in cands}) == len(cands)
+assert top == ["The Incredibles", "Elf", "John Wick"] and cands[K] == "Mad Max"
+OFF = {"Elf": (0.08, 0.0, "left"), "Paddington": (-0.08, 0.0, "right"), "John Wick": (0.08, 0.0, "left"), "Mad Max": (0.08, 0.0, "left"),
+       "Shrek": (0.08, 0.0, "left"), "The Incredibles": (0.09, 0.07, "left"), "The Notebook": (0.08, 0.0, "left"), "Titanic": (-0.08, 0.0, "right")}
+OFF2 = {"Elf": (0.1, 0.06, "left"), "Paddington": (-0.1, 0.0, "right"), "John Wick": (0.12, 0.02, "left"), "Mad Max": (0.12, 0.0, "left"),
+        "Shrek": (0.1, 0.0, "left"), "The Incredibles": (0.13, 0.08, "left"), "The Notebook": (0.08, -0.07, "left"), "Titanic": (-0.1, 0.03, "right")}
+
+
+def mcol(m):
+    return KCOL[KIND[m]]
+```
+
+# Practice Problem
+
+```{python}
+# ---------------- practice data ----------------
+def emb(v):
+    """An embedding as it appears in every table: one decimal each."""
+    return f"({v[0]:.1f}, {v[1]:.1f})"
+
+
+PODS = {"Podcast A": (0.8, 0.2), "Podcast B": (0.2, 0.9), "Podcast C": (0.6, 0.6), "Podcast D": (0.1, 0.4),
+        "Podcast E": (0.9, 0.8), "Podcast F": (0.1, 1.2)}
+PHIST = ["Podcast E", "Podcast F"]
+puser = np.mean([PODS[m] for m in PHIST], axis=0)
+pscore = {m: puser @ np.array(v) for m, v in PODS.items()}
+pcands = sorted([m for m in PODS if m not in PHIST], key=lambda m: -pscore[m])
+PK = 2
+ptop = pcands[:PK]
+PHELD = {"Podcast C", "Podcast D"}
+phits = [m for m in ptop if m in PHELD]
+assert np.allclose(puser, [0.5, 1.0])
+assert len({round(pscore[m], 6) for m in pcands}) == len(pcands)
+```
+
+## Practice Problem: Build the User's Vector, Then Retrieve {.practice}
+
+A podcast app gives every podcast a 2-number embedding (number 1: news and business, number 2: comedy and stories). **These podcast embeddings were learned beforehand** by the app's model from all users' listening data, so in this problem they are **known**. Only the user's embedding must be computed.
+
+```{python}
+table(["Podcast", "Embedding (news, comedy)"], [[m, emb(v)] for m, v in PODS.items()])
+```
+
+Last month **the user** listened to **Podcast E** and **Podcast F**.
+
+a. Compute **the user's embedding** as the **average** of the podcasts they listened to.
+
+b. Score every podcast with the **dot product**. Recommend the top 2 that the user has **not** heard.
+
+::: check
+**Method:** average-of-items user profile (Rocchio's method; YouTube's 2016 system started this way) + dot-product retrieval of the top K.
+:::
+
+::: warn
+**Caveat:** on its own, this is a baseline, not what YouTube runs today. Big systems replace the plain average with a neural network (two-tower or transformer). The retrieval step after it (dot product, top K) is exactly what they still do.
+:::
+
+
+```{python}
+# ---------------- two standard calculation tables, used on every solution slide ----------------
+OR = "#E8833A"
+
+
+def num(x):
+    """A number as it appears in tables: at most 3 decimals, a real minus sign."""
+    return r(x, 3).replace("-", "−")
+
+
+def avg_table(cat, W, reason, name):
+    """Weighted average of the embeddings in W (weights), shown the same way every time."""
+    rows = []
+    for m, w in W.items():
+        v = cat[m]
+        rows.append([m, emb(v), f"{num(w)} ({reason[m]})",
+                     f"${num(w)} \\times {num(v[0])} = {num(w * v[0])}$", f"${num(w)} \\times {num(v[1])} = {num(w * v[1])}$"])
+    tot = sum(W.values())
+    sx, sy = sum(w * cat[m][0] for m, w in W.items()), sum(w * cat[m][1] for m, w in W.items())
+    rows.append(["**total**", "", f"**{num(tot)}**", f"$\\mathbf{{{num(sx)}}}$", f"$\\mathbf{{{num(sy)}}}$"])
+    table(["Podcast", "Embedding (news, comedy)", "Weight", "weight × news", "weight × comedy"], rows)
+    u = np.array([sx / tot, sy / tot])
+    md(f"$$\\mathbf{{u}}_{{\\text{{{name}}}}} = \\left(\\frac{{\\text{{total weight × news}}}}{{\\text{{total weight}}}},\\ \\frac{{\\text{{total weight × comedy}}}}{{\\text{{total weight}}}}\\right) = \\left(\\frac{{{num(sx)}}}{{{num(tot)}}},\\ \\frac{{{num(sy)}}}{{{num(tot)}}}\\right) = ({num(u[0])},\\ {num(u[1])})$$")
+    return u
+
+
+def score_table(cat, u, items, heard=(), k=2):
+    """Dot-product scores of u with each item, sorted high to low, the user's numbers in orange."""
+    sc = {m: u @ np.array(cat[m]) for m in items}
+    pick = [m for m in sorted(items, key=lambda m: -sc[m]) if m not in heard][:k]
+    a, b = num(u[0]), num(u[1])
+    md(f"The user's embedding is $\\mathbf{{u}} = (\\textcolor{{{OR}}}{{\\mathbf{{{a}}}}}, \\textcolor{{{OR}}}{{\\mathbf{{{b}}}}})$ (orange). "
+       f"Score $= \\mathbf{{u}} \\cdot \\mathbf{{v}} = \\textcolor{{{OR}}}{{\\mathbf{{{a}}}}} \\times \\text{{news}} + \\textcolor{{{OR}}}{{\\mathbf{{{b}}}}} \\times \\text{{comedy}}$, sorted from high to low:")
+    rows = []
+    for m in sorted(items, key=lambda m: -sc[m]):
+        v = cat[m]
+        p1, p2 = u[0] * v[0], u[1] * v[1]
+        rows.append([m, emb(v),
+                     f"$\\textcolor{{{OR}}}{{\\mathbf{{{a}}}}} \\times {num(v[0])} = {num(p1)}$",
+                     f"$\\textcolor{{{OR}}}{{\\mathbf{{{b}}}}} \\times {num(v[1])} = {num(p2)}$",
+                     f"${num(p1)} + {num(p2)} = \\mathbf{{{num(sc[m])}}}$",
+                     "heard" if m in heard else ("**recommend**" if m in pick else "")])
+    table(["Podcast", "Embedding (news, comedy)", "news part", "comedy part", "Score", ""], rows)
+    return sc, pick
+```
+
+```{python}
+# Round-2 data, needed by the solution slides (also shown on the Round 2 problem slide)
+NEW = {"Podcast G": (1.0, 0.5), "Podcast H": (0.1, 1.0), "Podcast I": (0.7, 0.9)}
+ALL2 = {**PODS, **NEW}
+W_E = {"Podcast E": 1, "Podcast F": 1, "Podcast C": 2, "Podcast D": 2}
+W_F = {"Podcast E": 1, "Podcast F": 1, "Podcast C": -1, "Podcast D": 4}
+u_e = np.array([sum(w * ALL2[m][k] for m, w in W_E.items()) / sum(W_E.values()) for k in (0, 1)])
+u_f = np.array([sum(w * ALL2[m][k] for m, w in W_F.items()) / sum(W_F.values()) for k in (0, 1)])
+cand2 = ["Podcast A", "Podcast B", "Podcast G", "Podcast H", "Podcast I"]
+top_e = sorted(cand2, key=lambda m: -(u_e @ np.array(ALL2[m])))[:2]
+top_f = sorted(cand2, key=lambda m: -(u_f @ np.array(ALL2[m])))[:2]
+assert set(top_e) == {"Podcast I", "Podcast G"} and set(top_f) == {"Podcast I", "Podcast H"}
+```
+
+```{python}
+# ---------------- practice solutions in the examples' layout ----------------
+def _w(w):
+    return f"({num(w)})" if w < 0 else num(w)
+
+
+PSTAGE = {
+    "ab": dict(items=PODS, W={"Podcast E": 1, "Podcast F": 1}, why={"Podcast E": "heard", "Podcast F": "heard"},
+               u=puser, top=ptop, lab=(0.0, 0.13, "center"), note="(E and F score higher, but the user already heard them.)"),
+    "c": dict(items=ALL2, W=W_E, why={"Podcast E": "older", "Podcast F": "older", "Podcast C": "this week", "Podcast D": "this week"},
+              u=u_e, top=top_e, lab=(-0.05, 0.08, "right"), note="The user's vector moved toward C and D, their newest plays."),
+    "d": dict(items=ALL2, W=W_F, why={"Podcast E": "older", "Podcast F": "older", "Podcast C": "not interested", "Podcast D": "this week, liked"},
+              u=u_f, top=top_f, lab=(0.06, 0.1, "left"), note="Feedback swapped G (news) for H (stories): the user rejected C and liked D."),
+}
+for st in PSTAGE.values():
+    st["score"] = {m: st["u"] @ np.array(v) for m, v in st["items"].items()}
+    st["rank"] = sorted([m for m in st["items"] if m not in st["W"]], key=lambda m: -st["score"][m])
+    assert st["rank"][:2] == st["top"] or set(st["rank"][:2]) == set(st["top"])
+    st["top"] = st["rank"][:2]
+
+
+def ps_data(key):
+    st = PSTAGE[key]
+    table(["Podcast", "(news, comedy)", "Weight"],
+          [[m.split()[-1], emb(v), f"**{_w(st['W'][m])}** ({st['why'][m]})" if m in st["W"] else ("new" if m in NEW else "")]
+           for m, v in st["items"].items()])
+
+
+def ps_avg(key):
+    st, W = PSTAGE[key], PSTAGE[key]["W"]
+    tot = sum(W.values())
+    vs = np.sum([w * np.array(st["items"][m]) for m, w in W.items()], axis=0)
+    terms = []
+    for k, (m, w) in enumerate(W.items()):
+        coef = "" if abs(w) == 1 else num(abs(w))
+        sign = ("-" if w < 0 else "") if k == 0 else (" - " if w < 0 else " + ")
+        terms.append(f"{sign}{coef}{emb(st['items'][m])}")
+    head = ("**The user = average of the 2 they heard:**" if key == "ab" else
+            "**The user = weighted average.** Weights: " + ", ".join(f"{m.split()[-1]} ×{_w(w)}" for m, w in W.items()) + f"; total = {num(tot)}.")
+    md(head + "\n\n" + f"$$\\begin{{aligned}}\\mathbf{{u}} &= \\dfrac{{{''.join(terms)}}}{{{num(tot)}}} \\\\ &= \\dfrac{{({vs[0]:.1f},\\ {vs[1]:.1f})}}{{{num(tot)}}} = ({num(st['u'][0])},\\ {num(st['u'][1])})\\end{{aligned}}$$")
+    assert np.allclose(vs / tot, st["u"])
+
+
+def ps_scores(key):
+    st = PSTAGE[key]
+    u, sc = st["u"], st["score"]
+    md(f"$\\text{{score}} = {num(u[0])} \\times \\text{{news}} + {num(u[1])} \\times \\text{{comedy}}$")
+    rows = []
+    for m in sorted(st["items"], key=lambda m: -sc[m]):
+        v = st["items"][m]
+        if m in st["W"]:
+            dec = "heard: skip"
+        else:
+            i = st["rank"].index(m) + 1
+            dec = f"**#{i} ✓**" if i <= 2 else f"#{i}"
+        nm = m.split()[-1]
+        rows.append([f"**{nm}**" if m in st["top"] else nm, f"{num(u[0])}({num(v[0])}) + {num(u[1])}({num(v[1])})", num(sc[m]), dec])
+    table(["Podcast", "Calculation", "Score", "Rank"], rows)
+    md(f"**Recommend: {' and '.join(m.split()[-1] for m in st['top'])}.** {st['note']}")
+
+
+def ps_frame(key, k):
+    st = PSTAGE[key]
+    u, sc, W = st["u"], st["score"], st["W"]
+    fig, ax = plt.subplots(figsize=(8.4, 6.6))
+    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+    if k == 2:
+        cut = sc[st["top"][1]]
+        gx, gy = np.meshgrid(np.linspace(-0.05, 1.25, 200), np.linspace(-0.05, 1.4, 200))
+        ax.contour(gx, gy, u[0] * gx + u[1] * gy, levels=[cut], colors="#bbbbbb", linestyles="dashed", linewidths=1.2)
+    for m, v in st["items"].items():
+        L = m.split()[-1]
+        if k == 0:
+            c, mk, lab = (BLUE if m not in NEW else "#7b3fb5"), "o", L + (" (new)" if m in NEW else "")
+        elif k == 1:
+            if m in W:
+                c = RED if W[m] < 0 else GREEN
+                mk, lab = "s", f"{L} ×{_w(W[m])}"
+            else:
+                c, mk, lab = "#aaaaaa", "o", L
+        else:
+            c = GREY if m in W else (GREEN if m in st["top"] else BLUE)
+            mk, lab = ("X" if m in W else "o"), f"{L} ({num(sc[m])})"
+            if m in st["top"]:
+                ax.scatter(*v, s=650, facecolors="none", edgecolors=GREEN, lw=2.5, zorder=3)
+        ax.scatter(*v, s=170, color=c, marker=mk, zorder=4)
+        ax.text(v[0] + 0.035, v[1] + 0.03, lab, fontsize=13, color=c, fontweight="bold", zorder=5,
+                bbox=dict(fc="white", ec="none", alpha=0.8, pad=0.4))
+    if k:
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=3.5), zorder=2)
+        ray(ax, u, 1.25, 1.4)
+        dx, dy, ha = st["lab"]
+        ax.text(u[0] + dx, u[1] + dy, f"The user\n({num(u[0])}, {num(u[1])})", fontsize=13, color=ORANGE, fontweight="bold", ha=ha,
+                va="center", zorder=6, bbox=dict(fc="white", ec="none", alpha=0.85, pad=0.4))
+    ax.set_xlim(-0.05, 1.25); ax.set_ylim(-0.05, 1.4); ax.set_aspect("equal")
+    ax.set_xlabel("news and business", fontsize=14); ax.set_ylabel("comedy and stories", fontsize=14)
+    ax.set_title(["1. The podcasts as points", "2. The user's vector (squares = plays, × weight)",
+                  "3. Scores: circled = top 2, X = heard, dashed = cutoff"][k], fontsize=14)
+    return fig
+```
+## Solution (a) and (b): The User's Vector and Top 2 (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("ab")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("ab")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("ab", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("ab")
+```
+:::
+:::
+::::
+
+## Practice Problem, Round 2: One Week Later {.practice}
+
+```{python}
+NEW = {"Podcast G": (1.0, 0.5), "Podcast H": (0.1, 1.0), "Podcast I": (0.7, 0.9)}
+ALL2 = {**PODS, **NEW}
+W_E = {"Podcast E": 1, "Podcast F": 1, "Podcast C": 2, "Podcast D": 2}        # (c) recency weights
+W_F = {"Podcast E": 1, "Podcast F": 1, "Podcast C": -1, "Podcast D": 4}       # (d) recency x feedback
+def wavg(W):
+    tot = sum(W.values())
+    return np.array([sum(w * ALL2[m][k] for m, w in W.items()) / tot for k in (0, 1)]), tot
+u_e, tot_e = wavg(W_E)
+u_f, tot_f = wavg(W_F)
+cand2 = ["Podcast A", "Podcast B", "Podcast G", "Podcast H", "Podcast I"]
+s_e = {m: u_e @ np.array(ALL2[m]) for m in cand2}
+s_f = {m: u_f @ np.array(ALL2[m]) for m in cand2}
+top_e = sorted(cand2, key=lambda m: -s_e[m])[:2]
+top_f = sorted(cand2, key=lambda m: -s_f[m])[:2]
+assert set(top_e) == {"Podcast I", "Podcast G"} and set(top_f) == {"Podcast I", "Podcast H"}
+assert np.allclose(u_e, [0.4, 2 / 3]) and np.allclose(u_f, [0.16, 0.60])
+table(["New this week", "Embedding (also learned beforehand)"], [[m, emb(v)] for m, v in NEW.items()])
+```
+
+The user played **Podcast C** (one of our picks) and **Podcast D** (which we did not recommend); they skipped Podcast B. Three **new** podcasts (G, H, I) were also released this week.
+
+c. Recompute the user's embedding as a **weighted average** of their 4 plays: older plays (E, F) count **1**, this week's plays (C, D) count **2**. Score the 5 podcasts they have not heard (A, B, G, H, I) and recommend the top 2.
+
+d. The user also gave **feedback**: they **liked** Podcast D and tapped **"not interested"** on Podcast C. The app doubles the weight of a liked play and gives a "not interested" play weight **−1**. Recompute their embedding and their top 2.
+
+
+## Solution (c): Recent Plays Count More (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("c")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("c")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("c", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("c")
+```
+:::
+:::
+::::
+
+## Solution (d): Feedback Changes the Weights (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("d")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("d")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("d", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("d")
+```
+:::
+:::
+::::
+
+## The User's Embedding Over Time (Click to Step Through) {.practice}
+
+```{python}
+STAGES = [
+    dict(title="Start: the podcast catalog", items=list(PODS), heard={}, u=None, top=[], note=""),
+    dict(title="Round 1: the user heard E and F → u = average = (0.5, 1)", items=list(PODS), heard={"Podcast E": "heard", "Podcast F": "heard"},
+         u=puser, top=ptop, note="recommend B and C"),
+    dict(title="Round 2: they played C and D (weight 2) → u = (0.4, 0.667)", items=list(ALL2),
+         heard={"Podcast E": "older", "Podcast F": "older", "Podcast C": "played", "Podcast D": "played"}, u=u_e, top=top_e, note="recommend I and G"),
+    dict(title="Round 2 + feedback: liked D, \"not interested\" in C → u = (0.16, 0.6)", items=list(ALL2),
+         heard={"Podcast E": "older", "Podcast F": "older", "Podcast C": "not interested", "Podcast D": "liked"}, u=u_f, top=top_f,
+         note="recommend I and H"),
+]
+
+
+def frame_fig(k):
+    st = STAGES[k]
+    fig, ax = plt.subplots(figsize=(10, 7.2))
+    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.09, top=0.86)
+    for j in range(1, k):                                                   # earlier arrows stay as faded ghosts
+        ax.annotate("", xy=STAGES[j]["u"], xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color="#cccccc", lw=2.5, ls="--"))
+        ax.text(STAGES[j]["u"][0] + 0.02, STAGES[j]["u"][1] + 0.03, ["", "round 1", "round 2", ""][j], fontsize=11, color=GREY)
+    for m in st["items"]:
+        v = ALL2[m]
+        tag = st["heard"].get(m)
+        if tag == "liked":
+            col, mk, sz = GREEN, "*", 420
+        elif tag == "not interested":
+            col, mk, sz = RED, "X", 230
+        elif tag:
+            col, mk, sz = GREY, "s", 160
+        else:
+            col, mk, sz = (GREEN if m in st["top"] else BLUE), "o", 160
+        ax.scatter(*v, s=sz, color=col, marker=mk, zorder=4)
+        lab = m.split()[-1] + (f" ({tag})" if tag in ("liked", "not interested") else "")
+        ax.text(v[0] + 0.035, v[1] + 0.035, lab, fontsize=14, color=col, fontweight="bold")
+        if m in st["top"]:
+            ax.scatter(*v, s=750, facecolors="none", edgecolors=GREEN, lw=2.5, zorder=3)
+    if st["u"] is not None:
+        u = st["u"]
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=4), zorder=5)
+        ray(ax, u, 1.2, 1.3)
+        ax.scatter(*u, s=120, color=ORANGE, zorder=6)
+        dx, dy, ha = (0.03, 0.12, "left") if k == 2 else (0.04, -0.05, "left")      # round-2 label goes above the tip, away from C
+        sep = "\n" if k == 2 else " "                                                 # narrower label where space is tight
+        ax.text(u[0] + dx, u[1] + dy, f"The user{sep}({num(u[0])}, {num(u[1])})", fontsize=14, color=ORANGE, fontweight="bold", ha=ha, va="center",
+                zorder=7, bbox=dict(fc="white", ec=ORANGE, lw=1, pad=2, alpha=0.9))
+    if st["note"]:
+        ax.text(1.17, 0.05, st["note"], fontsize=15, color=GREEN, fontweight="bold", ha="right")
+    ax.set_xlim(0, 1.2); ax.set_ylim(0, 1.3); ax.set_aspect("equal")
+    ax.set_xlabel("news and business", fontsize=14); ax.set_ylabel("comedy and stories", fontsize=14)
+    fig.suptitle(st["title"], fontsize=15, y=0.97)
+    fig.text(0.5, 0.905, "■ heard / played     ● not heard     ◯ recommended     → the user's embedding (faded: earlier)", fontsize=12, color=GREY, ha="center")
+    return fig
+
+
+stack([frame_fig(k) for k in range(len(STAGES))])
+```

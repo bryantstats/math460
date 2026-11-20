@@ -1,0 +1,60 @@
+---
+title: "Assignment 9: Neural Networks"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In this assignment you will compute one step of training a small neural network by hand, then use Python to train networks of different shapes on the breast cancer data and compare them with the logistic regression from Assignment 8.
+
+## What to Submit
+
+Submit the following on Canvas:
+
+| Deliverable | Format |
+|---|---|
+| Problem 1 (by hand) | Word document, or photos/scans of your written work |
+| Problem 2 | The completed notebook `assignment9_student.ipynb`, with all cells run |
+
+## Problem 1 (by hand)
+
+A neural network has 2 inputs, one hidden layer with 2 neurons, and 1 output neuron. All neurons use the sigmoid activation $\sigma(z) = \dfrac{1}{1 + e^{-z}}$.
+
+-   Hidden neuron 1: $h_1 = \sigma(0.5x_1 - 0.3x_2 + 0.1)$
+-   Hidden neuron 2: $h_2 = \sigma(-0.2x_1 + 0.4x_2)$
+-   Output: $\hat y = \sigma(v_1 h_1 + v_2 h_2 + c)$ with $v_1 = 0.8$, $v_2 = -0.6$, $c = 0.2$
+
+One training observation has $x_1 = 1$, $x_2 = 2$ and true label $y = 1$. Round your answers to 4 decimals.
+
+a.  Compute $h_1$ and $h_2$.
+
+b.  Compute the predicted probability $\hat y$. Which class does the network predict?
+
+c.  Compute the cross-entropy loss $L = -\log(\hat y)$ (since $y = 1$).
+
+d.  For a sigmoid output with cross-entropy loss, $\dfrac{\partial L}{\partial z} = \hat y - y$, where $z = v_1 h_1 + v_2 h_2 + c$. Use the chain rule to compute $\dfrac{\partial L}{\partial v_1}$, $\dfrac{\partial L}{\partial v_2}$ and $\dfrac{\partial L}{\partial c}$.
+
+e.  Do one step of gradient descent with learning rate $0.5$: update $v_1$, $v_2$ and $c$ (keep the hidden-layer weights fixed).
+
+f.  Using the updated weights, recompute $\hat y$ and the loss. Did the step help? Explain.
+
+g.  How many parameters (weights and biases) does this network have?
+
+## Problem 2 (Python): Neural networks for breast cancer diagnosis
+
+Open `assignment9_student.ipynb` and complete Questions 1–7. You will:
+
+-   Train networks with hidden layers $(2, 4)$, $(2, 4, 3, 2, 1)$ and $(20,)$, and count their parameters.
+-   Retrain each network with 10 different random starting points and find out how reliable it is.
+-   See what happens when the inputs are not standardized.
+-   Design your own network, choose it by cross-validation, and compare it with logistic regression.
+
+Data: [Breast Cancer Wisconsin](https://bryantstats.github.io/math460/data/breast_cancer.csv)
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

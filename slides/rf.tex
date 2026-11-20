@@ -1,0 +1,615 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  ignorenonframetext,
+]{beamer}
+\title{Random Forest}
+\author{}
+\date{\vspace{-2.5em}}
+
+\usepackage{pgfpages}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
+\setbeamertemplate{part page}{
+  \centering
+  \begin{beamercolorbox}[sep=16pt,center]{part title}
+    \usebeamerfont{part title}\insertpart\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \centering
+  \begin{beamercolorbox}[sep=12pt,center]{part title}
+    \usebeamerfont{section title}\insertsection\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{subsection page}{
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center]{part title}
+    \usebeamerfont{subsection title}\insertsubsection\par
+  \end{beamercolorbox}
+}
+\AtBeginPart{
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \frame{\subsectionpage}
+}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Random Forest},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\newif\ifbibliography
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Big Picture of Random Forest}
+\protect\hypertarget{big-picture-of-random-forest}{}
+\includegraphics{images/rf1.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section}{}
+\includegraphics{images/r1.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-1}{}
+\includegraphics{images/r2.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-2}{}
+\includegraphics{images/r3.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-3}{}
+\includegraphics{images/r4.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-4}{}
+\includegraphics{images/r5.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-5}{}
+\includegraphics{images/r6.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-6}{}
+\includegraphics{images/r7.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-7}{}
+\includegraphics{images/r8.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-8}{}
+\includegraphics{images/r9.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-9}{}
+\includegraphics{images/r10.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-10}{}
+\includegraphics{images/r11.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-11}{}
+\includegraphics{images/r12.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-12}{}
+\includegraphics{images/r13.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-13}{}
+\includegraphics{images/r14.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-14}{}
+\includegraphics{images/r15.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-15}{}
+\includegraphics{images/r16.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-16}{}
+\includegraphics{images/r17.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-17}{}
+\includegraphics{images/r18.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-18}{}
+\includegraphics{images/r19.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-19}{}
+\includegraphics{images/r20.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-20}{}
+\includegraphics{images/r21.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-21}{}
+\includegraphics{images/r22.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-22}{}
+\includegraphics{images/r23.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-23}{}
+\includegraphics{images/r24.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-24}{}
+\includegraphics{images/r25.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-25}{}
+\includegraphics{images/r26.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-26}{}
+\includegraphics{images/r27.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-27}{}
+\includegraphics{images/r28.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-28}{}
+\includegraphics{images/r29.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-29}{}
+\includegraphics{images/r30.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-30}{}
+\includegraphics{images/r31.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-31}{}
+\includegraphics{images/r32.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-32}{}
+\includegraphics{images/r33.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-33}{}
+\includegraphics{images/r34.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-34}{}
+\includegraphics{images/r35.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-35}{}
+\includegraphics{images/r36.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-36}{}
+\includegraphics{images/r37.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-37}{}
+\includegraphics{images/r38.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-38}{}
+\includegraphics{images/r39.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-39}{}
+\includegraphics{images/r40.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-40}{}
+\includegraphics{images/r41.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-41}{}
+\includegraphics{images/r42.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-42}{}
+\includegraphics{images/r43.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-43}{}
+\includegraphics{images/r44.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-44}{}
+\includegraphics{images/r45.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-45}{}
+\includegraphics{images/r46.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-46}{}
+\includegraphics{images/r47.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-47}{}
+\includegraphics{images/r48.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-48}{}
+\includegraphics{images/r49.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-49}{}
+\includegraphics{images/r50.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-50}{}
+\includegraphics{images/r51.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-51}{}
+\includegraphics{images/r52.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-52}{}
+\includegraphics{images/r53.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-53}{}
+\includegraphics{images/r54.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-54}{}
+\includegraphics{images/r55.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-55}{}
+\includegraphics{images/r56.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-56}{}
+\includegraphics{images/r57.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-57}{}
+\includegraphics{images/r58.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-58}{}
+\includegraphics{images/r59.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-59}{}
+\includegraphics{images/r60.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-60}{}
+\includegraphics{images/r61.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-61}{}
+\includegraphics{images/r62.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-62}{}
+\includegraphics{images/r63.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-63}{}
+\includegraphics{images/r64.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-64}{}
+\includegraphics{images/r65.png}
+\end{frame}
+
+\begin{frame}{Out-of-bag errors}
+\protect\hypertarget{out-of-bag-errors}{}
+\begin{itemize}
+\tightlist
+\item
+  Random Forest do not need a validation dataset!
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-65}{}
+\includegraphics{images/r66.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-66}{}
+\includegraphics{images/r67.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-67}{}
+\includegraphics{images/r68.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-68}{}
+\includegraphics{images/r69.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-69}{}
+\includegraphics{images/r70.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-70}{}
+\includegraphics{images/r71.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-71}{}
+\includegraphics{images/r72.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-72}{}
+\includegraphics{images/r73.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-73}{}
+\includegraphics{images/r74.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-74}{}
+\includegraphics{images/r75.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-75}{}
+\includegraphics{images/r76.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-76}{}
+\includegraphics{images/r77.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-77}{}
+\includegraphics{images/r78.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-78}{}
+\includegraphics{images/r79.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-79}{}
+\includegraphics{images/r80.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-80}{}
+\includegraphics{images/r81.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-81}{}
+\includegraphics{images/r82.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-82}{}
+\includegraphics{images/r83.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-83}{}
+\includegraphics{images/r84.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-84}{}
+\includegraphics{images/r85.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-85}{}
+\includegraphics{images/r86.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-86}{}
+\includegraphics{images/r87.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-87}{}
+\includegraphics{images/r88.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-88}{}
+\includegraphics{images/r89.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-89}{}
+\includegraphics{images/r90.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-90}{}
+\includegraphics{images/r91.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-91}{}
+\includegraphics{images/r92.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-92}{}
+\includegraphics{images/r93.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-93}{}
+\includegraphics{images/r94.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-94}{}
+\includegraphics{images/r95.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-95}{}
+\includegraphics{images/r96.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-96}{}
+\includegraphics{images/r97.png}
+\end{frame}
+
+\begin{frame}{}
+\protect\hypertarget{section-97}{}
+\includegraphics{images/r98.png}
+\end{frame}
+
+\end{document}

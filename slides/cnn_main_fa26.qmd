@@ -1,0 +1,843 @@
+---
+title: "🦇 Convolutional Neural Networks: The Main Components"
+subtitle: "Convolution, ReLU, pooling, and a dense layer, and one photo traced through all of them"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    code-line-numbers: false
+    menu: true
+    footer: "CNN: the main components"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { font-size: 1.6em; }
+          .reveal p, .reveal li { font-size: 0.72em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.62em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display { font-size: 0.9em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 600px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal .slides section .h480 img { max-height: 480px !important; }
+          .reveal .slides section .h400 img { max-height: 400px !important; }
+          .reveal .slides section .h340 img { max-height: 340px !important; }
+          .reveal .slides section .h280 img { max-height: 280px !important; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.72em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.72em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .note { font-size: 0.5em; color: #555; margin-top: 0.4em; }
+          .reveal .note p { font-size: 1em; }
+          .reveal .r-stack img { background: #ffffff; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import base64, io
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, FancyBboxPatch, Polygon
+from IPython.display import display, HTML, Markdown
+from scipy.signal import correlate2d
+from sklearn.datasets import load_sample_image, load_digits
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 13})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def n(x, d=3):
+    s = f"{x:.{d}f}"
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s in ("-0", "") else s
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def show_fig(fig):
+    display(HTML(f'<img src="{png_uri(fig)}">'))
+
+
+def stack(figs):
+    """Figures on top of each other; each click shows the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in r) + " |" for r in rows)
+    md(s)
+
+
+def conv(x, w, b=0):
+    """Slide the filter and take inner products (no flip, as deep learning libraries do)."""
+    return b + correlate2d(np.asarray(x, float), np.asarray(w, float), mode="valid")
+
+
+def relu(z):
+    return np.maximum(0, z)
+
+
+def pool(a, s=2):
+    h, w = a.shape[0] // s, a.shape[1] // s
+    return a[:h * s, :w * s].reshape(h, s, w, s).max(axis=(1, 3))
+
+
+def out_size(n_, f, p=0, s=1):
+    return (n_ - f + 2 * p) // s + 1
+
+
+def conv_params(f, c_in, k):
+    return (f * f * c_in + 1) * k
+
+
+def fc_params(m, k):
+    return (m + 1) * k
+
+
+def canvas(size, xlim, ylim):
+    fig, ax = plt.subplots(figsize=size)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.subplots_adjust(0, 0, 1, 1)
+    return fig, ax
+
+
+def cells(ax, A, x=0, y=0, cmap=None, vmin=None, vmax=None, fs=15, text=True, face="white", title=None, tfs=14, blank=None, fmt=None):
+    """Draw matrix A with its top-left corner at (x, y). Cells where blank is True are left empty."""
+    A = np.asarray(A, float)
+    cm = plt.get_cmap(cmap) if cmap else None
+    vmin = A.min() if vmin is None else vmin
+    vmax = A.max() if vmax is None else vmax
+    for r in range(A.shape[0]):
+        for k in range(A.shape[1]):
+            fc, tc = face, INK
+            empty = blank is not None and blank[r, k]
+            if cm and not empty:
+                t = 0.5 if vmax == vmin else (A[r, k] - vmin) / (vmax - vmin)
+                fc = cm(t)
+                tc = "white" if 0.299 * fc[0] + 0.587 * fc[1] + 0.114 * fc[2] < 0.55 else INK
+            ax.add_patch(Rectangle((x + k, y - r - 1), 1, 1, fc="white" if empty else fc, ec="#999999", lw=1, zorder=2))
+            if text and not empty:
+                ax.text(x + k + 0.5, y - r - 0.5, fmt(A[r, k]) if fmt else n(A[r, k]), ha="center", va="center", fontsize=fs, color=tc, zorder=3)
+    if title:
+        ax.text(x + A.shape[1] / 2, y + 0.35, title, ha="center", va="bottom", fontsize=tfs, fontweight="bold", color="#444444", linespacing=1.3)
+
+
+def frame(ax, x, y, h, w, color=ORANGE, lw=4):
+    ax.add_patch(Rectangle((x, y - h), w, h, fc="none", ec=color, lw=lw, zorder=5))
+
+
+def arrow(ax, x0, y0, x1, y1, color="#777777", lw=1.8):
+    ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", color=color, lw=lw, shrinkA=0, shrinkB=0), zorder=4)
+
+
+def label(ax, x, y, s, fs=15, color=INK, **kw):
+    ax.text(x, y, s, ha="center", va="center", fontsize=fs, color=color, **kw)
+
+
+def img_axes(ax, A, title, cmap="gray", vmin=None, vmax=None):
+    ax.imshow(A, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.set_title(title, fontsize=15)
+    ax.axis("off")
+
+
+# ------------------------------------------------------------------
+# Data: real 8 x 8 handwritten digits
+# ------------------------------------------------------------------
+
+DIGITS = load_digits()
+X = DIGITS.images[1].astype(int)                               # a real 8 x 8 handwritten "1", pixels 0 (black) to 16 (white)
+FOUR = [("1", DIGITS.images[1]), ("7", DIGITS.images[43]), ("0", DIGITS.images[0]), ("4", DIGITS.images[4])]
+
+V_EDGE = np.array([[-1, 0, 1]] * 3)                            # vertical edges: dark on the left, bright on the right
+H_EDGE = V_EDGE.T                                              # horizontal edges: dark above, bright below
+
+Z1, Z2 = conv(X, V_EDGE), conv(X, H_EDGE)                      # step 1: convolution (biases 0), 6 x 6 each
+A1, A2 = relu(Z1), relu(Z2)                                    # step 2: ReLU
+P1, P2 = pool(A1), pool(A2)                                    # step 3: 2 x 2 max pooling, 3 x 3 each
+f = np.concatenate([P1.ravel(), P2.ravel()])                   # step 4: flatten, 18 numbers
+
+CLASSES = ["1", "7"]
+Q = {"1": '"1"', "7": '"7"'}                                 # how each class is written on the slides
+W = np.zeros((2, 18))                                          # step 5: dense layer, made-up weights
+W[0, :9] = 0.01                                                # "1": add up the vertical-edge features
+W[1, 9:] = 0.01                                                # "7": add up the horizontal-edge features
+b = np.array([0.0, 0.0])
+scores = W @ f + b
+probs = np.exp(scores) / np.exp(scores).sum()                  # step 6: softmax
+
+BLOCKS = [(r, c) for r in range(0, 6, 2) for c in range(0, 6, 2)]   # the nine 2 x 2 pooling blocks of a 6 x 6 map
+BCOLS = [plt.get_cmap("tab10")(k) for k in range(9)]
+assert X.shape == (8, 8) and Z1.shape == (6, 6) and P1.shape == (3, 3) and f.shape == (18,)
+```
+
+## The Big Picture
+
+```{python}
+#| fig-align: center
+fig, ax = canvas((15, 4.8), (-0.3, 30.3), (-2.6, 5.0))
+boxes = [("Image", "#dfe8ff", BLUE), ("Convolution", "#FDE3C8", ORANGE), ("ReLU", "#FDE3C8", ORANGE),
+         ("Max\npooling", "#FDE3C8", ORANGE), ("Flatten", "#dcf3e2", GREEN), ("Dense", "#dcf3e2", GREEN),
+         ("Softmax", "#dcf3e2", GREEN), (f'{Q[CLASSES[0]]}  {probs[0]:.0%}\n{Q[CLASSES[1]]}  {probs[1]:.0%}', "#ffffff", INK)]
+xs = [0, 3.8, 7.6, 11.4, 15.6, 19.4, 23.2, 27.0]
+w_box = 3.0
+for (t, fc, ec), x in zip(boxes, xs):
+    ax.add_patch(FancyBboxPatch((x, 0), w_box, 2.6, boxstyle="round,pad=0.08", fc=fc, ec=ec, lw=2))
+    label(ax, x + w_box / 2, 1.3, t, fs=15, fontweight="bold" if t != boxes[-1][0] else None)
+for x0, x1 in zip(xs[:-1], xs[1:]):
+    arrow(ax, x0 + w_box + 0.1, 1.3, x1 - 0.1, 1.3)
+ax.plot([3.8, 14.4], [3.4, 3.4], color=ORANGE, lw=3)
+label(ax, 9.1, 4.1, "Part 1: find features (repeat this block several times)", fs=15, color=ORANGE, fontweight="bold")
+ax.plot([15.6, 26.2], [3.4, 3.4], color=GREEN, lw=3)
+label(ax, 20.9, 4.1, "Part 2: classify", fs=15, color=GREEN, fontweight="bold")
+ax.annotate("", xy=(5.3, -0.2), xytext=(12.9, -0.2),
+            arrowprops=dict(arrowstyle="-|>", color=ORANGE, lw=2, connectionstyle="arc3,rad=-0.3"))
+label(ax, 9.1, -2.1, "repeat", fs=14, color=ORANGE)
+show_fig(fig)
+```
+
+- **Convolution** finds patterns · **ReLU** keeps the matches · **Pooling** shrinks the maps
+- **Flatten + Dense + Softmax**: the familiar network, giving class probabilities
+
+::: key
+Today: each component, then **one real image** through every layer **by hand**.
+:::
+
+# Part 1. The Convolutional Layer
+
+## An Image Is a Grid of Numbers
+
+```{python}
+fig, axes = plt.subplots(1, 2, figsize=(13, 5.2))
+axes[0].imshow(X, cmap="gray", vmin=0, vmax=16, interpolation="nearest")
+axes[0].set_title("A real handwritten digit: only 8 × 8 pixels", fontsize=15)
+axes[0].axis("off")
+ax = axes[1]
+ax.set_xlim(-0.2, 8.2); ax.set_ylim(-8.2, 1.0); ax.set_aspect("equal"); ax.axis("off")
+cells(ax, X, cmap="gray", vmin=0, vmax=16, fs=15, title="The same image as numbers, 0 (black) to 16 (white)")
+fig.tight_layout()
+show_fig(fig)
+```
+
+- A gray image is **one** matrix of brightness values (a color image is three).
+- This digit comes from a real dataset of handwritten digits. It really is only 8 × 8: **nothing was shrunk**.
+- Small enough to push through a CNN **by hand**. Notice the bright stroke: it has a **vertical edge** on each side.
+
+## The Convolutional Layer: A Small Filter That Slides
+
+```{python}
+def slide_fig(r, c, done):
+    fig, ax = canvas((15, 6.6), (-0.5, 22.0), (-9.7, 1.3))
+    cells(ax, X, 0, 0, fs=15, title="Image (8 × 8)")
+    cells(ax, V_EDGE, 10, -2.5, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="Filter (3 × 3)")
+    label(ax, 9.0, -4, "×", fs=26)
+    label(ax, 14.2, -4, "=", fs=26)
+    blank = np.ones_like(Z1, dtype=bool)
+    for k in range(done):
+        blank[k // 6, k % 6] = False
+    m = np.abs(Z1).max()
+    cells(ax, Z1, 15.5, -1, cmap="RdBu_r", vmin=-m, vmax=m, fs=15, title="Feature map (6 × 6)", blank=blank)
+    frame(ax, c, -r, 3, 3)
+    frame(ax, 15.5 + c, -1 - r, 1, 1)
+    win = X[r:r + 3, c:c + 3]
+    terms = " + ".join(f"({V_EDGE[i, j]})({win[i, j]})" for i in range(3) for j in range(3) if V_EDGE[i, j] != 0)
+    label(ax, 10.75, -9.2, f"{terms} = {n(Z1[r, c])}", fs=17, color=ORANGE)
+    return fig
+
+stack([slide_fig(0, 0, 1), slide_fig(0, 1, 2), slide_fig(0, 2, 3), slide_fig(5, 5, 36)])
+```
+
+- Put the 3 × 3 filter on a 3 × 3 window, **multiply matching entries and add**: one inner product, one output number.
+- Slide one step and repeat. The filter is **the same** at every position (weight sharing).
+- An 8 × 8 image and a 3 × 3 filter give a 6 × 6 **feature map**: $8 - 3 + 1 = 6$.
+
+## What a Filter Finds
+
+```{python}
+fig, axes = plt.subplots(3, 4, figsize=(11, 8.4))
+mf = max(np.abs(conv(im, F)).max() for _, im in FOUR for F in (V_EDGE, H_EDGE))
+for k, (d, im) in enumerate(FOUR):
+    axes[0, k].imshow(im, cmap="gray", vmin=0, vmax=16, interpolation="nearest")
+    axes[1, k].imshow(conv(im, V_EDGE), cmap="RdBu_r", vmin=-mf, vmax=mf, interpolation="nearest")
+    axes[2, k].imshow(conv(im, H_EDGE), cmap="RdBu_r", vmin=-mf, vmax=mf, interpolation="nearest")
+    axes[0, k].set_title(f'digit "{d}"', fontsize=16)
+for ax in axes.ravel():
+    ax.set_xticks([]); ax.set_yticks([])
+for r, s in enumerate(["image", "vertical-edge\nfilter", "horizontal-edge\nfilter"]):
+    axes[r, 0].set_ylabel(s, fontsize=15)
+fig.tight_layout()
+show_fig(fig)
+```
+
+- Each output number measures **how well that window matches the filter's pattern**. **Red**: strong match (dark → bright). **Blue**: the opposite. **White**: nothing there.
+- The "1" lights up the **vertical-edge** filter; the bars of the "7" light up the **horizontal-edge** filter.
+- A layer uses **many filters** and makes one feature map per filter.
+
+::: key
+Nobody chooses the filter values. They are **weights**, learned in training like any other weights.
+:::
+
+# Part 2. ReLU
+
+## ReLU: Keep the Matches, Drop the Rest
+
+```{python}
+fig = plt.figure(figsize=(15, 4.3))
+ax0 = fig.add_axes([0.02, 0.12, 0.22, 0.75])
+t = np.linspace(-3, 3, 100)
+ax0.plot(t, relu(t), color=ORANGE, lw=3)
+ax0.axhline(0, color="#bbb", lw=1); ax0.axvline(0, color="#bbb", lw=1)
+ax0.set_title(r"$\mathrm{ReLU}(z) = \max(0, z)$", fontsize=16)
+ax0.set_xticks([-2, 0, 2]); ax0.set_yticks([0, 2])
+ax = fig.add_axes([0.28, 0.0, 0.72, 1.0])
+ax.set_xlim(-0.5, 16.5); ax.set_ylim(-6.6, 1.3); ax.set_aspect("equal"); ax.axis("off")
+m = np.abs(Z1).max()
+cells(ax, Z1, 0, 0, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="Feature map")
+arrow(ax, 6.4, -3, 9.6, -3, color=ORANGE, lw=2.5)
+label(ax, 8.0, -2.4, "ReLU", fs=15, color=ORANGE, fontweight="bold")
+cells(ax, A1, 10, 0, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="After ReLU")
+show_fig(fig)
+```
+
+- ReLU is applied to **every number** in every feature map, one at a time. It has **no parameters**.
+- Positive = "pattern found here": **kept**. Negative = "pattern not here": **set to 0**.
+- Without it, stacked conv layers would collapse into one big linear filter. ReLU makes depth useful, and its slope of 1 keeps gradients from vanishing.
+
+## ReLU on Four Digits
+
+```{python}
+fig, axes = plt.subplots(2, 4, figsize=(11, 5.8))
+for k, (d, im) in enumerate(FOUR):
+    zz = conv(im, V_EDGE)
+    axes[0, k].imshow(zz, cmap="RdBu_r", vmin=-mf, vmax=mf, interpolation="nearest")
+    axes[1, k].imshow(relu(zz), cmap="RdBu_r", vmin=-mf, vmax=mf, interpolation="nearest")
+    axes[0, k].set_title(f'digit "{d}"', fontsize=16)
+for ax in axes.ravel():
+    ax.set_xticks([]); ax.set_yticks([])
+axes[0, 0].set_ylabel("vertical edges,\nbefore ReLU", fontsize=15)
+axes[1, 0].set_ylabel("after ReLU", fontsize=15)
+fig.tight_layout()
+show_fig(fig)
+```
+
+- Vertical-edge maps of the four digits: ReLU keeps the red (dark → bright) edges and turns all the blue to 0.
+
+# Part 3. Pooling
+
+## Max Pooling: Shrink the Map, Keep the Strongest Signal
+
+```{python}
+fig, ax = canvas((14, 4.8), (-0.5, 13.5), (-6.6, 1.3))
+mx = A1.max()
+cells(ax, A1, 0, 0, cmap="Oranges", vmin=0, vmax=mx, fs=14, title="After ReLU (6 × 6)")
+for (r, c), col in zip(BLOCKS, BCOLS):
+    frame(ax, c, -r, 2, 2, color=col, lw=3.5)
+    frame(ax, 10 + c // 2, -1.5 - r // 2, 1, 1, color=col, lw=3.5)
+arrow(ax, 6.4, -3, 9.4, -3, color=ORANGE, lw=2.5)
+label(ax, 7.9, -2.0, "max of each\n2 × 2 block", fs=13, color=ORANGE, fontweight="bold")
+cells(ax, P1, 10, -1.5, cmap="Oranges", vmin=0, vmax=mx, fs=14, title="Pooled (3 × 3)")
+show_fig(fig)
+```
+
+- Split each map into 2 × 2 blocks and keep the **largest** number. Height and width are cut in half.
+- **Why**: fewer numbers for later layers; a feature that moves a pixel or two gives (almost) the same result; and the next filters see a **larger area** of the original image.
+- **No parameters**, and it works on each feature map separately (the number of maps stays the same).
+
+## Max Pooling on Four Digits
+
+```{python}
+fig, axes = plt.subplots(2, 4, figsize=(11, 5.8))
+for k, (d, im) in enumerate(FOUR):
+    rz = relu(conv(im, V_EDGE))
+    axes[0, k].imshow(rz, cmap="Oranges", vmin=0, vmax=mf, interpolation="nearest")
+    axes[1, k].imshow(pool(rz), cmap="Oranges", vmin=0, vmax=mf, interpolation="nearest", extent=(-0.5, 5.5, 5.5, -0.5))
+    axes[0, k].set_title(f'digit "{d}"', fontsize=16)
+for ax in axes.ravel():
+    ax.set_xticks([]); ax.set_yticks([])
+axes[0, 0].set_ylabel("after ReLU\n(6 × 6)", fontsize=15)
+axes[1, 0].set_ylabel("pooled\n(3 × 3)", fontsize=15)
+fig.tight_layout()
+show_fig(fig)
+```
+
+- Each 6 × 6 map becomes 3 × 3: a quarter of the numbers, but each digit's strong edges are still there.
+
+## Stacking the Block: Smaller Maps, More of Them
+
+```{python}
+def box3d(ax, x, y, w, h, d, fc, ec):
+    dx, dy = d * 0.5, d * 0.35
+    ax.add_patch(Polygon([(x, y + h), (x + dx, y + h + dy), (x + w + dx, y + h + dy), (x + w, y + h)], fc=fc, ec=ec, lw=1.5, alpha=0.85))
+    ax.add_patch(Polygon([(x + w, y), (x + w + dx, y + dy), (x + w + dx, y + h + dy), (x + w, y + h)], fc=fc, ec=ec, lw=1.5, alpha=0.6))
+    ax.add_patch(Rectangle((x, y), w, h, fc=fc, ec=ec, lw=1.5))
+
+fig, ax = canvas((15, 4.4), (-0.5, 32), (-2.4, 5.6))
+spec = [("28 × 28 × 1\nimage", 0, 4.0, 0.2, "#dfe8ff", BLUE), ("26 × 26 × 32\nconv + ReLU", 6.0, 3.8, 1.6, "#FDE3C8", ORANGE),
+        ("13 × 13 × 32\npool", 12.5, 2.0, 1.6, "#FDE3C8", ORANGE), ("11 × 11 × 64\nconv + ReLU", 17.0, 1.7, 3.0, "#FDE3C8", ORANGE),
+        ("5 × 5 × 64\npool", 23.0, 0.8, 3.0, "#FDE3C8", ORANGE), ("1,600 → 10\nflatten, dense", 28.0, 0.45, 0, "#dcf3e2", GREEN)]
+for t, x, s, d, fc, ec in spec:
+    if d == 0:
+        ax.add_patch(Rectangle((x, 0), 0.5, 4.0, fc=fc, ec=ec, lw=1.5))
+        ax.add_patch(Rectangle((x + 1.8, 1.3), 0.5, 1.4, fc=fc, ec=ec, lw=1.5))
+        arrow(ax, x + 0.6, 2.0, x + 1.7, 2.0)
+        label(ax, x + 1.2, -1.3, t, fs=13)
+    else:
+        box3d(ax, x, 2.0 - s / 2, s, s, d, fc, ec)
+        label(ax, x + s / 2 + d * 0.25, -1.3, t, fs=13)
+show_fig(fig)
+```
+
+- Each conv + ReLU + pool block makes the maps **smaller** (pooling) but **more numerous** (more filters).
+- Layer 1 filters see 3 × 3 pixels: edges. Later filters read earlier maps, so they see **larger areas** and find **combinations**: corners, textures, petals, eyes, wheels.
+
+::: key
+Early layers: simple, local patterns. Deep layers: complex patterns covering much of the image.
+:::
+
+# Part 4. Flatten, Dense, Softmax
+
+## From Feature Maps to Class Probabilities
+
+```{python}
+fig, ax = canvas((15, 4.6), (-0.6, 40.5), (-4.6, 5.4))
+mm = max(P1.max(), P2.max())
+cells(ax, P1, 0, 4.0, cmap="Oranges", vmin=0, vmax=mm, fs=12, title="Feature maps", tfs=13)
+cells(ax, P2, 0, -0.6, cmap="Oranges", vmin=0, vmax=mm, fs=12)
+arrow(ax, 3.4, 0.2, 5.6, 0.2, color=ORANGE, lw=2.2)
+label(ax, 4.0, -0.9, "Flatten\n(18 numbers)", fs=12, color=ORANGE, fontweight="bold")
+cells(ax, f[None, :], 6.0, 0.7, cmap="Oranges", vmin=0, vmax=mm, fs=12)
+bx = [(27.6, 1.6), (27.6, -2.4)]
+for k in range(18):
+    for (_, by), y0 in zip(bx, (0.7, -0.3)):
+        ax.plot([6.5 + k, 27.6], [y0, by + 0.4], color="#bbbbbb", lw=0.7, zorder=1)
+label(ax, 25.9, 0.2, "Dense", fs=13, color=GREEN, fontweight="bold")
+for (x, y), c, s in zip(bx, CLASSES, scores):
+    ax.add_patch(FancyBboxPatch((x, y), 4.6, 0.8, boxstyle="round,pad=0.1", fc="#dcf3e2", ec=GREEN, lw=1.8))
+    label(ax, x + 2.3, y + 0.4, f'{Q[c]} score: {n(s, 2)}', fs=13)
+    arrow(ax, 32.5, y + 0.4, 34.3, y + 0.4, color=GREEN, lw=2.2)
+label(ax, 33.4, 0.2, "Softmax", fs=13, color=GREEN, fontweight="bold")
+for (x, y), c, p in zip(bx, CLASSES, probs):
+    ax.add_patch(Rectangle((34.5, y), 3.0 * p, 0.8, fc=GREEN if p == probs.max() else "#cfcfcf", ec="none"))
+    ax.text(34.5 + 3.0 * p + 0.15, y + 0.4, f'{Q[c]} {p:.0%}', ha="left", va="center", fontsize=13, fontweight="bold")
+show_fig(fig)
+```
+
+- **Flatten**: line up all the numbers from all the maps into one long list.
+- **Dense layer**: each class gets a **score**, a weighted sum of every number in the list (the weights are learned).
+- **Softmax**: turns the scores into **probabilities** that add up to 100%. The biggest one is the prediction.
+
+::: key
+This is the neural network we already know. The only difference: it reads the **features the filters found**, not raw pixels.
+:::
+
+# Part 5. One Image Through the Network, by Hand
+
+## The Network and the Image
+
+```{python}
+fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
+axes[0].imshow(X, cmap="gray", vmin=0, vmax=16, interpolation="nearest")
+axes[0].set_title("A handwritten digit", fontsize=14)
+axes[0].axis("off")
+ax = axes[1]
+ax.set_xlim(-0.2, 8.2); ax.set_ylim(-8.2, 1.0); ax.set_aspect("equal"); ax.axis("off")
+cells(ax, X, cmap="gray", vmin=0, vmax=16, fs=11, title="Input X (8 × 8)")
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+table(["Step", "Layer", "Output shape", "Parameters"],
+      [[1, "Convolution: 2 filters, 3 × 3 (vertical edge, horizontal edge), bias 0", "6 × 6 × 2", conv_params(3, 1, 2)],
+       [2, "ReLU", "6 × 6 × 2", 0],
+       [3, "Max pooling 2 × 2", "3 × 3 × 2", 0],
+       [4, "Flatten", "18", 0],
+       [5, 'Dense: 2 classes (digit "1", digit "7")', "2", fc_params(18, 2)],
+       [6, "Softmax", "2", 0],
+       ["", "**Total**", "", f"**{conv_params(3, 1, 2) + fc_params(18, 2)}**"]])
+```
+
+::: note
+In a real CNN the filter values start out **random** and are **learned** in training. Here we skip training and plug in two well-known edge filters (and made-up dense weights) so we can do every step by hand.
+:::
+
+## Step 1. Convolution: Two Filters, Two Feature Maps
+
+```{python}
+r0, c0 = np.unravel_index(np.argmax(np.abs(Z1) + np.abs(Z2)), Z1.shape)          # the window with the most going on
+fig, ax = canvas((14, 8.2), (-0.5, 23.0), (-13.4, 1.5))
+cells(ax, X, 0, -2.5, fs=14, title="Input X (8 × 8)")
+m = max(np.abs(Z1).max(), np.abs(Z2).max())
+cells(ax, V_EDGE, 11, -1.0, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="Filter 1: vertical edge")
+cells(ax, Z1, 16.5, 0.5, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="Feature map 1")
+cells(ax, H_EDGE, 11, -8.0, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="Filter 2: horizontal edge")
+cells(ax, Z2, 16.5, -6.5, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="Feature map 2")
+for y in (-2.5, -9.5):
+    arrow(ax, 14.3, y, 16.2, y)
+frame(ax, c0, -2.5 - r0, 3, 3)
+frame(ax, 16.5 + c0, 0.5 - r0, 1, 1)
+frame(ax, 16.5 + c0, -6.5 - r0, 1, 1)
+show_fig(fig)
+```
+
+```{python}
+w = X[r0:r0 + 3, c0:c0 + 3]
+t1 = " + ".join(f"{w[i, 2]}" for i in range(3)) + " − (" + " + ".join(f"{w[i, 0]}" for i in range(3)) + ")"
+t2 = " + ".join(f"{w[2, j]}" for j in range(3)) + " − (" + " + ".join(f"{w[0, j]}" for j in range(3)) + ")"
+md(f"""- Window in the orange box (row {r0 + 1}, column {c0 + 1}). **Filter 1** = right column minus left column: ${t1} = {n(Z1[r0, c0])}$.
+- **Filter 2** = bottom row minus top row: ${t2} = {n(Z2[r0, c0])}$.
+- Slide to all 36 positions. Map 1 is strong: **red** on the left side of the stroke, **blue** on the right. A "1" is mostly **vertical edges**.""")
+```
+
+## Step 2. ReLU
+
+```{python}
+fig, ax = canvas((14, 7.6), (-0.5, 16.5), (-14.0, 1.3))
+cells(ax, Z1, 0, 0, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="Feature map 1")
+cells(ax, A1, 10, 0, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="After ReLU")
+cells(ax, Z2, 0, -7.5, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="Feature map 2")
+cells(ax, A2, 10, -7.5, cmap="RdBu_r", vmin=-m, vmax=m, fs=14, title="After ReLU")
+for y in (-3, -10.5):
+    arrow(ax, 6.4, y, 9.6, y, color=ORANGE, lw=2.5)
+    label(ax, 8.0, y + 0.55, "max(0, z)", fs=14, color=ORANGE)
+show_fig(fig)
+```
+
+```{python}
+md(f"""- Every negative number becomes 0; positives stay the same.
+- Map 1 loses {int((Z1 < 0).sum())} numbers and map 2 loses {int((Z2 < 0).sum())}: those windows showed the **opposite** of the filter's pattern.""")
+```
+
+## Step 3. Max Pooling
+
+```{python}
+fig, ax = canvas((14, 7.6), (-0.5, 14.5), (-14.0, 1.3))
+mx = max(A1.max(), A2.max())
+for A, P, y, tt in [(A1, P1, 0, "map 1"), (A2, P2, -7.5, "map 2")]:
+    cells(ax, A, 0, y, cmap="Oranges", vmin=0, vmax=mx, fs=14, title=f"After ReLU, {tt}")
+    cells(ax, P, 10.5, y - 1.5, cmap="Oranges", vmin=0, vmax=mx, fs=14, title=f"Pooled, {tt}")
+    for (r, c), col in zip(BLOCKS, BCOLS):
+        frame(ax, c, y - r, 2, 2, color=col, lw=3)
+        frame(ax, 10.5 + c // 2, y - 1.5 - r // 2, 1, 1, color=col, lw=3)
+    arrow(ax, 6.4, y - 3, 10.0, y - 3, color=ORANGE, lw=2.5)
+    label(ax, 8.2, y - 2.45, "max of each 2 × 2", fs=13, color=ORANGE)
+show_fig(fig)
+```
+
+```{python}
+blk = A1[0:2, 0:2]
+md(f"- Top-left block of map 1: $\\max({', '.join(n(v) for v in blk.ravel())}) = {n(P1[0, 0])}$. Each 6 × 6 map becomes 3 × 3.")
+```
+
+## Step 4. Flatten
+
+```{python}
+fig, ax = canvas((15, 3.6), (-0.5, 29), (-4.6, 1.6))
+cells(ax, P1, 0, 0, cmap="Oranges", vmin=0, vmax=mx, fs=14, title="Map 1")
+cells(ax, P2, 3.6, 0, cmap="Oranges", vmin=0, vmax=mx, fs=14, title="Map 2")
+arrow(ax, 7.0, -1.5, 9.8, -1.5, color=ORANGE, lw=2.5)
+label(ax, 8.4, -0.9, "line up", fs=14, color=ORANGE)
+cells(ax, f[None, :], 10.5, -1, cmap="Oranges", vmin=0, vmax=mx, fs=13, title="Feature vector a (18 numbers)")
+for i in range(18):
+    label(ax, 11 + i, -2.5, f"$a_{{{i + 1}}}$", fs=12, color="#555")
+label(ax, 15.0, -3.9, "map 1 (vertical edges)", fs=13, color=GREY)
+ax.plot([10.6, 19.4], [-3.2, -3.2], color=GREY, lw=2)
+label(ax, 24.0, -3.9, "map 2 (horizontal edges)", fs=13, color=GREY)
+ax.plot([19.6, 28.4], [-3.2, -3.2], color=GREY, lw=2)
+show_fig(fig)
+```
+
+```{python}
+md(f"""- Read each map row by row, map 1 then map 2: $\\mathbf{{a}} = ({', '.join(n(v) for v in f)})$.
+- These 18 numbers describe the image: **how strong each edge type is, in each of 9 regions**.""")
+```
+
+## Step 5. Dense Layer: Two Scores
+
+```{python}
+table(["", "$a_1, \\dots, a_9$ (map 1: vertical edges)", "$a_{10}, \\dots, a_{18}$ (map 2: horizontal edges)", "bias"],
+      [["**a**", ", ".join(n(v) for v in f[:9]), ", ".join(n(v) for v in f[9:]), ""],
+       ['weights, "1"', "0.01 each", "0 each", n(b[0])],
+       ['weights, "7"', "0 each", "0.01 each", n(b[1])]])
+```
+
+```{python}
+def dot_text(part):
+    return f"0.01({' + '.join(n(v) for v in part)}) = 0.01({n(part.sum())})"
+
+md(f"""- $z_1 = {dot_text(f[:9])} = {n(scores[0])}$
+- $z_7 = {dot_text(f[9:])} = {n(scores[1])}$
+- Each score is **one inner product** of a weight row with $\\mathbf{{a}}$ (zero weights left out).""")
+```
+
+::: note
+These weights are made up so the arithmetic is easy. In a real network they are learned. Here the "1" weights add up the **vertical-edge** features (a "1" is a vertical stroke); the "7" weights add up the **horizontal-edge** features (the bars of a "7").
+:::
+
+## Step 6. Softmax: Probabilities
+
+```{python}
+e = np.exp(scores)
+md(f"""$$p_1 = \\frac{{e^{{{n(scores[0])}}}}}{{e^{{{n(scores[0])}}} + e^{{{n(scores[1])}}}}}
+= \\frac{{{n(e[0], 2)}}}{{{n(e[0], 2)} + {n(e[1], 2)}}} = {n(probs[0], 3)}
+\\qquad
+p_7 = \\frac{{{n(e[1], 2)}}}{{{n(e[0], 2)} + {n(e[1], 2)}}} = {n(probs[1], 3)}$$""")
+```
+
+```{python}
+#| classes: h280
+fig, ax = plt.subplots(figsize=(8, 2.4))
+ax.barh([Q[c] for c in CLASSES[::-1]], probs[::-1], color=[GREY, ORANGE])
+for i, p in enumerate(probs[::-1]):
+    ax.text(p + 0.02, i, f"{p:.0%}", va="center", fontsize=15)
+ax.set_xlim(0, 1.12)
+ax.spines[["top", "right"]].set_visible(False)
+ax.tick_params(labelsize=15)
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+md(f"""::: key
+Prediction: **{Q[CLASSES[int(np.argmax(probs))]]}** with probability {probs.max():.0%}.
+From 64 pixels to 2 probabilities, using only inner products, $\\max(0, z)$, $\\max$ of blocks, and softmax.
+:::""")
+```
+
+## The Whole Trip on One Slide
+
+```{python}
+fig, ax = canvas((15, 5.6), (-0.5, 41.5), (-14.4, 1.6))
+cells(ax, X, 0, -3.0, cmap="gray", vmin=0, vmax=16, fs=9, title="Input 8 × 8", tfs=13)
+for Z, A, P, y0 in [(Z1, A1, P1, 0), (Z2, A2, P2, -7.5)]:
+    cells(ax, Z, 10, y0, cmap="RdBu_r", vmin=-m, vmax=m, fs=9, title="Conv" if y0 == 0 else None, tfs=13)
+    cells(ax, A, 18, y0, cmap="RdBu_r", vmin=-m, vmax=m, fs=9, title="ReLU" if y0 == 0 else None, tfs=13)
+    cells(ax, P, 26, y0 - 1.5, cmap="Oranges", vmin=0, vmax=mx, fs=9, title="Pool" if y0 == 0 else None, tfs=13)
+    arrow(ax, 8.3, -7, 9.7, y0 - 3)
+    arrow(ax, 16.3, y0 - 3, 17.7, y0 - 3)
+    arrow(ax, 24.3, y0 - 3, 25.7, y0 - 3)
+    arrow(ax, 29.3, y0 - 3, 31.0, -6)
+cells(ax, f[:9, None], 31.3, -1.5, cmap="Oranges", vmin=0, vmax=mx, fs=9)
+cells(ax, f[9:, None], 32.5, -1.5, cmap="Oranges", vmin=0, vmax=mx, fs=9)
+label(ax, 32.4, -0.8, "Flatten", fs=13, color="#444444", fontweight="bold")
+for i, (cname, p, s) in enumerate(zip(CLASSES, probs, scores)):
+    y = -3.5 - i * 5
+    ax.add_patch(FancyBboxPatch((35.5, y - 1.2), 5.6, 2.4, boxstyle="round,pad=0.08", fc=ORANGE if i == 0 else "#eeeeee", ec="#999", lw=1.2))
+    label(ax, 38.3, y, f'{Q[cname]}\nz = {n(s)},  p = {p:.2f}', fs=12, color="white" if i == 0 else INK)
+    arrow(ax, 33.8, -6, 35.3, y)
+show_fig(fig)
+```
+
+```{python}
+md(f"- Parameters learned in training: 2 filters (18 weights + 2 biases) and the dense layer (36 weights + 2 biases): "
+   f"**{conv_params(3, 1, 2) + fc_params(18, 2)}** in total.")
+```
+
+## Your Turn
+
+```{python}
+Xq = np.array([[0, 0, 5, 5, 0], [0, 0, 5, 5, 0], [0, 0, 5, 5, 0], [0, 0, 5, 5, 0], [0, 0, 5, 5, 0]])
+Fq = np.array([[-1, 1], [-1, 1]])
+Zq = conv(Xq, Fq); Aq = relu(Zq); Pq = pool(Aq)
+fig, ax = canvas((10, 3.6), (-0.5, 10), (-5.4, 1.2))
+cells(ax, Xq, 0, 0, cmap="gray", vmin=0, vmax=9, fs=16, title="Image (5 × 5): a bright bar")
+cells(ax, Fq, 7, -1.5, cmap="RdBu_r", vmin=-2, vmax=2, fs=16, title="Filter (2 × 2), bias 0")
+show_fig(fig)
+```
+
+1. What is the size of the feature map? Compute it.
+2. Apply ReLU. Which edge of the bar survives, and why?
+3. Apply 2 × 2 max pooling.
+4. How many parameters does this layer have if it uses 8 such filters on a color image?
+
+## Your Turn: Answers
+
+```{python}
+fig, ax = canvas((14, 3.8), (-0.5, 17.5), (-5.0, 1.3))
+mq = np.abs(Zq).max()
+cells(ax, Zq, 0, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="1. Feature map (4 × 4)")
+cells(ax, Aq, 6.5, 0, cmap="RdBu_r", vmin=-mq, vmax=mq, fs=16, title="2. After ReLU")
+cells(ax, Pq, 13, -1, cmap="Oranges", vmin=0, vmax=Aq.max(), fs=16, title="3. Pooled (2 × 2)")
+arrow(ax, 4.4, -2, 6.1, -2); arrow(ax, 10.9, -2, 12.6, -2)
+show_fig(fig)
+```
+
+```{python}
+md(f"""1. $5 - 2 + 1 = 4$, so 4 × 4. Each output is (right column) − (left column) of the window.
+2. Only the **left** edge (dark → bright, value {n(Zq.max())}) survives; the right edge (bright → dark) is negative and becomes 0.
+3. $\\max$ of each 2 × 2 block, as shown.
+4. Each filter is 2 × 2 × 3 with one bias: $(2 \\cdot 2 \\cdot 3 + 1)\\cdot 8 = {conv_params(2, 3, 8)}$.""")
+```
+
+# Part 6. A Real-Size CNN
+
+## A CNN for 28 × 28 Handwritten Digits
+
+```{python}
+rows, total = [], 0
+s1 = out_size(28, 3); p1 = s1 // 2; s2 = out_size(p1, 3); p2 = s2 // 2
+spec = [("Input", "28 × 28 × 1", 0),
+        ("Conv, 32 filters 3 × 3, ReLU", f"{s1} × {s1} × 32", conv_params(3, 1, 32)),
+        ("Max pool 2 × 2", f"{p1} × {p1} × 32", 0),
+        ("Conv, 64 filters 3 × 3, ReLU", f"{s2} × {s2} × 64", conv_params(3, 32, 64)),
+        ("Max pool 2 × 2", f"{p2} × {p2} × 64", 0),
+        ("Flatten", f"{p2 * p2 * 64:,}", 0),
+        ("Dense, 10 classes, softmax", "10", fc_params(p2 * p2 * 64, 10))]
+for name, shape, prm in spec:
+    total += prm
+    rows.append([name, shape, f"{prm:,}"])
+rows.append(["**Total**", "", f"**{total:,}**"])
+table(["Layer", "Output shape", "Parameters"], rows)
+```
+
+```{python}
+md(f"""- Same components as our hand calculation, just more filters and one more block.
+- Second conv layer: each filter is 3 × 3 × **32**, because it reads all 32 maps of layer 1: $(3\\cdot3\\cdot32+1)\\cdot64 =$ {conv_params(3, 32, 64):,}.
+- In Keras: `Conv2D(32, 3, activation="relu")`, `MaxPooling2D(2)`, `Conv2D(64, 3, activation="relu")`, `MaxPooling2D(2)`, `Flatten()`, `Dense(10, activation="softmax")`.""")
+```
+
+## Training: Nothing New
+
+- **Learned**: the filter weights and biases of every conv layer, and the weights and biases of the dense layer.
+- **Not learned**: ReLU, pooling, and flatten have no parameters.
+- **How**: exactly as before. Cross-entropy loss, gradients by backpropagation, gradient descent (Adam).
+- The network discovers on its own which filters are useful: edge detectors appear in layer 1 without anyone designing them.
+
+# Part 7. Famous CNNs
+
+## Famous CNNs: The Same Two Parts
+
+```{python}
+def two_part(boxes, n1, fs=12):
+    """A chain of boxes like the Big Picture. boxes[0] is the input, boxes[1..n1] are Part 1, the rest are Part 2."""
+    w, gap = 2.7, 0.75
+    nb = len(boxes)
+    xs = [i * (w + gap) for i in range(nb)]
+    fig, ax = canvas((15, 4.6), (-0.3, xs[-1] + w + 0.3), (-0.6, 5.0))
+    for i, ((t, s), x) in enumerate(zip(boxes, xs)):
+        fc, ec = ("#dfe8ff", BLUE) if i == 0 else (("#FDE3C8", ORANGE) if i <= n1 else ("#dcf3e2", GREEN))
+        ax.add_patch(FancyBboxPatch((x, 0), w, 3.0, boxstyle="round,pad=0.06", fc=fc, ec=ec, lw=1.8))
+        label(ax, x + w / 2, 2.1, t, fs=fs, fontweight="bold", linespacing=1.15)
+        label(ax, x + w / 2, 0.65, s, fs=fs - 1, color="#444444")
+    for x0, x1 in zip(xs[:-1], xs[1:]):
+        arrow(ax, x0 + w + 0.05, 1.5, x1 - 0.05, 1.5, lw=1.4)
+    ax.plot([xs[1], xs[n1] + w], [3.6, 3.6], color=ORANGE, lw=3)
+    label(ax, (xs[1] + xs[n1] + w) / 2, 4.25, "Part 1: find features", fs=15, color=ORANGE, fontweight="bold")
+    ax.plot([xs[n1 + 1], xs[-1] + w], [3.6, 3.6], color=GREEN, lw=3)
+    label(ax, (xs[n1 + 1] + xs[-1] + w) / 2, 4.25, "Part 2: classify", fs=15, color=GREEN, fontweight="bold")
+    show_fig(fig)
+```
+
+Every famous CNN has the shape of our Big Picture: **Part 1** (conv, ReLU, pooling, repeated) finds features; **Part 2** (flatten, dense, softmax) classifies them.
+
+| Network | Year | Known for | Input | Classes | Parameters |
+|:---|:---:|:---|:---:|:---:|:---:|
+| **LeNet-5** | 1998 | reading handwritten digits on bank checks | 32 × 32 × 1 | 10 | about 60 thousand |
+| **AlexNet** | 2012 | won ImageNet by a wide margin; started the deep learning boom | 227 × 227 × 3 | 1,000 | about 60 million |
+| **VGG-16** | 2014 | very simple design: only 3 × 3 filters, stacked deep | 224 × 224 × 3 | 1,000 | about 138 million |
+| **ResNet-50** | 2015 | "skip connections" make very deep networks trainable | 224 × 224 × 3 | 1,000 | about 26 million |
+
+::: key
+Over time Part 1 got **deeper** (more conv layers find richer features), while Part 2 stayed small or even shrank to a single dense layer.
+:::
+
+## LeNet-5 (1998)
+
+```{python}
+two_part([("Input", "32×32×1"),
+          ("Conv\n6 @ 5×5", "28×28×6"), ("Pool", "14×14×6"), ("Conv\n16 @ 5×5", "10×10×16"), ("Pool", "5×5×16"),
+          ("Flatten", "400"), ("Dense", "120"), ("Dense", "84"), ("Softmax", "10 digits")], 4)
+```
+
+- Yann LeCun's network for reading **handwritten digits**, used by banks to read checks in the 1990s.
+- **Part 1**: two conv + pool blocks, 5 × 5 filters. **Part 2**: three dense layers, ending in 10 digit probabilities.
+- Almost exactly the network from our "28 × 28 handwritten digits" slide: small, about **60 thousand** parameters.
+
+## AlexNet (2012)
+
+```{python}
+two_part([("Input", "227×227×3"),
+          ("Conv\n96 @ 11×11", "55×55×96"), ("Pool", "27×27×96"), ("Conv\n256 @ 5×5", "27×27×256"), ("Pool", "13×13×256"),
+          ("Conv\n384 @ 3×3", "13×13×384"), ("Conv\n384 @ 3×3", "13×13×384"), ("Conv\n256 @ 3×3", "13×13×256"), ("Pool", "6×6×256"),
+          ("Flatten", "9,216"), ("Dense", "4,096"), ("Dense", "4,096"), ("Softmax", "1,000")], 8, fs=9.8)
+```
+
+- Won the **ImageNet** challenge in 2012 (1.2 million color photos, 1,000 classes) with far fewer errors than any other method. This started the deep learning boom.
+- **Part 1**: five conv layers (the first one with big 11 × 11 filters) and three pools. **Part 2**: two big dense layers + softmax.
+- New tricks that are now standard: **ReLU**, training on **GPUs**, and dropout. About **60 million** parameters.
+
+## VGG-16 (2014)
+
+```{python}
+two_part([("Input", "224×224×3"),
+          ("2 × Conv 64\n+ Pool", "112×112×64"), ("2 × Conv 128\n+ Pool", "56×56×128"), ("3 × Conv 256\n+ Pool", "28×28×256"),
+          ("3 × Conv 512\n+ Pool", "14×14×512"), ("3 × Conv 512\n+ Pool", "7×7×512"),
+          ("Flatten", "25,088"), ("Dense", "4,096"), ("Dense", "4,096"), ("Softmax", "1,000")], 5, fs=11)
+```
+
+```{python}
+p2_vgg = fc_params(25088, 4096) + fc_params(4096, 4096) + fc_params(4096, 1000)
+md(f"""- A very regular design: **only 3 × 3 filters**, in five blocks; each block ends with a 2 × 2 max pool that halves the size.
+- 13 conv layers + 3 dense layers = **16** layers with weights. About **138 million** parameters.
+- Surprise: about **{p2_vgg / 1e6:.0f} million** of them are in **Part 2** (the first dense layer alone reads 25,088 numbers).""")
+```
+
+## ResNet-50 (2015)
+
+```{python}
+two_part([("Input", "224×224×3"),
+          ("Conv 64\n7×7 + Pool", "56×56×64"), ("3 blocks", "56×56×256"), ("4 blocks", "28×28×512"),
+          ("6 blocks", "14×14×1,024"), ("3 blocks", "7×7×2,048"),
+          ("Average\neach map", "2,048"), ("Softmax", "1,000")], 5, fs=12)
+```
+
+- **50 layers deep.** Each "block" is 3 conv layers plus a **skip connection** that adds the block's input to its output, which makes very deep networks trainable.
+- **Part 2 is tiny**: instead of flattening, average each of the 2,048 maps into one number, then one dense layer + softmax.
+- Fewer parameters than VGG-16 (about **26 million**) but more accurate. Variants of ResNet are still widely used today.
+
+## Summary
+
+| Component | What it does | Parameters |
+|:---|:---|:---:|
+| **Convolution** | a small filter slides; each output is an inner product with one window | $(f \cdot f \cdot c_{\text{in}} + 1)\cdot k$ |
+| **ReLU** | $\max(0, z)$: keep where the pattern was found | 0 |
+| **Max pooling** | keep the largest value in each 2 × 2 block; halves the size | 0 |
+| **Flatten** | line up all maps into one vector | 0 |
+| **Dense** | $W\mathbf{a} + \mathbf{b}$: one inner product per class | $(m + 1)\cdot K$ |
+| **Softmax** | scores → probabilities that add to 1 | 0 |
+
+::: key
+Convolution blocks **find features**; the dense layer **classifies** them. Everything is inner products plus two simple $\max$ operations.
+:::

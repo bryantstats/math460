@@ -1,0 +1,1243 @@
+---
+title: "Recommender Systems"
+subtitle: "How a modern recommender picks your next video: embeddings and retrieval"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: none
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    menu: true
+    footer: "Recommender systems"
+    code-line-numbers: false
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { color: #B8621B; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.6em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display { font-size: 0.85em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 520px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal pre code { font-size: 0.85em; line-height: 1.35; }
+          .reveal .cell-output pre code { font-size: 0.8em; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .warn { background:#fdecea; border-left:6px solid #b5302a; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .warn p { font-size: 1em; }
+          .reveal .note { font-size: 0.55em; color: #666; }
+          .reveal .practice table { font-size: 0.54em; }
+          .reveal .practice table th, .reveal .practice table td { padding: 3px 12px; white-space: nowrap; }
+          .reveal .old table th, .reveal .old table td { white-space: nowrap; }
+          .reveal .cmp table { font-size: 0.62em; width: 100%; }
+          .reveal .cmp table th, .reveal .cmp table td { text-align: left !important; }
+          .reveal .cmp table td:first-child { white-space: nowrap; font-weight: bold; width: 13%; }
+          .reveal .cmp table th:nth-child(2), .reveal .cmp table td:nth-child(2) { width: 38%; }
+          .reveal .ex table { font-size: 0.48em; margin: 0.2em 0; }
+          .reveal .ex .avg { clear: both; }
+          .reveal .ex .avg .katex-display { font-size: 0.78em !important; margin: 0.2em 0 !important; text-align: left; }
+          .reveal .ex table th, .reveal .ex table td { padding: 2px 7px; white-space: nowrap; }
+          .reveal .ex p { font-size: 0.56em; margin: 0.3em 0; }
+          .reveal .ex .katex-display { font-size: 0.6em !important; }
+          .reveal .ex .slides section img, .reveal .ex img { max-height: 560px !important; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, Rectangle
+from IPython.display import Markdown, display, HTML
+import base64, io
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 14,
+                     "axes.spines.top": False, "axes.spines.right": False})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def r(x, d=3):
+    s = f"{x:.{d}f}".rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in row) + " |" for row in rows)
+    md(s)
+
+
+def show(fig, h=None):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white", bbox_inches="tight")
+    plt.close(fig)
+    style = f' style="max-height:{h}px !important"' if h else ""
+    display(HTML(f'<img src="data:image/png;base64,{base64.b64encode(b.getvalue()).decode()}"{style}>'))
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")          # fixed size: frames line up exactly
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def stack(figs, h=520):
+    """Frames on top of each other; each click shows the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}" style="max-height:{h}px !important">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}" style="max-height:{h}px !important">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def ray(ax, u, xmax, ymax, color=None):
+    """Faint dashed line continuing the user's arrow to the edge of the plot: only the direction matters."""
+    u = np.asarray(u, float)
+    t = min(xmax / u[0] if u[0] > 0 else np.inf, ymax / u[1] if u[1] > 0 else np.inf)
+    ax.plot([u[0], t * u[0]], [u[1], t * u[1]], ls=(0, (5, 4)), lw=2, color=color or ORANGE, alpha=0.45, zorder=1)
+
+
+def boxes(stages, w=3.0, gap=0.8, h=2.2, figsize=(15, 3.2), fs=15, sfs=12.5):
+    """A left-to-right chain of rounded boxes: stages = [(title, subtitle, face, edge), ...]."""
+    fig, ax = plt.subplots(figsize=figsize)
+    for k, (t, s_, fc, ec) in enumerate(stages):
+        x = k * (w + gap)
+        ax.add_patch(FancyBboxPatch((x, 0), w, h, boxstyle="round,pad=0.06", fc=fc, ec=ec, lw=2))
+        ax.text(x + w / 2, h * 0.72, t, ha="center", va="center", fontsize=fs, fontweight="bold")
+        ax.text(x + w / 2, h * 0.32, s_, ha="center", va="center", fontsize=sfs, color="#444")
+        if k < len(stages) - 1:
+            ax.annotate("", xy=(x + w + gap - 0.08, h / 2), xytext=(x + w + 0.08, h / 2), arrowprops=dict(arrowstyle="-|>", color=GREY, lw=2))
+    ax.set_xlim(-0.2, len(stages) * (w + gap) - gap + 0.2); ax.set_ylim(-0.2, h + 0.3); ax.axis("off")
+    return fig
+
+
+# ---------------- running example: 8 movies, 2 numbers each (funny, action-packed) ----------------
+CAT = {"Elf": (2.0, 0.2), "Paddington": (1.6, 0.4),                 # comedies
+       "John Wick": (0.2, 2.0), "Mad Max": (0.4, 1.6),               # action
+       "Shrek": (1.6, 1.4), "The Incredibles": (1.4, 1.8),           # both
+       "The Notebook": (0.2, 0.2), "Titanic": (0.4, 0.6)}            # neither
+KIND = {"Elf": "comedy", "Paddington": "comedy", "John Wick": "action", "Mad Max": "action",
+        "Shrek": "both", "The Incredibles": "both", "The Notebook": "neither", "Titanic": "neither"}
+KCOL = {"comedy": GREEN, "action": RED, "both": "#7b3fb5", "neither": "#6b6b6b"}
+rho = np.corrcoef([v[0] for v in CAT.values()], [v[1] for v in CAT.values()])[0, 1]
+HIST = ["Paddington", "Shrek", "Titanic"]                          # what Eve watched recently
+eve = np.mean([CAT[m] for m in HIST], axis=0)                     # Eve's embedding = average of her history
+score = {m: eve @ np.array(v) for m, v in CAT.items()}
+cands = sorted([m for m in CAT if m not in HIST], key=lambda m: -score[m])
+K = 3
+top = cands[:K]
+HELD = {"Elf", "Mad Max"}                                         # what Eve actually watched next week
+assert abs(rho) < 0.3 and np.allclose(eve, [1.2, 0.8])
+assert len({round(score[m], 6) for m in cands}) == len(cands)
+assert top == ["The Incredibles", "Elf", "John Wick"] and cands[K] == "Mad Max"
+OFF = {"Elf": (0.08, 0.0, "left"), "Paddington": (-0.08, 0.0, "right"), "John Wick": (0.08, 0.0, "left"), "Mad Max": (0.08, 0.0, "left"),
+       "Shrek": (0.08, 0.0, "left"), "The Incredibles": (0.09, 0.07, "left"), "The Notebook": (0.08, 0.0, "left"), "Titanic": (-0.08, 0.0, "right")}
+OFF2 = {"Elf": (0.1, 0.06, "left"), "Paddington": (-0.1, 0.0, "right"), "John Wick": (0.12, 0.02, "left"), "Mad Max": (0.12, 0.0, "left"),
+        "Shrek": (0.1, 0.0, "left"), "The Incredibles": (0.13, 0.08, "left"), "The Notebook": (0.08, -0.07, "left"), "Titanic": (-0.1, 0.03, "right")}
+
+
+def mcol(m):
+    return KCOL[KIND[m]]
+```
+
+## Today: One Recommendation, Start to Finish
+
+```{python}
+# the three steps of the modern approach: used on this slide and on "The Modern Approach in Three Steps"
+STEPS3 = [("1. Movie embeddings", "assign (or train) a vector\nfor every movie", "#FDE3C8", ORANGE),
+          ("2. User embedding", "average the vectors of\nthe movies the user watched", "#eef3ff", BLUE),
+          ("3. Retrieve", "score every movie with u · v;\nkeep the top K", "#dcf3e2", GREEN)]
+SW, SGAP = 3.8, 1.0
+
+
+def steps_loop(h=300):
+    """The three steps, with the feedback loop from Retrieve back to the user's embedding."""
+    fig = boxes(STEPS3, w=SW, gap=SGAP, figsize=(15, 4.3))
+    ax = fig.axes[0]
+    x_from, x_to = 2 * (SW + SGAP) + SW / 2, 1 * (SW + SGAP) + SW / 2     # centers of box 3 and box 2
+    ax.annotate("", xy=(x_to, -0.08), xytext=(x_from, -0.08),
+                arrowprops=dict(arrowstyle="-|>", color=ORANGE, lw=2.8, connectionstyle="arc3,rad=-0.25"))
+    ax.text((3 * SW + 2 * SGAP) / 2, -1.45, "what the user watches, likes, or skips next updates their vector  →  repeat",
+            ha="center", va="center", fontsize=14, color=ORANGE, fontweight="bold")
+    ax.set_ylim(-1.75, 2.5)
+    show(fig, h)
+
+
+steps_loop()
+```
+
+- A recommender answers one question: **what will this person want next?**
+- Today: follow **the user** through the loop by hand, with 8 movies.
+
+::: key
+**Similar things are close together.** Recommend the movies closest to the person.
+:::
+
+::: warn
+**Simplified version, small enough to do by hand.** Real systems use the same ideas at full scale: hundreds of learned numbers per item, millions of items, and large neural networks.
+:::
+
+## The Recommendation Problem
+
+:::: {.columns}
+::: {.column width="38%"}
+```{python}
+table(["Movie"], [[m] for m in CAT])
+```
+:::
+::: {.column width="62%"}
+- **The user**, and a catalog of **8 movies**.
+- The user has already seen a few of them.
+- **Question:** which movie should the user watch **next**?
+- A **recommender system (RS)** answers this for every user: rank the movies they have not seen and show the top few.
+
+::: key
+**Goal:** a short, ranked list of movies the user is likely to want next.
+:::
+
+Two ways to build it: the **old approach** (ratings + KNN) and the **modern approach** (behavior + embeddings).
+:::
+::::
+
+# Part 1. The Old Approach: Ratings and KNN
+
+```{python}
+# ---------------- old approach: star ratings, user-based KNN ----------------
+RATE = {   # 1-5 stars; None = not rated
+    "The user": {"Paddington": 5, "Shrek": 5, "Titanic": 2},
+    "User 1": {"Elf": 5, "Paddington": 5, "John Wick": 3, "Shrek": 4, "The Incredibles": 5, "The Notebook": 1, "Titanic": 2},
+    "User 2": {"Elf": 4, "Paddington": 4, "John Wick": 4, "Mad Max": 3, "Shrek": 5, "The Incredibles": 5, "The Notebook": 2, "Titanic": 1},
+    "User 3": {"Elf": 2, "Paddington": 2, "Mad Max": 1, "Shrek": 2, "The Incredibles": 2, "The Notebook": 5, "Titanic": 5},
+    "User 4": {"Elf": 1, "Paddington": 1, "John Wick": 5, "Mad Max": 5, "Shrek": 3, "The Incredibles": 4, "Titanic": 3},
+}
+OTHERS = ["User 1", "User 2", "User 3", "User 4"]
+ME = "The user"
+EVE_R = list(RATE[ME])                                      # movies the user rated
+KNN_K = 2
+def cosine(a, b):
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+
+SIM = {p: cosine([RATE[ME][m] for m in EVE_R], [RATE[p][m] for m in EVE_R]) for p in OTHERS}
+NBR = sorted(OTHERS, key=lambda p: -SIM[p])[:KNN_K]
+UNSEEN = [m for m in CAT if m not in RATE[ME]]
+PRED = {m: np.mean([RATE[p][m] for p in NBR if m in RATE[p]]) for m in UNSEEN}
+OLD_TOP = sorted(UNSEEN, key=lambda m: -PRED[m])[:3]
+assert NBR == ["User 1", "User 2"] and OLD_TOP == ["The Incredibles", "Elf", "John Wick"]
+assert len({round(PRED[m], 6) for m in OLD_TOP}) == 3
+```
+
+## Old Approach, Step 1: Collect Ratings {.old}
+
+:::: {.columns}
+::: {.column width="60%"}
+```{python}
+def cell(p, m):
+    if m in RATE[p]:
+        return f"**{RATE[p][m]}**" if p == ME else str(RATE[p][m])
+    return '<span style="color:#E8833A;font-weight:bold">?</span>' if p == ME else "–"
+table(["Movie", "**The user**", *OTHERS], [[m, *[cell(p, m) for p in [ME, *OTHERS]]] for m in CAT])
+```
+:::
+::: {.column width="40%"}
+- Users give **1 to 5 stars** to movies they have seen.
+- The user rated **3** movies: Paddington 5, Shrek 5, Titanic 2.
+- **?** = the user's unknown ratings: the 5 movies they have not seen. **–** = not rated.
+- **Task:** predict each **?**, then recommend the highest.
+:::
+::::
+
+## Old Approach, Step 2: Find the User's Nearest Neighbors (KNN) {.old}
+
+Compare the user with every other user on the movies **the user rated** (Paddington, Shrek, Titanic), using **cosine similarity**:
+$\cos(\mathbf{a}, \mathbf{b}) = \dfrac{\mathbf{a}\cdot\mathbf{b}}{\lVert\mathbf{a}\rVert\,\lVert\mathbf{b}\rVert}$ (1 = same pattern of ratings; larger = more similar).
+
+```{python}
+me_v = [RATE[ME][m] for m in EVE_R]
+sq = lambda v: " + ".join(f"{x}^2" for x in v)
+rows = []
+for p in sorted(OTHERS, key=lambda p: -SIM[p]):
+    v = [RATE[p][m] for m in EVE_R]
+    num = " + ".join(f"{a}({b})" for a, b in zip(me_v, v))
+    rows.append([p, "(" + ", ".join(map(str, v)) + ")", f"$\\dfrac{{{num}}}{{\\sqrt{{{sq(me_v)}}}\\,\\sqrt{{{sq(v)}}}}}$",
+                 f"**{r(SIM[p], 3)}**", "**neighbor**" if p in NBR else ""])
+table(["User", "Ratings", "Cosine with the user (5, 5, 2)", "Cosine", f"K = {KNN_K}"], rows)
+md(f"""- **Nearest neighbors: {NBR[0]} and {NBR[1]}** (largest cosine). Their ratings look most like the user's: they like the same movies.
+- This is the **KNN** you know, with similarity instead of distance: keep the $K$ **most similar**. Here the points are **users**, described by their ratings.""")
+```
+
+::: check
+**Why not the plain dot product here?** On raw stars it rewards **generous raters**: someone who gives everything 5★ would score $5(5) + 5(5) + 2(5) = 60$, beating User 1, even though they disagree on Titanic. Cosine divides by the lengths, so only the **pattern** counts.
+:::
+
+## Old Approach, Step 3: Predict the User's Ratings, Then Recommend {.old}
+
+```{python}
+rows = []
+for m in sorted(UNSEEN, key=lambda m: -PRED[m]):
+    vals = [RATE[p][m] for p in NBR if m in RATE[p]]
+    calc = f"({' + '.join(map(str, vals))}) / {len(vals)}" if len(vals) > 1 else f"{vals[0]} (only {[p for p in NBR if m in RATE[p]][0]} rated it)"
+    i = OLD_TOP.index(m) + 1 if m in OLD_TOP else None
+    rows.append([m, *[RATE[p].get(m, "–") for p in NBR], f"{calc} = **{r(PRED[m], 2)}**", f"**#{i} ✓**" if i else ""])
+table(["Movie the user has not seen", *NBR, "Predicted rating = neighbors' average", "Recommend"], rows)
+md(f"""**Recommend: {', '.join(OLD_TOP)}** (the highest predicted ratings).
+
+This was the method of the 2000s: **user-based collaborative filtering** (GroupLens, early Amazon and Netflix).""")
+```
+
+## Old Approach, Another Way: Item-Based KNN {.old}
+
+```{python}
+# ---------------- item-based KNN: the points are movies, described by the other users' ratings ----------------
+ITEM_K = 2
+
+
+def co_raters(a, b):
+    """Other users who rated both movies."""
+    return [p for p in OTHERS if a in RATE[p] and b in RATE[p]]
+
+
+ISIM = {(m, q): cosine([RATE[p][m] for p in co_raters(m, q)], [RATE[p][q] for p in co_raters(m, q)]) for m in UNSEEN for q in EVE_R}
+INBR = {m: sorted(EVE_R, key=lambda q: -ISIM[(m, q)])[:ITEM_K] for m in UNSEEN}
+IPRED = {m: np.mean([RATE[ME][q] for q in INBR[m]]) for m in UNSEEN}
+ITOP = sorted(UNSEEN, key=lambda m: (-IPRED[m], -ISIM[(m, INBR[m][0])]))[:3]   # ties: most similar neighbor first
+for m in UNSEEN:                                                                  # no ties when choosing the 2 neighbors
+    d = sorted((ISIM[(m, q)] for q in EVE_R), reverse=True)
+    assert d[ITEM_K - 1] > d[ITEM_K] + 1e-3
+assert ITOP == ["Elf", "The Incredibles", "Mad Max"]
+```
+
+:::: {.columns}
+::: {.column width="50%"}
+**Flip the table.** Each **movie** is a point, described by the ratings the **other users** gave it:
+
+```{python}
+ex_m, ex_q = "The Incredibles", "Shrek"
+table(["Movie", *OTHERS], [[f"**{m}**", *[RATE[p].get(m, "–") for p in OTHERS]] for m in [ex_m, ex_q]])
+a_ = [RATE[p][ex_m] for p in co_raters(ex_m, ex_q)]; b_ = [RATE[p][ex_q] for p in co_raters(ex_m, ex_q)]
+num = " + ".join(f"{x}({y})" for x, y in zip(a_, b_))
+md(f"""Cosine similarity of the two movies:
+$$\\frac{{{num}}}{{\\sqrt{{{sq(a_)}}}\\,\\sqrt{{{sq(b_)}}}}} = {r(ISIM[(ex_m, ex_q)], 3)}$$
+Close to 1: **the same people liked both**.""")
+```
+:::
+::: {.column width="50%"}
+- **User-based** (Steps 2–3): find **users** like the user, average **their** ratings.
+- **Item-based**: for each movie the user has **not** seen, find the $K = 2$ **most similar movies the user rated**, and average **the user's own** ratings of them.
+- Compare two movies with **cosine similarity**, only over users who rated **both** (skip the –).
+
+::: key
+Same KNN, new points: **movies instead of users**. This is Amazon's "customers who bought this also bought" (item-to-item, 2003).
+:::
+:::
+::::
+
+## Item-Based Step 2: Similarity Between Movies {.old}
+
+Cosine similarity of each movie the user has not seen with each movie the user rated (over the other users who rated both). The $K = 2$ most similar are in **bold**.
+
+```{python}
+rows = []
+for m in UNSEEN:
+    cells_ = [f"**{r(ISIM[(m, q)], 3)}**" if q in INBR[m] else r(ISIM[(m, q)], 3) for q in EVE_R]
+    rows.append([m, *cells_, " and ".join(INBR[m])])
+table(["Movie the user has not seen", *[f"with {q} (user: {RATE[ME][q]}★)" for q in EVE_R], f"{ITEM_K} most similar movies"], rows)
+mm_ = "Mad Max"
+a_ = [RATE[p][mm_] for p in co_raters(mm_, "Shrek")]; b_ = [RATE[p]["Shrek"] for p in co_raters(mm_, "Shrek")]
+num = " + ".join(f"{x}({y})" for x, y in zip(a_, b_))
+md(f"""- Example: *{mm_}* with *Shrek* uses {', '.join(co_raters(mm_, 'Shrek'))} (User 1 did not rate *{mm_}*): $\\dfrac{{{num}}}{{\\sqrt{{{sq(a_)}}}\\,\\sqrt{{{sq(b_)}}}}} = {r(ISIM[(mm_, 'Shrek')], 3)}$.
+- *Elf* and *Paddington* have cosine **1**: every other user gave them the same rating.""")
+```
+
+## Item-Based Step 3: Predict the User's Ratings, Then Recommend {.old}
+
+```{python}
+rows = []
+for m in sorted(UNSEEN, key=lambda m: (-IPRED[m], -ISIM[(m, INBR[m][0])])):
+    vals = [RATE[ME][q] for q in INBR[m]]
+    i = ITOP.index(m) + 1 if m in ITOP else None
+    rows.append([m, " and ".join(INBR[m]), " and ".join(f"{v}★" for v in vals),
+                 f"({' + '.join(map(str, vals))}) / {len(vals)} = **{r(IPRED[m], 2)}**", f"**#{i} ✓**" if i else ""])
+table(["Movie the user has not seen", "2 most similar movies the user rated", "The user's ratings of them", "Predicted rating", "Recommend"], rows)
+tie = [m for m in UNSEEN if IPRED[m] == max(IPRED.values())]
+md(f"""- {len(tie)} movies tie at **{r(max(IPRED.values()), 2)}**; break the tie by the most similar neighbor (cosine {', '.join(r(ISIM[(m, INBR[m][0])], 3) for m in ITOP)}).
+- **Item-based recommends: {', '.join(ITOP)}.** User-based recommended: {', '.join(OLD_TOP)}. Two of the three agree.""")
+```
+
+::: check
+**Why item-based in practice:** movies change slowly, so movie-to-movie similarities can be computed **once, offline**, and reused for every user. User-based must compare the user with every other user at request time.
+:::
+
+## Why the Old Approach Was Replaced
+
+- **Ratings are rare.** Most people never rate. The user rated only 3 movies; many users rate none, so there is nothing to compare.
+- **Too slow at scale.** Comparing the user with **every** other user (billions at YouTube) for every request is not feasible.
+- **Wrong target.** It predicts **stars**, but the goal is a **list** of what they will actually watch.
+
+::: key
+**Modern approach:** learn from **behavior** (what people watch), describe every movie and person with an **embedding**, and **retrieve** the closest movies. Same user, same 8 movies: next.
+:::
+
+# Part 2. The Modern Approach: From Ratings to Behavior
+
+## People Do Not Rate. They Watch.
+
+```{python}
+clicks = pd.DataFrame([[1, 1, 0, 1, 0], [0, 1, 1, 0, 0], [1, 0, 0, 1, 1]], index=["person 1", "person 2", "person 3"],
+                      columns=["video A", "video B", "video C", "video D", "video E"])
+table(["", *clicks.columns], [[u, *clicks.loc[u]] for u in clicks.index])
+```
+
+- Few people rate, but everyone **clicks, plays, skips** (implicit feedback): **1 = watched, 0 = not**.
+- A 0 is ambiguous: not interested, or never saw it?
+
+## Old vs Modern: What Is Being Predicted?
+
+| | **Old** (Netflix Prize, 2006) | **Modern** (YouTube, TikTok) |
+|:---|:---|:---|
+| **Data** | star ratings | clicks, plays, watch time |
+| **Predict** | "How many stars?" | "What will the user **watch next**?" |
+| **Output** | a rating, e.g. 4.5 | a **ranked list** |
+
+- **Why:** ratings are rare, and people rate documentaries 5 stars but watch comedies.
+- The methods (embeddings, dot products) stayed the same; only the **target** changed.
+
+## So What Happens to Ratings and Feedback Today?
+
+Old: ratings were **the target**. Modern: feedback is an **extra signal**.
+
+| Signal | How common | Tells the system |
+|:---|:---|:---|
+| clicks, plays, watch time | very common | **what** people engage with |
+| likes, shares, ratings | rare | **how much** they valued it |
+| dislikes, "not interested" | rare | what to **avoid** |
+
+- Used to **weight** history: a like counts more, "not interested" counts against (practice problem).
+
+## The Problem in Numbers
+
+- **YouTube:** billions of videos, 2+ billion users, a home page in a fraction of a second.
+- We need:
+  1. a **short description** of every video and person → **embedding** (Part 3)
+  2. a **fast search** for the best few hundred → **retrieval** (Part 3), with more examples in Part 4
+
+# Part 3. Embeddings: Describing Movies and People With Numbers
+
+## The Data: What the User Watched {.old}
+
+:::: {.columns}
+::: {.column width="40%"}
+```{python}
+table(["Movie", "Watched?"], [[m, "**yes**" if m in HIST else "–"] for m in CAT])
+```
+:::
+::: {.column width="60%"}
+```{python}
+md(f"""- The modern approach needs **no ratings**: only what the user **watched**.
+- The user watched **{len(HIST)}** movies: *{'*, *'.join(HIST[:-1])}*, and *{HIST[-1]}*.
+- **–** = not watched yet: these {len(CAT) - len(HIST)} movies are the candidates to recommend.
+- Same user, same movies as the old approach; they rated these same {len(HIST)} movies there.""")
+```
+:::
+::::
+
+::: key
+**Next:** describe each movie with numbers (Step 1), turn the user's watch history into their own numbers (Step 2), then score the movies they have not watched (Step 3).
+:::
+
+## The Modern Approach in Three Steps
+
+```{python}
+steps_loop(270)
+```
+
+**Two differences from the old approach:**
+
+| | **Old approach** (KNN on ratings) | **New approach** (embeddings) |
+|:---|:---|:---|
+| **1. Similarity between** | user and user (user-based), or movie and movie (item-based) | **the user and each movie**: both are points in the same space |
+| **2. Similarity measure** | cosine similarity | **dot product** $\mathbf{u}\cdot\mathbf{v}$ |
+
+::: key
+No neighbors to find and no ratings to average: score every movie directly against the user's vector and **retrieve** the top $K$. Next: the three steps by hand.
+:::
+
+## Step 1: Describe Each Movie With Two Numbers
+
+```{python}
+table(["Movie", "Number 1: funny (0 to 2)", "Number 2: action-packed (0 to 2)", "Kind"], [[m, v[0], v[1], KIND[m]] for m, v in CAT.items()])
+```
+
+- Score each movie on two traits: **funny** and **action-packed**.
+- *Elf* $= (2.0, 0.2)$: very funny. *John Wick* $= (0.2, 2.0)$: all action.
+- That pair of numbers is the movie's **embedding**.
+
+::: check
+**In practice**, a movie's embedding is much longer: typically **64 to 256 numbers**, learned from data rather than scored by hand. YouTube's 2016 system used **256** numbers per video. We use 2 so we can draw the picture and calculate by hand.
+:::
+
+## The Movies as Points
+
+```{python}
+fig, ax = plt.subplots(figsize=(7.6, 5.4))
+for m, v in CAT.items():
+    ax.scatter(*v, s=150, color=mcol(m), zorder=3)
+    dx, dy, ha = OFF[m]
+    ax.text(v[0] + dx, v[1] + dy, m, fontsize=13, color=mcol(m), ha=ha, va="center")
+for (x, y, t, c) in [(1.85, -0.25, "comedies", KCOL["comedy"]), (0.3, 2.35, "action", KCOL["action"]),
+                     (1.6, 2.35, "action-comedies", KCOL["both"]), (0.4, -0.25, "neither (romance, drama)", KCOL["neither"])]:
+    ax.text(x, y, t, fontsize=12, color=c, ha="center", fontweight="bold")
+ax.set_xlim(-0.1, 2.5); ax.set_ylim(-0.4, 2.5); ax.set_aspect("equal")
+ax.set_xlabel("funny", fontsize=14); ax.set_ylabel("action-packed", fontsize=14)
+show(fig, 470)
+```
+
+```{python}
+md(f"""- **Close means alike:** comedies sit together, action films sit together.
+- Real systems use 64 to 256 numbers, **learned** from watch data ([how they are trained](rs_embedding_training_fa26.html)).""")
+```
+
+```{python}
+# ---------------- extra examples: same three steps, new data ----------------
+EXAMPLES = {
+    "eve": dict(user="The user", item="Movie", done="watched", xl="funny", yl="action", xmax=2.6, want=(1.2, 0.8),
+                top=["The Incredibles", "Elf", "John Wick"], items={m: (v, KIND[m]) for m, v in CAT.items()}, hist=list(HIST),
+                off=OFF2, col=KCOL),
+    "leo": dict(user="The user", item="Song", done="played", xl="energetic", yl="acoustic", xmax=2.8, want=(0.7, 1.0),
+                top=["Ho Hey", "Fast Car", "Blinding Lights"],
+                items={"Uptown Funk": ((2.0, 0.1), "energetic"), "Blinding Lights": ((1.7, 0.4), "energetic"),
+                       "Hallelujah": ((0.2, 1.9), "acoustic"), "Fast Car": ((0.5, 1.6), "acoustic"),
+                       "Mr. Brightside": ((1.6, 0.8), "both"), "Ho Hey": ((1.2, 1.8), "both"),
+                       "Weightless": ((0.3, 0.3), "neither"), "Teardrop": ((0.5, 0.2), "neither")},
+                hist=["Hallelujah", "Mr. Brightside", "Weightless"],
+                off={"Uptown Funk": (0.1, 0.08, "left"), "Weightless": (0.1, 0.13, "left"), "Hallelujah": (-0.15, 0.18, "left"),
+                     "Ho Hey": (0.1, 0.06, "left")}),
+    "kai": dict(user="The user", item="Book", done="read", xl="mystery", yl="romance", xmax=2.8, want=(1.0, 0.7),
+                top=["Rebecca", "Gone Girl", "Pride and Prejudice"],
+                items={"Gone Girl": ((2.0, 0.2), "mystery"), "The Da Vinci Code": ((1.8, 0.4), "mystery"),
+                       "Me Before You": ((0.2, 1.9), "romance"), "Pride and Prejudice": ((0.5, 1.6), "romance"),
+                       "Rebecca": ((1.3, 1.7), "both"), "Twilight": ((1.0, 1.4), "both"),
+                       "Atomic Habits": ((0.2, 0.3), "neither"), "Sapiens": ((0.5, 0.2), "neither")},
+                hist=["The Da Vinci Code", "Twilight", "Atomic Habits"],
+                off={"Gone Girl": (0.0, -0.17, "center"), "The Da Vinci Code": (0.0, 0.17, "center"), "Atomic Habits": (0.1, 0.13, "left"),
+                     "Me Before You": (-0.15, 0.18, "left"), "Pride and Prejudice": (0.0, 0.19, "center")}, ulab=(-0.08, 0.12, "right")),
+    "mia": dict(user="The user", item="Show", done="watched", xl="funny", yl="scary", xmax=2.8, want=(0.9, 0.7),
+                top=["Stranger Things", "Wednesday", "Friends"],
+                items={"The Office": ((2.0, 0.1), "funny"), "Friends": ((1.8, 0.4), "funny"),
+                       "The Walking Dead": ((0.2, 1.8), "scary"), "Black Mirror": ((0.4, 1.5), "scary"),
+                       "Stranger Things": ((1.3, 1.5), "both"), "Wednesday": ((1.5, 1.1), "both"),
+                       "The Crown": ((0.2, 0.3), "neither"), "Planet Earth": ((0.5, 0.2), "neither")},
+                hist=["The Office", "The Walking Dead", "Planet Earth"],
+                off={"The Office": (0.0, -0.17, "center"), "The Crown": (0.1, 0.13, "left"), "The Walking Dead": (0.1, 0.06, "left"),
+                     "Black Mirror": (0.0, -0.17, "center")}),
+}
+for EX in EXAMPLES.values():
+    kinds = list(dict.fromkeys(k for _, k in EX["items"].values()))
+    EX.setdefault("col", dict(zip(kinds, [RED, GREEN, "#7b3fb5", "#6b6b6b"])))
+    EX["kinds"] = kinds
+    EX["u"] = np.mean([EX["items"][m][0] for m in EX["hist"]], axis=0)
+    EX["score"] = {m: EX["u"] @ np.array(v) for m, (v, _) in EX["items"].items()}
+    EX["rank"] = sorted([m for m in EX["items"] if m not in EX["hist"]], key=lambda m: -EX["score"][m])
+    assert np.allclose(EX["u"], EX["want"]) and EX["rank"][:3] == EX["top"]
+    assert len({round(x, 6) for x in EX["score"].values()}) == len(EX["items"])
+
+
+def ex_frame(EX, k):
+    u, sc, nm = EX["u"], EX["score"], EX["user"]
+    fig, ax = plt.subplots(figsize=(8.4, 6.6))
+    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.92)
+    if k == 2:
+        gx, gy = np.meshgrid(np.linspace(-0.1, EX["xmax"], 200), np.linspace(-0.4, 2.3, 200))
+        ax.contour(gx, gy, u[0] * gx + u[1] * gy, levels=[1, 2, 3], colors="#cccccc", linestyles="dashed", linewidths=1)
+    for m, (v, kd) in EX["items"].items():
+        dx, dy, ha = EX["off"].get(m, (0.1, 0.0, "left"))
+        if k == 2:
+            c = GREY if m in EX["hist"] else (GREEN if m in EX["top"] else RED)
+            mk, lab = ("X" if m in EX["hist"] else "o"), f"{m} ({r(sc[m], 2)})"
+            if m in EX["top"]:
+                ax.scatter(*v, s=650, facecolors="none", edgecolors=GREEN, lw=2.5, zorder=3)
+        else:
+            c, mk, lab = EX["col"][kd], ("s" if (k == 1 and m in EX["hist"]) else "o"), m
+        ax.scatter(*v, s=160, color=c, marker=mk, zorder=4)
+        ax.text(v[0] + dx, v[1] + dy, lab, fontsize=13, color=c, ha=ha, va="center", zorder=5, bbox=dict(fc="white", ec="none", alpha=0.8, pad=0.5))
+    if k == 0:
+        for (x, y, kd) in [(1.85, -0.3, EX["kinds"][0]), (0.35, 2.25, EX["kinds"][1]), (1.6, 2.25, "both"), (0.4, -0.3, "neither")]:
+            ax.text(x, y, kd, fontsize=12, color=EX["col"][kd], ha="center", fontweight="bold")
+    else:
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=3.5), zorder=2)
+        ray(ax, u, EX["xmax"], 2.3)
+        ldx, ldy, lha = EX.get("ulab", (0.1, -0.05, "left"))
+        ax.text(u[0] + ldx, u[1] + ldy, f"{nm} ({r(u[0], 2)}, {r(u[1], 2)})", fontsize=14, color=ORANGE, fontweight="bold",
+                ha=lha, zorder=6, bbox=dict(fc="white", ec="none", alpha=0.8, pad=0.5))
+    ax.set_xlim(-0.1, EX["xmax"]); ax.set_ylim(-0.4, 2.3); ax.set_aspect("equal")
+    ax.set_xlabel(EX["xl"], fontsize=14); ax.set_ylabel(EX["yl"], fontsize=14)
+    ax.set_title([f"1. The {EX['item'].lower()}s as points", f"2. {nm}'s vector = average of the squares",
+                  f"3. Scores: circled = top 3, X = already {EX['done']}"][k], fontsize=14, pad=16)
+    return fig
+
+
+def ex_data(EX):
+    done = EX["done"]
+    table([EX["item"], f"({EX['xl']}, {EX['yl']})", f"{done.capitalize()}?"],
+          [[m, f"({v[0]}, {v[1]})", "**yes**" if m in EX["hist"] else ""] for m, (v, _) in EX["items"].items()])
+
+
+def ex_avg(EX):
+    H, u = EX["hist"], EX["u"]
+    tot = np.sum([EX["items"][m][0] for m in H], axis=0)
+    vecs = " + ".join(f"({r(EX['items'][m][0][0], 2)}, {r(EX['items'][m][0][1], 2)})" for m in H)
+    md(f"**{EX['user']} = average of the {len(H)} {EX['done']}:**\n\n"
+       f"$$\\begin{{aligned}}\\mathbf{{u}} &= \\dfrac{{{vecs}}}{{{len(H)}}} \\\\ &= \\dfrac{{({tot[0]:.1f},\\ {tot[1]:.1f})}}{{{len(H)}}} = ({r(u[0], 2)},\\ {r(u[1], 2)})\\end{{aligned}}$$")
+    assert np.allclose(tot / len(H), u)
+
+
+def ex_scores(EX):
+    u, sc = EX["u"], EX["score"]
+    md(f"$\\text{{score}} = {r(u[0], 2)} \\times \\text{{{EX['xl']}}} + {r(u[1], 2)} \\times \\text{{{EX['yl']}}}$")
+    rows = []
+    for m in sorted(EX["items"], key=lambda m: -sc[m]):
+        v = EX["items"][m][0]
+        if m in EX["hist"]:
+            dec = "done: skip"
+        else:
+            i = EX["rank"].index(m) + 1
+            dec = f"**#{i} ✓**" if i <= 3 else f"#{i}"
+        name = f"**{m}**" if m in EX["top"] else m
+        rows.append([name, f"{r(u[0], 2)}({v[0]}) + {r(u[1], 2)}({v[1]})", f"{r(sc[m], 2)}", dec])
+    table([EX["item"], "Calculation", "Score", "Rank"], rows)
+    md(f"**Recommend: {', '.join(EX['top'])}.**")
+```
+
+## Steps 2–3: The User's Vector and Scores (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ex_data(EXAMPLES["eve"])
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ex_avg(EXAMPLES["eve"])
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ex_frame(EXAMPLES["eve"], k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ex_scores(EXAMPLES["eve"])
+```
+:::
+:::
+::::
+
+## Step 4: Why the Dot Product Works (a Picture)
+
+```{python}
+fig, ax = plt.subplots(figsize=(7.8, 5.5))
+for m, v in CAT.items():
+    ax.scatter(*v, s=150, color=mcol(m), zorder=3, marker="s" if m in HIST else "o")
+    dx, dy, ha = OFF[m]
+    ax.text(v[0] + dx, v[1] + dy, m, fontsize=13, color=mcol(m), ha=ha, va="center")
+ax.annotate("", xy=eve, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=3.5), zorder=2)
+ray(ax, eve, 2.5, 2.3)
+ax.text(eve[0] - 0.05, eve[1] + 0.15, f"The user ({r(eve[0], 2)}, {r(eve[1], 2)})", fontsize=14, color=ORANGE, fontweight="bold", ha="right")
+ax.set_xlim(-0.1, 2.5); ax.set_ylim(-0.1, 2.3); ax.set_aspect("equal")
+ax.set_xlabel("funny", fontsize=14); ax.set_ylabel("action-packed", fontsize=14)
+ax.set_title("squares = movies the user watched; the arrow = their average (the user)", fontsize=12)
+show(fig, 470)
+```
+
+- A movie scores high when it lies **far along the user's arrow**: *The Incredibles* is furthest, *The Notebook* barely along it.
+
+## What Does the Dot Product Measure?
+
+```{python}
+u0 = np.array([1.5, 0.0]); L = 1.2
+fig, axes = plt.subplots(1, 4, figsize=(15, 3.9))
+for ax, deg, verdict, col in zip(axes, [0, 60, 90, 180], ["same direction:\nstrong match", "partly aligned:\nsome match", "at a right angle:\nunrelated", "opposite:\nmismatch"],
+                                 [GREEN, BLUE, GREY, RED]):
+    th = np.radians(deg)
+    v = L * np.array([np.cos(th), np.sin(th)])
+    dot = u0 @ v
+    lift = 0.0                                                     # every vector starts at the origin
+    ax.axhline(0, color="#e5e5e5", lw=1, zorder=0)
+    ax.annotate("", xy=u0, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=3.5))
+    ax.annotate("", xy=v + [0, lift], xytext=(0, lift), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=col, lw=3), zorder=4)
+    ax.text(u0[0], -0.22, "u", fontsize=15, color=ORANGE, fontweight="bold", ha="center")
+    ax.text(v[0] + (0.12 if deg < 120 else -0.12), v[1] + lift + (0.0 if deg == 90 else 0.1), "v", fontsize=15, color=col, fontweight="bold",
+            ha="left" if deg < 120 else "right", va="center" if deg == 90 else "bottom")
+    if deg not in (0, 180):
+        ax.plot([v[0], v[0]], [v[1], 0], color=col, ls=":", lw=1.8)            # drop v onto u's line
+    ax.plot([0, v[0]], [0.0, 0.0], color=col, lw=6, alpha=0.35, solid_capstyle="butt")   # how far v reaches along u
+    ax.set_title(f"angle {deg}°\n$\\mathbf{{u}}\\cdot\\mathbf{{v}} = {r(dot, 2)}$", fontsize=14, color=col)
+    ax.text(0.15, -0.62, verdict, fontsize=13, color=col, ha="center" if deg == 180 else "left", va="top")
+    ax.set_xlim(-1.4, 1.8); ax.set_ylim(-1.0, 1.45); ax.set_aspect("equal"); ax.axis("off")
+fig.tight_layout()
+show(fig, 300)
+```
+
+```{python}
+_m = "The Incredibles"
+_v = np.array(CAT[_m])
+md(f"""- **Definition:** multiply matching entries and add: $\\mathbf{{u}}\\cdot\\mathbf{{v}} = u_1v_1 + u_2v_2 = \\lVert\\mathbf{{u}}\\rVert\\,\\lVert\\mathbf{{v}}\\rVert\\cos\\theta$
+- **Example:** the user's embedding $\\mathbf{{u}} = ({r(eve[0], 2)}, {r(eve[1], 2)})$ and *{_m}*'s embedding $\\mathbf{{v}} = ({r(_v[0], 2)}, {r(_v[1], 2)})$:
+$$\\mathbf{{u}}\\cdot\\mathbf{{v}} = ({r(eve[0], 2)})({r(_v[0], 2)}) + ({r(eve[1], 2)})({r(_v[1], 2)}) = {r(eve[0] * _v[0], 2)} + {r(eve[1] * _v[1], 2)} = {r(eve @ _v, 2)}$$
+- **Meaning:** how much the arrows point the same way, times how long they are. The shaded bar shows how far $\\mathbf{{v}}$ reaches along $\\mathbf{{u}}$.""")
+assert np.isclose(eve @ _v, 3.12)
+```
+
+## Why the Dot Product, Not Cosine? {.old}
+
+```{python}
+COS = {m: float(eve @ np.array(v) / (np.linalg.norm(eve) * np.linalg.norm(v))) for m, v in CAT.items()}
+cos_top = sorted(cands, key=lambda m: -COS[m])[:K]
+assert cos_top[0] == "The Notebook" and top == ["The Incredibles", "Elf", "John Wick"]
+rows = []
+for m in sorted(cands, key=lambda m: -score[m]):
+    v = np.array(CAT[m])
+    rows.append([m, f"({v[0]:.1f}, {v[1]:.1f})", r(np.linalg.norm(v), 2),
+                 f"**{r(score[m], 2)}**" + (f" (#{top.index(m) + 1})" if m in top else ""),
+                 f"{r(COS[m], 3)}" + (f" (#{cos_top.index(m) + 1})" if m in cos_top else "")])
+```
+
+:::: {.columns}
+::: {.column width="55%"}
+```{python}
+table(["Movie the user has not seen", "Embedding", "Length", "Dot product", "Cosine"], rows)
+```
+:::
+::: {.column width="45%"}
+```{python}
+md(f"""- $\\mathbf{{u}}\\cdot\\mathbf{{v}} = \\lVert\\mathbf{{u}}\\rVert\\,\\lVert\\mathbf{{v}}\\rVert\\cos\\theta$. **Cosine keeps only the angle** and throws away the lengths.
+- With cosine, ***The Notebook*** would be **#1**: it points the same way as the user, but it is tiny ({r(CAT['The Notebook'][0], 1)}, {r(CAT['The Notebook'][1], 1)}): barely funny, barely action.
+- The dot product puts it **last**: a movie must point the user's way **and** be strong on those traits.""")
+```
+:::
+::::
+
+::: key
+In **learned** embeddings, length carries information: a long movie vector = strongly has the traits (and often **popular**); a long user vector = **strong** preferences. Training fits $\hat r = \mathbf{u}\cdot\mathbf{v}$, so retrieval uses the **same** score. Raw star ratings (old approach) were never trained this way, so there length only means "generous rater": use cosine.
+:::
+
+::: note
+Some systems do normalize the vectors and use cosine on purpose, to stop popular items from winning every list. Either way, the score used for retrieval matches the one used in training.
+:::
+
+# Part 4. More Examples: Songs, Books, and TV Shows
+
+## Example 2: Songs (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ex_data(EXAMPLES["leo"])
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ex_avg(EXAMPLES["leo"])
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ex_frame(EXAMPLES["leo"], k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ex_scores(EXAMPLES["leo"])
+```
+:::
+:::
+::::
+
+## Example 3: Books (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ex_data(EXAMPLES["kai"])
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ex_avg(EXAMPLES["kai"])
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ex_frame(EXAMPLES["kai"], k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ex_scores(EXAMPLES["kai"])
+```
+:::
+:::
+::::
+
+## Example 4: TV Shows (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ex_data(EXAMPLES["mia"])
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ex_avg(EXAMPLES["mia"])
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ex_frame(EXAMPLES["mia"], k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ex_scores(EXAMPLES["mia"])
+```
+:::
+:::
+::::
+
+# Practice Problem
+
+```{python}
+# ---------------- practice data ----------------
+def emb(v):
+    """An embedding as it appears in every table: one decimal each."""
+    return f"({v[0]:.1f}, {v[1]:.1f})"
+
+
+PODS = {"Podcast A": (0.8, 0.2), "Podcast B": (0.2, 0.9), "Podcast C": (0.6, 0.6), "Podcast D": (0.1, 0.4),
+        "Podcast E": (0.9, 0.8), "Podcast F": (0.1, 1.2)}
+PHIST = ["Podcast E", "Podcast F"]
+puser = np.mean([PODS[m] for m in PHIST], axis=0)
+pscore = {m: puser @ np.array(v) for m, v in PODS.items()}
+pcands = sorted([m for m in PODS if m not in PHIST], key=lambda m: -pscore[m])
+PK = 2
+ptop = pcands[:PK]
+PHELD = {"Podcast C", "Podcast D"}
+phits = [m for m in ptop if m in PHELD]
+assert np.allclose(puser, [0.5, 1.0])
+assert len({round(pscore[m], 6) for m in pcands}) == len(pcands)
+```
+
+## Practice Problem: Build the User's Vector, Then Retrieve {.practice}
+
+A podcast app gives every podcast a 2-number embedding (number 1: news and business, number 2: comedy and stories). **These podcast embeddings were learned beforehand** by the app's model from all users' listening data, so in this problem they are **known**. Only the user's embedding must be computed.
+
+```{python}
+table(["Podcast", "Embedding (news, comedy)"], [[m, emb(v)] for m, v in PODS.items()])
+```
+
+Last month **the user** listened to **Podcast E** and **Podcast F**.
+
+a. Compute **the user's embedding** as the **average** of the podcasts they listened to.
+
+b. Score every podcast with the **dot product**. Recommend the top 2 that the user has **not** heard.
+
+
+
+```{python}
+# ---------------- two standard calculation tables, used on every solution slide ----------------
+OR = "#E8833A"
+
+
+def num(x):
+    """A number as it appears in tables: at most 3 decimals, a real minus sign."""
+    return r(x, 3).replace("-", "−")
+
+
+def avg_table(cat, W, reason, name):
+    """Weighted average of the embeddings in W (weights), shown the same way every time."""
+    rows = []
+    for m, w in W.items():
+        v = cat[m]
+        rows.append([m, emb(v), f"{num(w)} ({reason[m]})",
+                     f"${num(w)} \\times {num(v[0])} = {num(w * v[0])}$", f"${num(w)} \\times {num(v[1])} = {num(w * v[1])}$"])
+    tot = sum(W.values())
+    sx, sy = sum(w * cat[m][0] for m, w in W.items()), sum(w * cat[m][1] for m, w in W.items())
+    rows.append(["**total**", "", f"**{num(tot)}**", f"$\\mathbf{{{num(sx)}}}$", f"$\\mathbf{{{num(sy)}}}$"])
+    table(["Podcast", "Embedding (news, comedy)", "Weight", "weight × news", "weight × comedy"], rows)
+    u = np.array([sx / tot, sy / tot])
+    md(f"$$\\mathbf{{u}}_{{\\text{{{name}}}}} = \\left(\\frac{{\\text{{total weight × news}}}}{{\\text{{total weight}}}},\\ \\frac{{\\text{{total weight × comedy}}}}{{\\text{{total weight}}}}\\right) = \\left(\\frac{{{num(sx)}}}{{{num(tot)}}},\\ \\frac{{{num(sy)}}}{{{num(tot)}}}\\right) = ({num(u[0])},\\ {num(u[1])})$$")
+    return u
+
+
+def score_table(cat, u, items, heard=(), k=2):
+    """Dot-product scores of u with each item, sorted high to low, the user's numbers in orange."""
+    sc = {m: u @ np.array(cat[m]) for m in items}
+    pick = [m for m in sorted(items, key=lambda m: -sc[m]) if m not in heard][:k]
+    a, b = num(u[0]), num(u[1])
+    md(f"The user's embedding is $\\mathbf{{u}} = (\\textcolor{{{OR}}}{{\\mathbf{{{a}}}}}, \\textcolor{{{OR}}}{{\\mathbf{{{b}}}}})$ (orange). "
+       f"Score $= \\mathbf{{u}} \\cdot \\mathbf{{v}} = \\textcolor{{{OR}}}{{\\mathbf{{{a}}}}} \\times \\text{{news}} + \\textcolor{{{OR}}}{{\\mathbf{{{b}}}}} \\times \\text{{comedy}}$, sorted from high to low:")
+    rows = []
+    for m in sorted(items, key=lambda m: -sc[m]):
+        v = cat[m]
+        p1, p2 = u[0] * v[0], u[1] * v[1]
+        rows.append([m, emb(v),
+                     f"$\\textcolor{{{OR}}}{{\\mathbf{{{a}}}}} \\times {num(v[0])} = {num(p1)}$",
+                     f"$\\textcolor{{{OR}}}{{\\mathbf{{{b}}}}} \\times {num(v[1])} = {num(p2)}$",
+                     f"${num(p1)} + {num(p2)} = \\mathbf{{{num(sc[m])}}}$",
+                     "heard" if m in heard else ("**recommend**" if m in pick else "")])
+    table(["Podcast", "Embedding (news, comedy)", "news part", "comedy part", "Score", ""], rows)
+    return sc, pick
+```
+
+```{python}
+# Round-2 data, needed by the solution slides (also shown on the Round 2 problem slide)
+NEW = {"Podcast G": (1.0, 0.5), "Podcast H": (0.1, 1.0), "Podcast I": (0.7, 0.9)}
+ALL2 = {**PODS, **NEW}
+W_E = {"Podcast E": 1, "Podcast F": 1, "Podcast C": 2, "Podcast D": 2}
+W_F = {"Podcast E": 1, "Podcast F": 1, "Podcast C": -1, "Podcast D": 4}
+u_e = np.array([sum(w * ALL2[m][k] for m, w in W_E.items()) / sum(W_E.values()) for k in (0, 1)])
+u_f = np.array([sum(w * ALL2[m][k] for m, w in W_F.items()) / sum(W_F.values()) for k in (0, 1)])
+cand2 = ["Podcast A", "Podcast B", "Podcast G", "Podcast H", "Podcast I"]
+top_e = sorted(cand2, key=lambda m: -(u_e @ np.array(ALL2[m])))[:2]
+top_f = sorted(cand2, key=lambda m: -(u_f @ np.array(ALL2[m])))[:2]
+assert set(top_e) == {"Podcast I", "Podcast G"} and set(top_f) == {"Podcast I", "Podcast H"}
+```
+
+```{python}
+# ---------------- practice solutions in the examples' layout ----------------
+def _w(w):
+    return f"({num(w)})" if w < 0 else num(w)
+
+
+PSTAGE = {
+    "ab": dict(items=PODS, W={"Podcast E": 1, "Podcast F": 1}, why={"Podcast E": "heard", "Podcast F": "heard"},
+               u=puser, top=ptop, lab=(0.0, 0.13, "center"), note="(E and F score higher, but the user already heard them.)"),
+    "c": dict(items=ALL2, W=W_E, why={"Podcast E": "older", "Podcast F": "older", "Podcast C": "this week", "Podcast D": "this week"},
+              u=u_e, top=top_e, lab=(-0.05, 0.08, "right"), note="The user's vector moved toward C and D, their newest plays."),
+    "d": dict(items=ALL2, W=W_F, why={"Podcast E": "older", "Podcast F": "older", "Podcast C": "not interested", "Podcast D": "this week, liked"},
+              u=u_f, top=top_f, lab=(0.06, 0.1, "left"), note="Feedback swapped G (news) for H (stories): the user rejected C and liked D."),
+}
+for st in PSTAGE.values():
+    st["score"] = {m: st["u"] @ np.array(v) for m, v in st["items"].items()}
+    st["rank"] = sorted([m for m in st["items"] if m not in st["W"]], key=lambda m: -st["score"][m])
+    assert st["rank"][:2] == st["top"] or set(st["rank"][:2]) == set(st["top"])
+    st["top"] = st["rank"][:2]
+
+
+def ps_data(key):
+    st = PSTAGE[key]
+    table(["Podcast", "(news, comedy)", "Weight"],
+          [[m.split()[-1], emb(v), f"**{_w(st['W'][m])}** ({st['why'][m]})" if m in st["W"] else ("new" if m in NEW else "")]
+           for m, v in st["items"].items()])
+
+
+def ps_avg(key):
+    st, W = PSTAGE[key], PSTAGE[key]["W"]
+    tot = sum(W.values())
+    vs = np.sum([w * np.array(st["items"][m]) for m, w in W.items()], axis=0)
+    terms = []
+    for k, (m, w) in enumerate(W.items()):
+        coef = "" if abs(w) == 1 else num(abs(w))
+        sign = ("-" if w < 0 else "") if k == 0 else (" - " if w < 0 else " + ")
+        terms.append(f"{sign}{coef}{emb(st['items'][m])}")
+    head = ("**The user = average of the 2 they heard:**" if key == "ab" else
+            "**The user = weighted average.** Weights: " + ", ".join(f"{m.split()[-1]} ×{_w(w)}" for m, w in W.items()) + f"; total = {num(tot)}.")
+    md(head + "\n\n" + f"$$\\begin{{aligned}}\\mathbf{{u}} &= \\dfrac{{{''.join(terms)}}}{{{num(tot)}}} \\\\ &= \\dfrac{{({vs[0]:.1f},\\ {vs[1]:.1f})}}{{{num(tot)}}} = ({num(st['u'][0])},\\ {num(st['u'][1])})\\end{{aligned}}$$")
+    assert np.allclose(vs / tot, st["u"])
+
+
+def ps_scores(key):
+    st = PSTAGE[key]
+    u, sc = st["u"], st["score"]
+    md(f"$\\text{{score}} = {num(u[0])} \\times \\text{{news}} + {num(u[1])} \\times \\text{{comedy}}$")
+    rows = []
+    for m in sorted(st["items"], key=lambda m: -sc[m]):
+        v = st["items"][m]
+        if m in st["W"]:
+            dec = "heard: skip"
+        else:
+            i = st["rank"].index(m) + 1
+            dec = f"**#{i} ✓**" if i <= 2 else f"#{i}"
+        nm = m.split()[-1]
+        rows.append([f"**{nm}**" if m in st["top"] else nm, f"{num(u[0])}({num(v[0])}) + {num(u[1])}({num(v[1])})", num(sc[m]), dec])
+    table(["Podcast", "Calculation", "Score", "Rank"], rows)
+    md(f"**Recommend: {' and '.join(m.split()[-1] for m in st['top'])}.** {st['note']}")
+
+
+def ps_frame(key, k):
+    st = PSTAGE[key]
+    u, sc, W = st["u"], st["score"], st["W"]
+    fig, ax = plt.subplots(figsize=(8.4, 6.6))
+    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+    if k == 2:
+        cut = sc[st["top"][1]]
+        gx, gy = np.meshgrid(np.linspace(-0.05, 1.25, 200), np.linspace(-0.05, 1.4, 200))
+        ax.contour(gx, gy, u[0] * gx + u[1] * gy, levels=[cut], colors="#bbbbbb", linestyles="dashed", linewidths=1.2)
+    for m, v in st["items"].items():
+        L = m.split()[-1]
+        if k == 0:
+            c, mk, lab = (BLUE if m not in NEW else "#7b3fb5"), "o", L + (" (new)" if m in NEW else "")
+        elif k == 1:
+            if m in W:
+                c = RED if W[m] < 0 else GREEN
+                mk, lab = "s", f"{L} ×{_w(W[m])}"
+            else:
+                c, mk, lab = "#aaaaaa", "o", L
+        else:
+            c = GREY if m in W else (GREEN if m in st["top"] else BLUE)
+            mk, lab = ("X" if m in W else "o"), f"{L} ({num(sc[m])})"
+            if m in st["top"]:
+                ax.scatter(*v, s=650, facecolors="none", edgecolors=GREEN, lw=2.5, zorder=3)
+        ax.scatter(*v, s=170, color=c, marker=mk, zorder=4)
+        ax.text(v[0] + 0.035, v[1] + 0.03, lab, fontsize=13, color=c, fontweight="bold", zorder=5,
+                bbox=dict(fc="white", ec="none", alpha=0.8, pad=0.4))
+    if k:
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=3.5), zorder=2)
+        ray(ax, u, 1.25, 1.4)
+        dx, dy, ha = st["lab"]
+        ax.text(u[0] + dx, u[1] + dy, f"The user\n({num(u[0])}, {num(u[1])})", fontsize=13, color=ORANGE, fontweight="bold", ha=ha,
+                va="center", zorder=6, bbox=dict(fc="white", ec="none", alpha=0.85, pad=0.4))
+    ax.set_xlim(-0.05, 1.25); ax.set_ylim(-0.05, 1.4); ax.set_aspect("equal")
+    ax.set_xlabel("news and business", fontsize=14); ax.set_ylabel("comedy and stories", fontsize=14)
+    ax.set_title(["1. The podcasts as points", "2. The user's vector (squares = plays, × weight)",
+                  "3. Scores: circled = top 2, X = heard, dashed = cutoff"][k], fontsize=14)
+    return fig
+```
+## Solution (a) and (b): The User's Vector and Top 2 (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("ab")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("ab")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("ab", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("ab")
+```
+:::
+:::
+::::
+
+## Practice Problem, Round 2: One Week Later {.practice}
+
+```{python}
+NEW = {"Podcast G": (1.0, 0.5), "Podcast H": (0.1, 1.0), "Podcast I": (0.7, 0.9)}
+ALL2 = {**PODS, **NEW}
+W_E = {"Podcast E": 1, "Podcast F": 1, "Podcast C": 2, "Podcast D": 2}        # (c) recency weights
+W_F = {"Podcast E": 1, "Podcast F": 1, "Podcast C": -1, "Podcast D": 4}       # (d) recency x feedback
+def wavg(W):
+    tot = sum(W.values())
+    return np.array([sum(w * ALL2[m][k] for m, w in W.items()) / tot for k in (0, 1)]), tot
+u_e, tot_e = wavg(W_E)
+u_f, tot_f = wavg(W_F)
+cand2 = ["Podcast A", "Podcast B", "Podcast G", "Podcast H", "Podcast I"]
+s_e = {m: u_e @ np.array(ALL2[m]) for m in cand2}
+s_f = {m: u_f @ np.array(ALL2[m]) for m in cand2}
+top_e = sorted(cand2, key=lambda m: -s_e[m])[:2]
+top_f = sorted(cand2, key=lambda m: -s_f[m])[:2]
+assert set(top_e) == {"Podcast I", "Podcast G"} and set(top_f) == {"Podcast I", "Podcast H"}
+assert np.allclose(u_e, [0.4, 2 / 3]) and np.allclose(u_f, [0.16, 0.60])
+table(["New this week", "Embedding (also learned beforehand)"], [[m, emb(v)] for m, v in NEW.items()])
+```
+
+The user played **Podcast C** (one of our picks) and **Podcast D** (which we did not recommend); they skipped Podcast B. Three **new** podcasts (G, H, I) were also released this week.
+
+c. Recompute the user's embedding as a **weighted average** of their 4 plays: older plays (E, F) count **1**, this week's plays (C, D) count **2**. Score the 5 podcasts they have not heard (A, B, G, H, I) and recommend the top 2.
+
+d. The user also gave **feedback**: they **liked** Podcast D and tapped **"not interested"** on Podcast C. The app doubles the weight of a liked play and gives a "not interested" play weight **−1**. Recompute their embedding and their top 2.
+
+
+## Solution (c): Recent Plays Count More (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("c")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("c")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("c", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("c")
+```
+:::
+:::
+::::
+
+## Solution (d): Feedback Changes the Weights (Click to Step Through) {.ex}
+
+:::: {.columns}
+::: {.column width="30%"}
+```{python}
+ps_data("d")
+```
+
+::: {.fragment .avg fragment-index=1}
+```{python}
+ps_avg("d")
+```
+:::
+:::
+
+::: {.column width="40%"}
+```{python}
+stack([ps_frame("d", k) for k in range(3)], h=560)
+```
+:::
+
+::: {.column width="30%"}
+::: {.fragment fragment-index=2}
+```{python}
+ps_scores("d")
+```
+:::
+:::
+::::
+
+## The User's Embedding Over Time (Click to Step Through) {.practice}
+
+```{python}
+STAGES = [
+    dict(title="Start: the podcast catalog", items=list(PODS), heard={}, u=None, top=[], note=""),
+    dict(title="Round 1: the user heard E and F → u = average = (0.5, 1)", items=list(PODS), heard={"Podcast E": "heard", "Podcast F": "heard"},
+         u=puser, top=ptop, note="recommend B and C"),
+    dict(title="Round 2: they played C and D (weight 2) → u = (0.4, 0.667)", items=list(ALL2),
+         heard={"Podcast E": "older", "Podcast F": "older", "Podcast C": "played", "Podcast D": "played"}, u=u_e, top=top_e, note="recommend I and G"),
+    dict(title="Round 2 + feedback: liked D, \"not interested\" in C → u = (0.16, 0.6)", items=list(ALL2),
+         heard={"Podcast E": "older", "Podcast F": "older", "Podcast C": "not interested", "Podcast D": "liked"}, u=u_f, top=top_f,
+         note="recommend I and H"),
+]
+
+
+def frame_fig(k):
+    st = STAGES[k]
+    fig, ax = plt.subplots(figsize=(10, 7.2))
+    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.09, top=0.86)
+    for j in range(1, k):                                                   # earlier arrows stay as faded ghosts
+        ax.annotate("", xy=STAGES[j]["u"], xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color="#cccccc", lw=2.5, ls="--"))
+        ax.text(STAGES[j]["u"][0] + 0.02, STAGES[j]["u"][1] + 0.03, ["", "round 1", "round 2", ""][j], fontsize=11, color=GREY)
+    for m in st["items"]:
+        v = ALL2[m]
+        tag = st["heard"].get(m)
+        if tag == "liked":
+            col, mk, sz = GREEN, "*", 420
+        elif tag == "not interested":
+            col, mk, sz = RED, "X", 230
+        elif tag:
+            col, mk, sz = GREY, "s", 160
+        else:
+            col, mk, sz = (GREEN if m in st["top"] else BLUE), "o", 160
+        ax.scatter(*v, s=sz, color=col, marker=mk, zorder=4)
+        lab = m.split()[-1] + (f" ({tag})" if tag in ("liked", "not interested") else "")
+        ax.text(v[0] + 0.035, v[1] + 0.035, lab, fontsize=14, color=col, fontweight="bold")
+        if m in st["top"]:
+            ax.scatter(*v, s=750, facecolors="none", edgecolors=GREEN, lw=2.5, zorder=3)
+    if st["u"] is not None:
+        u = st["u"]
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=ORANGE, lw=4), zorder=5)
+        ray(ax, u, 1.2, 1.3)
+        ax.scatter(*u, s=120, color=ORANGE, zorder=6)
+        dx, dy, ha = (0.03, 0.12, "left") if k == 2 else (0.04, -0.05, "left")      # round-2 label goes above the tip, away from C
+        sep = "\n" if k == 2 else " "                                                 # narrower label where space is tight
+        ax.text(u[0] + dx, u[1] + dy, f"The user{sep}({num(u[0])}, {num(u[1])})", fontsize=14, color=ORANGE, fontweight="bold", ha=ha, va="center",
+                zorder=7, bbox=dict(fc="white", ec=ORANGE, lw=1, pad=2, alpha=0.9))
+    if st["note"]:
+        ax.text(1.17, 0.05, st["note"], fontsize=15, color=GREEN, fontweight="bold", ha="right")
+    ax.set_xlim(0, 1.2); ax.set_ylim(0, 1.3); ax.set_aspect("equal")
+    ax.set_xlabel("news and business", fontsize=14); ax.set_ylabel("comedy and stories", fontsize=14)
+    fig.suptitle(st["title"], fontsize=15, y=0.97)
+    fig.text(0.5, 0.905, "■ heard / played     ● not heard     ◯ recommended     → the user's embedding (faded: earlier)", fontsize=12, color=GREY, ha="center")
+    return fig
+
+
+stack([frame_fig(k) for k in range(len(STAGES))])
+```
+
+## Our Practice Problem vs. a Modern Recommender
+
+::: cmp
+| | **Practice problem** (podcasts) | **Modern recommender** (YouTube, TikTok, Spotify) |
+|:-------|:-----------------|:------------------------|
+| Catalog | 9 podcasts | millions to billions of videos or songs |
+| Item embeddings | 2 numbers, **given** (learned beforehand) | 64 to 256+ numbers, **learned** from billions of plays; retrained daily or weekly |
+| User embedding | **average** of what the user played | a **neural network** (two-tower or transformer) reads the watch history plus context (time, device, searches) |
+| Recency and feedback | **fixed weights we chose**: 2 for this week, ×2 liked, −1 "not interested" | **learned** from data: watch time, likes, skips, shares, "not interested" |
+| Retrieval | score **every** podcast with $\mathbf{u}\cdot\mathbf{v}$, keep the top 2 | **approximate** nearest-neighbor search, keep the top few hundred; several candidate sources (similar items, subscriptions, trending) |
+| Ranking | none: the top 2 **are** the recommendations | a second, larger model **re-ranks** the candidates (predicted watch time, like, share), then rules for diversity, freshness and safety |
+| Updates | recompute by hand one week later | user vector recomputed at **every request**; item vectors retrained on new data |
+:::
+
+::: key
+**What stays the same:** items and users are vectors in the same space, the user's vector comes from their history, retrieval keeps the items with the largest $\mathbf{u}\cdot\mathbf{v}$, and what the user does next feeds back into the next round.
+:::

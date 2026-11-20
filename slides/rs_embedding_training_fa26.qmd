@@ -1,0 +1,540 @@
+---
+title: "How Item Embeddings Are Trained"
+subtitle: "One training step by hand, then the general framework: gradient descent on watch data"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: none
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    menu: true
+    footer: "Recommender systems: training embeddings"
+    code-line-numbers: false
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { color: #B8621B; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.54em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 12px; text-align: center; white-space: nowrap; }
+          .reveal .katex-display { font-size: 0.85em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 520px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal pre code { font-size: 0.85em; line-height: 1.35; }
+          .reveal .cell-output pre code { font-size: 0.8em; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .warn { background:#fdecea; border-left:6px solid #b5302a; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .warn p { font-size: 1em; }
+          .reveal .note { font-size: 0.55em; color: #666; }
+          .reveal pre.algo { font-size: 0.62em; background:#f7f7f7; border-left:6px solid #E8833A; padding:0.5em 0.9em; box-shadow:none; width: auto; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, Rectangle
+from IPython.display import Markdown, display, HTML
+import base64, io
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 14,
+                     "axes.spines.top": False, "axes.spines.right": False})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def r(x, d=3):
+    s = f"{x:.{d}f}".rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
+def emb(v):
+    """An embedding as it appears in every table: one decimal each."""
+    return f"({v[0]:.1f}, {v[1]:.1f})"
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in row) + " |" for row in rows)
+    md(s)
+
+
+def show(fig, h=None):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white", bbox_inches="tight")
+    plt.close(fig)
+    style = f' style="max-height:{h}px !important"' if h else ""
+    display(HTML(f'<img src="data:image/png;base64,{base64.b64encode(b.getvalue()).decode()}"{style}>'))
+
+
+def ray(ax, u, xmax, ymax, color=None):
+    """Faint dashed line continuing the user's arrow to the edge of the plot: only the direction matters."""
+    u = np.asarray(u, float)
+    t = min(xmax / u[0] if u[0] > 0 else np.inf, ymax / u[1] if u[1] > 0 else np.inf)
+    ax.plot([u[0], t * u[0]], [u[1], t * u[1]], ls=(0, (5, 4)), lw=2, color=color or ORANGE, alpha=0.45, zorder=1)
+
+
+def boxes(stages, w=3.0, gap=0.8, h=2.2, figsize=(15, 3.2), fs=15, sfs=12.5):
+    """A left-to-right chain of rounded boxes: stages = [(title, subtitle, face, edge), ...]."""
+    fig, ax = plt.subplots(figsize=figsize)
+    for k, (t, s_, fc, ec) in enumerate(stages):
+        x = k * (w + gap)
+        ax.add_patch(FancyBboxPatch((x, 0), w, h, boxstyle="round,pad=0.06", fc=fc, ec=ec, lw=2))
+        ax.text(x + w / 2, h * 0.72, t, ha="center", va="center", fontsize=fs, fontweight="bold")
+        ax.text(x + w / 2, h * 0.32, s_, ha="center", va="center", fontsize=sfs, color="#444")
+        if k < len(stages) - 1:
+            ax.annotate("", xy=(x + w + gap - 0.08, h / 2), xytext=(x + w + 0.08, h / 2), arrowprops=dict(arrowstyle="-|>", color=GREY, lw=2))
+    ax.set_xlim(-0.2, len(stages) * (w + gap) - gap + 0.2); ax.set_ylim(-0.2, h + 0.3); ax.axis("off")
+    return fig
+```
+
+
+```{python}
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")          # fixed size: frames line up exactly
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def stack(figs, h=520):
+    """Frames on top of each other; each click shows the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}" style="max-height:{h}px !important">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}" style="max-height:{h}px !important">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def vec(v, d=3):
+    return f"({r(v[0], d)}, {r(v[1], d)})"
+
+
+# ---------------- the hand problem: 6 users, podcast X, one batch gradient step ----------------
+UH = {"Ann": (1.0, 0.0), "Ben": (1.0, 0.2), "Cal": (1.0, 0.4),          # listened to X
+      "Dee": (0.0, 0.6), "Eli": (0.2, 1.0), "Fay": (0.0, 1.0)}          # skipped X
+RH = {"Ann": 1, "Ben": 1, "Cal": 1, "Dee": 0, "Eli": 0, "Fay": 0}
+NAMES = list(UH)
+UM, RV = np.array([UH[n] for n in NAMES]), np.array([RH[n] for n in NAMES], float)
+ETA, V0 = 0.25, np.array([0.5, 0.5])
+P0 = UM @ V0
+E0 = RV - P0
+G = E0 @ UM                                   # sum of e_i * u_i
+V1 = V0 + ETA * G
+P1 = UM @ V1
+E1 = RV - P1
+L0, L1 = 0.5 * np.sum(E0 ** 2), 0.5 * np.sum(E1 ** 2)
+VSTAR = np.linalg.lstsq(UM, RV, rcond=None)[0]  # where repeated steps end up (least squares)
+PATH = [V0.copy()]
+for _ in range(60):
+    PATH.append(PATH[-1] + ETA * (RV - UM @ PATH[-1]) @ UM)
+assert np.allclose(G, [1.08, -1.08]) and np.allclose(V1, [0.77, 0.23])
+assert np.isclose(L0, 0.6) and L1 < 0.3 * L0 and np.allclose(PATH[-1], VSTAR, atol=1e-3)
+```
+
+## Where This Fits
+
+```{python}
+fig = boxes([("1. Train item vectors", "from everyone's\nwatch data (today)", "#FDE3C8", ORANGE),
+             ("2. Your vector", "average of what\nyou watched", "#f4f4f4", GREY),
+             ("3. Retrieve", "dot product,\nkeep the top K", "#eef3ff", BLUE)], w=3.8, gap=1.1, figsize=(14, 3.0))
+show(fig, 230)
+```
+
+- In the RS lecture and practice problem, the item embeddings were **given** ("learned beforehand").
+- Today: **how they are learned**. First one step by hand, then the general recipe.
+
+::: key
+**Watched → pull the user and item vectors together. Skipped → push them apart.** Repeat millions of times.
+:::
+
+# Practice Problem
+
+## Setting Up the Learning Problem
+
+:::: {.columns}
+::: {.column width="50%"}
+**The dataset:** 6 users, one row each for Podcast X.
+
+```{python}
+table(["Row", "User", "User vector $\\mathbf{u}$", "Podcast", "Label $r$"],
+      [[k + 1, n, vec(UH[n], 1), "X", "1 (listened)" if RH[n] else "0 (skipped)"] for k, n in enumerate(NAMES)])
+```
+:::
+::: {.column width="50%"}
+- **Input:** a (user, podcast) pair, e.g. (Ann, X).
+- **Output variable:** the label $r$: 1 = listened, 0 = skipped.
+- **Parameters:** Podcast X's embedding $\mathbf{v}_X$ (2 numbers). The users' vectors are given (already trained) and stay fixed here.
+- **Prediction:** $\hat r = \mathbf{u}\cdot\mathbf{v}_X$.
+- **Loss** over all 6 rows:
+
+$$L(\mathbf{v}_X) = \tfrac{1}{2}\sum_{i=1}^{6} \left(r_i - \mathbf{u}_i\cdot\mathbf{v}_X\right)^2$$
+:::
+::::
+
+::: key
+The input has **no features**: just two IDs. The numbers describing Podcast X are **parameters**, learned from the labels.
+:::
+
+## Practice Problem: Find Podcast X's Embedding
+
+:::: {.columns}
+::: {.column width="55%"}
+```{python}
+md(f"""Podcast X's embedding starts **random**: $\\mathbf{{v}}_X = {vec(V0, 1)}$. Use **all 6 rows** and learning rate $\\eta = {r(ETA)}$:
+
+$$e_i = r_i - \\mathbf{{u}}_i\\cdot\\mathbf{{v}}_X, \\qquad \\mathbf{{v}}_X \\leftarrow \\mathbf{{v}}_X + \\eta \\sum_{{i=1}}^{{6}} e_i\\, \\mathbf{{u}}_i$$
+
+**(a)** Compute the prediction $\\mathbf{{u}}_i\\cdot\\mathbf{{v}}_X$ and the error $e_i$ for every row.
+
+**(b)** Take one gradient step: update $\\mathbf{{v}}_X$.
+
+**(c)** Compute the new predictions and the loss before and after. Did the loss go down?
+
+**(d)** If we keep repeating the step, where does $\\mathbf{{v}}_X$ go? Why there?""")
+```
+:::
+::: {.column width="45%"}
+```{python}
+def users_plot(ax, alpha=1.0):
+    for n in NAMES:
+        u = np.array(UH[n]); c = GREEN if RH[n] else RED
+        ax.annotate("", xy=u, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color=c, lw=2, alpha=alpha))
+        dx, dy = (0.04, 0.0) if RH[n] else (0.04, 0.03)
+        ax.text(u[0] + dx, u[1] + dy, n, color=c, fontsize=12, va="center", alpha=alpha)
+    ax.axhline(0, color="#e5e5e5", lw=1, zorder=0); ax.axvline(0, color="#e5e5e5", lw=1, zorder=0)
+    ax.set_xlim(-0.1, 1.35); ax.set_ylim(-0.3, 1.15); ax.set_aspect("equal")
+
+
+def x_arrow(ax, v, lab, ghost=False):
+    ax.annotate("", xy=v, xytext=(0, 0), arrowprops=dict(arrowstyle="-|>", shrinkA=0, shrinkB=0, color="#bbbbbb" if ghost else BLUE, lw=2.5 if ghost else 4,
+                                                          ls="--" if ghost else "-"), zorder=5)
+    if lab:
+        ax.text(v[0] + 0.03, v[1] - 0.07, lab, color=BLUE, fontsize=14, fontweight="bold", zorder=6,
+                bbox=dict(fc="white", ec="none", alpha=0.85, pad=0.5))
+
+
+fig, ax = plt.subplots(figsize=(6.4, 5.6))
+users_plot(ax)
+x_arrow(ax, V0, f"X {vec(V0, 1)}")
+ax.set_title("green = listened to X, red = skipped X", fontsize=13)
+show(fig, 460)
+```
+:::
+::::
+
+## Solution (a): Predict and Find the Error for Every Row
+
+```{python}
+rows = []
+for n, p, e in zip(NAMES, P0, E0):
+    u = UH[n]
+    rows.append([n, vec(u, 1), RH[n], f"${r(u[0])}({r(V0[0])}) + {r(u[1])}({r(V0[1])}) = {r(p)}$", f"${RH[n]} - {r(p)} = {r(e)}$"])
+table(["User", "$\\mathbf{u}$", "Label $r$", "Prediction $\\mathbf{u}\\cdot\\mathbf{v}_X$", "Error $e = r - \\mathbf{u}\\cdot\\mathbf{v}_X$"], rows)
+md("""- **Listeners** (Ann, Ben, Cal): predicted too low, so the error is **positive**.
+- **Skippers** (Dee, Eli, Fay): predicted too high, so the error is **negative**.""")
+```
+
+## Solution (b): One Gradient Step Using All 6 Users
+
+```{python}
+rows = [[n, r(e), f"${r(e)} \\times {vec(UH[n], 1)} = {vec(e * np.array(UH[n]))}$"] for n, e in zip(NAMES, E0)]
+rows.append(["**Sum**", "", f"$\\mathbf{{{vec(G)}}}$"])
+table(["User", "Error $e$", "$e \\times \\mathbf{u}$"], rows)
+md(f"""$$\\mathbf{{v}}_X \\leftarrow {vec(V0, 1)} + {r(ETA)} \\times {vec(G)} = {vec(V0, 1)} + {vec(ETA * G)} = \\mathbf{{{vec(V1)}}}$$
+
+- Listeners (positive $e$) **pull** X toward their vectors; skippers (negative $e$) **push** it away.
+- X moved toward Ann, Ben, Cal (right) and away from Dee, Eli, Fay (up).""")
+```
+
+## Solution (c): Did the Loss Go Down?
+
+```{python}
+rows = []
+for n, p0, p1, e1 in zip(NAMES, P0, P1, E1):
+    u = UH[n]
+    rows.append([n, RH[n], r(p0), f"${r(u[0])}({r(V1[0])}) + {r(u[1])}({r(V1[1])}) = {r(p1)}$", r(e1)])
+table(["User", "Label $r$", "Before", f"After: $\\mathbf{{u}}\\cdot{vec(V1)}$", "New error"], rows)
+md(f"""Every prediction moved **toward its label**: listeners up toward 1, skippers down toward 0.
+
+$$L_{{\\text{{before}}}} = \\tfrac{{1}}{{2}}\\left({' + '.join(f'({r(e)})^2' for e in E0)}\\right) = {r(L0)}$$
+$$L_{{\\text{{after}}}} = \\tfrac{{1}}{{2}}\\left({' + '.join(f'({r(e)})^2' for e in E1)}\\right) = {r(L1, 3)}$$
+
+The loss dropped from ${r(L0)}$ to ${r(L1, 2)}$. ✓""")
+```
+
+## Watch X's Embedding Move (Click to Step Through)
+
+```{python}
+def x_frame(k):
+    fig, ax = plt.subplots(figsize=(8.4, 6.6))
+    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.9)
+    users_plot(ax, alpha=0.75)
+    steps = {0: 0, 1: 1, 2: 60}[k]
+    if steps:
+        x_arrow(ax, PATH[0], None, ghost=True)
+        pts = np.array(PATH[:steps + 1])
+        ax.plot(pts[:, 0], pts[:, 1], "o-", color=BLUE, alpha=0.35, ms=5, zorder=4)
+    v = PATH[steps]
+    x_arrow(ax, v, f"X {vec(v, 2)}")
+    loss = 0.5 * np.sum((RV - UM @ v) ** 2)
+    ax.set_title(["Start (random)", "After 1 step", "After many steps"][k] + f":  loss = {r(loss, 3)}", fontsize=15)
+    return fig
+
+
+stack([x_frame(k) for k in range(3)], h=560)
+```
+
+## Solution (d): Where Is X Heading?
+
+```{python}
+show_steps = [0, 1, 2, 3, 5, 10, 60]
+table(["Step", *[str(k) for k in show_steps]], [["$\\mathbf{v}_X$", *[vec(PATH[k], 2) for k in show_steps]]])
+md(f"""- Repeating the step, $\\mathbf{{v}}_X$ settles at about **{vec(VSTAR, 2)}**: **close to the listeners** (all near $(1, 0.2)$), **away from the skippers**.
+- There, $\\mathbf{{u}}\\cdot\\mathbf{{v}}_X \\approx 1$ for listeners and $\\approx 0$ for skippers: the predictions match the labels as well as possible.
+- **With the users fixed, this is linear regression:** the user vectors are the features, $r$ is the response, and $\\mathbf{{v}}_X$ holds the coefficients. Gradient descent reaches the least-squares answer.
+- In full training, every podcast is found this way **and** every user's vector is updated by the same rule (roles swapped).""")
+```
+
+::: key
+A podcast's embedding is pulled **toward the people who listened** and **away from those who skipped**. Podcasts with the same listeners end up close together.
+:::
+
+# The General Framework
+
+```{python}
+# ---------------- a small training run: 6 listeners, 6 podcasts ----------------
+PODN = ["N1", "N2", "N3", "C1", "C2", "C3"]               # N = news podcasts, C = comedy podcasts (the model is NOT told this)
+USRN = ["Ann", "Ben", "Cal", "Dee", "Eli", "Fay"]
+RW = np.array([[1, 1, 1, 0, 0, 0], [1, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 1],
+               [0, 0, 0, 1, 1, 1], [0, 0, 0, 1, 1, 0], [1, 0, 0, 0, 1, 1]], float)
+rng = np.random.default_rng(1)
+UU, VV = rng.normal(0, 0.3, (6, 2)), rng.normal(0, 0.3, (6, 2))
+LR, LAM, EPOCHS = 0.05, 0.02, 300
+PAIRS = [(i, j) for i in range(6) for j in range(6)]
+LOSS, SNAP = [np.mean((RW - UU @ VV.T) ** 2)], {0: VV.copy()}
+for ep in range(1, EPOCHS + 1):
+    for k in rng.permutation(len(PAIRS)):
+        i, j = PAIRS[k]
+        e = RW[i, j] - UU[i] @ VV[j]
+        ui = UU[i].copy()
+        UU[i] += LR * (e * VV[j] - LAM * UU[i])
+        VV[j] += LR * (e * ui - LAM * VV[j])
+    LOSS.append(np.mean((RW - UU @ VV.T) ** 2))
+    if ep in (10, 40, EPOCHS):
+        SNAP[ep] = VV.copy()
+cosf = lambda a, b: a @ b / np.linalg.norm(a) / np.linalg.norm(b)
+WITHIN = np.mean([cosf(VV[a], VV[b]) for g in ([0, 1, 2], [3, 4, 5]) for a in g for b in g if a < b])
+ACROSS = np.mean([cosf(VV[a], VV[b]) for a in [0, 1, 2] for b in [3, 4, 5]])
+assert LOSS[-1] < 0.3 * LOSS[0] and WITHIN > 0.85 and ACROSS < 0.3
+```
+
+## The Learning Problem in General
+
+:::: {.columns}
+::: {.column width="40%"}
+```{python}
+rows = [[n + 1, USRN[i], PODN[j], int(RW[i, j])] for n, (i, j) in enumerate(PAIRS[:9])]
+rows.append(["…", "…", "…", "…"])
+rows.append([len(PAIRS), USRN[-1], PODN[-1], int(RW[-1, -1])])
+md(f"**The dataset:** {len(USRN)} listeners × {len(PODN)} podcasts = {len(PAIRS)} rows")
+table(["Row", "User", "Podcast", "Label $r$"], rows)
+md(f"Each podcast appears in **{len(USRN)} rows** (once per listener); each listener in **{len(PODN)} rows**.")
+```
+:::
+::: {.column width="60%"}
+- **Dataset:** every (user, item, label) row from the logs. Here 36 rows; at YouTube, billions.
+- **Input:** a (user, item) pair.
+- **Output variable:** $r$ = 1 if the user watched or listened, 0 if not (sampled).
+- **Parameters:** a vector $\mathbf{u}$ for every user and $\mathbf{v}$ for every item.
+- **Prediction:** $\hat r = \mathbf{u}\cdot\mathbf{v}$.
+- **Loss:** total squared error over all rows, plus a penalty:
+
+$$L = \sum_{\text{rows}} \tfrac{1}{2}\,(r - \mathbf{u}\cdot\mathbf{v})^2 \;+\; \tfrac{\lambda}{2}\sum\left(\lVert\mathbf{u}\rVert^2 + \lVert\mathbf{v}\rVert^2\right)$$
+
+- **Training:** gradient descent on $L$, one row at a time (SGD).
+:::
+::::
+
+## From One Step to Training
+
+```{python}
+fig = boxes([("1. Pick a pair", "(user, item, label r)\nfrom the data", "#f4f4f4", GREY),
+             ("2. Predict", "u · v", "#eef3ff", BLUE),
+             ("3. Error", "e = r − u·v", "#FDE3C8", ORANGE),
+             ("4. Update", "u ← u + η e v\nv ← v + η e u", "#dcf3e2", GREEN)], w=3.1, gap=0.9, figsize=(15, 4.3))
+ax = fig.axes[0]
+x_last, x_first = 3 * (3.1 + 0.9) + 1.55, 1.55
+ax.annotate("", xy=(x_first, -0.08), xytext=(x_last, -0.08),
+            arrowprops=dict(arrowstyle="-|>", color=ORANGE, lw=2.8, connectionstyle="arc3,rad=-0.12"))
+ax.text((x_first + x_last) / 2, -1.45, "repeat for every pair, many passes (epochs)", ha="center", va="center", fontsize=14, color=ORANGE, fontweight="bold")
+ax.set_ylim(-1.75, 2.5)
+show(fig, 300)
+```
+
+<pre class="algo">start every user vector and item vector at small random numbers
+repeat for many passes (epochs):
+    for each (user, item, r) in the data, in random order:
+        e = r − u·v
+        u ← u + η·e·v          (both updates use the old u and v)
+        v ← v + η·e·u
+store the item vectors → used for retrieval</pre>
+
+## The Loss Behind the Rule
+
+Training minimizes the squared error over all (user, item) pairs, plus a penalty that keeps vectors small:
+
+$$L = \sum_{(\text{user},\,\text{item})} \tfrac{1}{2}\,(r - \mathbf{u}\cdot\mathbf{v})^2 \;+\; \tfrac{\lambda}{2}\left(\lVert\mathbf{u}\rVert^2 + \lVert\mathbf{v}\rVert^2\right)$$
+
+For one pair, with $e = r - \mathbf{u}\cdot\mathbf{v}$:
+
+$$\frac{\partial L}{\partial \mathbf{u}} = -e\,\mathbf{v} + \lambda\mathbf{u}, \qquad \frac{\partial L}{\partial \mathbf{v}} = -e\,\mathbf{u} + \lambda\mathbf{v}$$
+
+Step against the gradient:
+
+$$\mathbf{u} \leftarrow \mathbf{u} + \eta\,(e\,\mathbf{v} - \lambda\mathbf{u}), \qquad \mathbf{v} \leftarrow \mathbf{v} + \eta\,(e\,\mathbf{u} - \lambda\mathbf{v})$$
+
+- This is **gradient descent**. One pair at a time = **stochastic gradient descent (SGD)**.
+- The practice problem took one step using all 6 rows at once (**batch** gradient descent); SGD steps after each row. Both head to the same place. $\lambda$ is the same ridge penalty as in regression.
+- The method is called **matrix factorization**: the watch table $\approx$ (user vectors) × (item vectors).
+
+## Where the Labels Come From
+
+Unlike a CNN, no person labels anything: **behavior is the label.**
+
+| Label $r$ | From the logs |
+|:---|:---|
+| 1 = watched / listened | Ann played Podcast X |
+| 1 = watched most of it | finished more than half (filters out clickbait) |
+| 0 = not watched | **random** items the user did not play ("negative sampling") |
+
+::: warn
+A 0 is a guess: it may mean "never saw it", not "did not want it". Labels are free and plentiful, but noisy.
+:::
+
+
+
+## Watch It Train: 6 Listeners, 6 Podcasts (Click to Step Through)
+
+:::: {.columns}
+::: {.column width="34%"}
+```{python}
+table(["", *PODN], [[u, *[int(x) for x in row]] for u, row in zip(USRN, RW)])
+md("""1 = listened. N = news, C = comedy, but the model is **not told** this.
+
+Each click = more training (SGD over all 36 cells).""")
+```
+:::
+::: {.column width="66%"}
+```{python}
+def epoch_frame(ep):
+    V = SNAP[ep]
+    fig, ax = plt.subplots(figsize=(8.6, 6.4))
+    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+    for j, name in enumerate(PODN):
+        c = BLUE if name[0] == "N" else ORANGE
+        ax.scatter(*V[j], s=170, color=c, zorder=3)
+        ax.text(V[j][0] + 0.04, V[j][1] + 0.04, name, fontsize=14, color=c, fontweight="bold")
+    ax.axhline(0, color="#e5e5e5", lw=1, zorder=0); ax.axvline(0, color="#e5e5e5", lw=1, zorder=0)
+    ax.set_xlim(-0.8, 1.2); ax.set_ylim(-0.5, 1.2); ax.set_aspect("equal")
+    ax.set_xlabel("learned number 1", fontsize=13); ax.set_ylabel("learned number 2", fontsize=13)
+    ax.set_title(f"item vectors after {ep} epochs" + ("  (random start)" if ep == 0 else ""), fontsize=15)
+    return fig
+
+
+stack([epoch_frame(ep) for ep in sorted(SNAP)], h=540)
+```
+:::
+::::
+
+## What Training Achieved
+
+:::: {.columns}
+::: {.column width="50%"}
+```{python}
+fig, ax = plt.subplots(figsize=(7.2, 4.6))
+ax.plot(range(len(LOSS)), LOSS, color=ORANGE, lw=3)
+ax.set_xlabel("epoch", fontsize=14); ax.set_ylabel("mean squared error", fontsize=14)
+ax.set_title("the loss goes down as the vectors improve", fontsize=14)
+show(fig, 400)
+```
+:::
+::: {.column width="50%"}
+```{python}
+md(f"""- Error: ${r(LOSS[0], 2)} \\to {r(LOSS[-1], 2)}$ after {EPOCHS} epochs.
+- News podcasts point one way, comedy another: average cosine **{r(WITHIN, 2)}** within a group vs **{r(ACROSS, 2)}** across groups.
+- The two learned numbers have **no names**. We only see afterward that they separate news from comedy.
+- These trained item vectors are what the RS lecture used for retrieval.""")
+```
+:::
+::::
+
+## Same Recipe as Training a Neural Network
+
+| | Neural network | Item embeddings |
+|:---|:---|:---|
+| Parameters | weights and biases | one vector per user and per item |
+| Prediction | network output | $\mathbf{u}\cdot\mathbf{v}$ |
+| Labels | given (e.g. image classes) | from behavior (watched = 1) |
+| Loss | squared error / cross-entropy | squared error (or logistic) |
+| Training | gradient descent | gradient descent (SGD) |
+
+## Variations Used in Practice
+
+| Method | Prediction | Idea |
+|:---|:---|:---|
+| **Matrix factorization** (today) | $\mathbf{u}\cdot\mathbf{v}$ | one free vector per user and item |
+| **Logistic version** | $\sigma(\mathbf{u}\cdot\mathbf{v})$ = P(watch) | logistic regression loss, sampled 0s |
+| **Two-tower network** | $f(\text{user features})\cdot g(\text{item features})$ | neural networks make the vectors, so new items get one immediately |
+| **Item2vec** | items in the same session are "neighbors" | like word2vec for words |
+
+All of them: **predict, measure the error, step down the gradient, repeat.**
+
+## After Training
+
+```{python}
+show(boxes([("Train", "everyone's data,\noffline: daily/weekly", "#FDE3C8", ORANGE),
+            ("Store", "item vectors\n(fixed until next training)", "#f4f4f4", GREY),
+            ("Your vector", "instant: average of\nwhat you just played", "#dcf3e2", GREEN),
+            ("Retrieve", "dot product,\nkeep the top K", "#eef3ff", BLUE)], w=3.1, gap=0.9), 230)
+```
+
+- **Slow loop:** item vectors are retrained on new data every day or week.
+- **Fast loop:** a user's vector updates instantly from their latest plays and feedback (the Sarah practice problem).
+
+## Summary
+
+```{python}
+table(["Step", "In the practice problem"],
+      [["Data: one row per (user, podcast) with label $r$", "6 users; Ann, Ben, Cal listened to X; Dee, Eli, Fay skipped"],
+       ["Start the embedding at random", f"$\\mathbf{{v}}_X = {vec(V0, 1)}$"],
+       ["Predict $\\mathbf{u}\\cdot\\mathbf{v}$, error $e = r - \\mathbf{u}\\cdot\\mathbf{v}$", "errors " + ", ".join(r(e) for e in E0)],
+       ["Gradient step: $\\mathbf{v} \\leftarrow \\mathbf{v} + \\eta\\sum e\\,\\mathbf{u}$", f"$\\mathbf{{v}}_X = {vec(V1)}$; loss ${r(L0)} \\to {r(L1, 2)}$"],
+       ["Repeat (all users and items, many passes)", f"$\\mathbf{{v}}_X \\to {vec(VSTAR, 2)}$, near its listeners"]])
+```
+
+::: key
+Embeddings are **learned by gradient descent from behavior**: each item is pulled toward the people who used it and away from those who did not.
+:::

@@ -1,0 +1,104 @@
+---
+title: "Math 460: Exam 1"
+# subtitle: "Semester Fall 2026"
+# date: "December 15, 2026"
+# author: "Department of Mathematics"
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - top=.5in
+      - bottom=.5in
+      - left=.5in
+      - right=.5in
+    header-includes:
+      - \pagestyle{empty}
+      - \pagenumbering{gobble}
+  html:
+    toc: false
+    theme: cosmo
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+**Student Name:** \underline{\hspace{8cm}} 
+
+## Problem
+
+```{r, echo = FALSE}
+library(tidyverse)
+ip = function(n0, n1){
+  p0 = n0/(n0+n1)
+  return(1-p0^2-(1-p0)^2)}
+
+ig = function(a0, a1, b0, b1){
+  k = (b0+b1)/(a0+a1)
+  return(ip(a0, a1) - k*ip(b0,b1)-(1-k)*ip(a0-b0, a1-b1))}
+
+ ig2 = function(a0, a1, b0, b1)
+ {
+  n = a0+a1+b0+b1
+  i_left  = ip(a0, a1) 
+  i_right = ip(b0, b1)
+  i_parent = ip(a0+b0, a1+b1)
+  i_children = ((a0+a1)/n)*i_left + ((b0+b1)/n)*i_right
+  i_gain =   i_parent-i_children
+  return(i_gain)
+ } 
+
+igg = function(df, v, s)
+# df = Data
+# v = Index of the Variable to split
+# s = Value the variable split at 
+  
+{
+  #set the variable (x1) and the value it splits at(x1==1)
+  s1 = table(df[df[,v]==s,]$target)
+  tt = table(df$target)
+  #calculate the impurity gain of the split
+  ig1 = ig(tt[1],tt[2],s1[1],s1[2])
+  
+  return(ig1)
+  
+}
+ID =       c(1,2,3,4,5,6,7,8,9, 10,11,12,13,14,15,16)
+Class     =c(1,1,1,1,1,1,1,3,2,2,3,2,3,1,2,1)
+Sex     =  c(0,0,0,1,0,0,0,1,1,1,1,1,0,0,0,1)
+target =   c(1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0)
+d = as_tibble(cbind(ID, Class, Sex, target))
+
+```
+
+-   Given the **training** data with the binary target variable `Survived` and two input categorical variables `Class` and `Sex`. (Notice: ID is not a variable of interest). 
+
+<center>
+
+```{r, echo = FALSE}
+names(d) = c("ID", "Class", "Sex", "Survived")
+knitr::kable(d)
+```
+
+</center>
+
+Using Gini Index as the measure for impurity to:
+
+1.  Grow the **maximum tree** with three leaves (a stopping rule!) on the data. Draw the (diagram of) tree. 
+
+  - Notice: If two splits achieve the same maximum impurity gain, you may randomly select either split as the best split.
+
+2.  Find the misclassification rate on training data of the maximal tree
+3.  Draw all the possible **subtrees**
+4.  Validate the maximal tree and all the subtrees on the following data to select the **optimal tree**. 
+
+  - Note: If the chance of Survived is 1/2, predict `Survived` (`Survived`=1)
+
+<center>
+
+```{r, echo = FALSE}
+knitr::kable(as_tibble(data.frame(Class=c(1,1,3,2), Sex =c(0,1,1,0), Survived =c(1,1,0,0))))
+```
+
+</center>

@@ -1,0 +1,363 @@
+---
+title: "AdaBoost for Regression: One Input Variable"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: none
+    center: false
+    chalkboard: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+## Learning goals
+
+By the end, students should be able to:
+
+- Explain how boosting builds an additive model from weak regression trees.
+- See how observations with larger errors receive more attention in later rounds.
+- Calculate the AdaBoost.R2 error and learner weight.
+- Interpret the final ensemble prediction.
+
+## The regression boosting idea
+
+AdaBoost.R2 builds a sequence of weak regression models. Each round fits a shallow regression tree to the same numeric-response dataset, while observation weights shift attention toward points that the current model predicts poorly. The individual trees are then combined into a single regression predictor.
+
+We use **one input variable** \(x\) throughout, and the response \(y\) is numeric.
+
+> We will use one-split regression trees (stumps) so each step is visible.
+
+## The toy data
+
+We observe a response \(y\) for each value of a single predictor \(x\). The points are intentionally nonlinear, so one simple stump will not capture the whole pattern.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+set.seed(17)
+dat <- data.frame(x = 1:16)
+dat$y <- c(2.1, 2.8, 3.4, 4.2, 4.0, 5.1, 6.7, 7.3,
+           7.0, 8.6, 9.2, 8.7, 10.5, 11.2, 10.7, 12.4)
+dat$y <- dat$y + c(0.2,-0.3,0.1,0.3,-0.5,0.2,0.4,-0.2,0.3,-0.4,0.2,-0.3,0.1,0.3,-0.4,0.2)
+plot(dat$x, dat$y, pch=19, cex=1.1, xlab="Input x", ylab="Response y",
+     main="Training data: one input variable")
+grid()
+```
+
+## The big idea
+
+AdaBoost builds a sequence of small models:
+
+1. Fit a weak learner to the current weighted data.
+2. Measure how well that learner predicts the training responses.
+3. Give more weight to observations that were predicted poorly.
+4. Fit the next learner to the updated weights.
+5. Combine the learners into one prediction rule.
+
+Unlike a single tree, the ensemble can gradually correct patterns left behind by earlier trees.
+
+## AdaBoost.R2: the moving parts
+
+For round \(m\), let \(h_m(x_i)\) be the prediction for observation \(i\).
+
+The absolute error is \(e_i=|y_i-h_m(x_i)|\). Normalize it by the largest error in that round:
+
+\[
+L_i=\frac{|y_i-h_m(x_i)|}{\max_j |y_j-h_m(x_j)|}.
+\]
+
+Thus \(0\leq L_i\leq 1\). The weighted round error is
+
+\[
+E_m=\sum_i w_i L_i,\qquad \sum_i w_i=1.
+\]
+
+## Learner weight and observation update
+
+For the classic AdaBoost.R2 scheme used in these slides, when \(0<E_m<0.5\), define
+
+\[
+\beta_m=\frac{E_m}{1-E_m},\qquad
+\alpha_m=\log\left(\frac{1}{\beta_m}\right).
+\]
+
+Update each observation's weight by
+
+\[
+w_i^{\text{new}}\propto w_i\,\beta_m^{\,1-L_i},
+\]
+
+then normalize the weights to sum to one. Large-loss observations are downweighted less (and therefore become relatively more important) than small-loss observations.
+
+## What is a regression stump?
+
+A stump makes one split on \(x\) and predicts a constant within each side. We choose the split and leaf predictions to minimize **weighted squared error** for the current observation weights.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main="A regression stump is piecewise constant")
+abline(v=8.5, lty=2, col="gray40")
+segments(1, mean(dat$y[dat$x<=8]), 8, mean(dat$y[dat$x<=8]), lwd=3, col="#2878B5")
+segments(9, mean(dat$y[dat$x>8]), 16, mean(dat$y[dat$x>8]), lwd=3, col="#2878B5")
+text(4.5, mean(dat$y[dat$x<=8])+0.6, "Left leaf", col="#2878B5")
+text(12.5, mean(dat$y[dat$x>8])+0.6, "Right leaf", col="#2878B5")
+grid()
+```
+
+## Round 1: start with equal weights
+
+Initially, every observation is equally important:
+
+\[
+w_i^{(1)}=1/n.
+\]
+
+We fit the first stump using these weights. After predicting each training point, we calculate its normalized absolute loss and the weighted average loss.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+# Fit a one-split regression stump by exhaustive search.
+fit_stump <- function(x, y, w) {
+  ord <- order(x); xs <- sort(unique(x))
+  cuts <- (xs[-length(xs)] + xs[-1]) / 2
+  best <- NULL; best_sse <- Inf
+  for (cut in cuts) {
+    left <- x <= cut; right <- !left
+    if (!any(left) || !any(right)) next
+    mu_l <- weighted.mean(y[left], w[left]); mu_r <- weighted.mean(y[right], w[right])
+    pred <- ifelse(left, mu_l, mu_r)
+    sse <- sum(w * (y-pred)^2)
+    if (sse < best_sse) { best_sse <- sse; best <- list(cut=cut, left=mu_l, right=mu_r, pred=pred, sse=sse) }
+  }
+  best
+}
+predict_stump <- function(model, x) ifelse(x <= model$cut, model$left, model$right)
+losses <- function(y, pred) {
+  ae <- abs(y-pred); mx <- max(ae)
+  if (mx == 0) rep(0, length(ae)) else ae/mx
+}
+boost_fit <- function(dat, M=3) {
+  n <- nrow(dat); w <- rep(1/n,n); models <- vector("list",M); hist <- vector("list",M)
+  for (m in seq_len(M)) {
+    model <- fit_stump(dat$x, dat$y, w)
+    pred <- predict_stump(model, dat$x)
+    L <- losses(dat$y,pred); E <- sum(w*L)
+    # Numerical guard for degenerate perfect learners.
+    E <- min(max(E, 1e-8), 0.499999)
+    beta <- E/(1-E); alpha <- log(1/beta)
+    w_new <- w * beta^(1-L); w_new <- w_new/sum(w_new)
+    models[[m]] <- model
+    hist[[m]] <- data.frame(round=m, x=dat$x, y=dat$y, pred=pred, weight=w,
+                            loss=L, new_weight=w_new, E=E, beta=beta, alpha=alpha)
+    w <- w_new
+  }
+  list(models=models, history=hist)
+}
+fit <- boost_fit(dat, M=3)
+round1 <- fit$history[[1]]
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main=sprintf("Round 1 stump (weighted error = %.3f)", round1$E[1]))
+ord <- order(dat$x)
+lines(dat$x[ord], round1$pred[ord], type="s", lwd=3, col="#2878B5")
+segments(dat$x, dat$y, dat$x, round1$pred, col=adjustcolor("gray30",.55))
+legend("topleft", c("Observed response","Round 1 stump","Residual"),
+       pch=c(19,NA,NA), lty=c(NA,1,1), lwd=c(NA,3,1), col=c("black","#2878B5","gray30"), bty="n")
+grid()
+```
+
+## Round 1: inspect the errors
+
+The normalized loss \(L_i\) is zero for a perfect prediction and one for the largest residual in the round. The weighted error \(E_1\) averages these losses using the current weights.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+barplot(round1$loss, names.arg=round1$x, col="#E69F00", border=NA,
+        xlab="Input x (observation)", ylab="Normalized absolute loss",
+        main="Round 1: normalized loss for each observation", ylim=c(0,1.08))
+abline(h=mean(round1$loss), lty=2, col="gray40")
+```
+
+## Round 1: update observation weights
+
+Observations with larger loss receive a smaller multiplicative penalty than well-predicted observations. After the update, weights are normalized to sum to one.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+barplot(round1$new_weight, names.arg=round1$x, col="#CC79A7", border=NA,
+        xlab="Input x (observation)", ylab="Weight after round 1",
+        main="The next stump pays relatively more attention to hard points")
+abline(h=1/nrow(dat), lty=2, col="gray40")
+legend("topright", "Initial equal weight", lty=2, col="gray40", bty="n")
+```
+
+## Round 2: refit using the new weights
+
+The second stump is fitted to the **same observations**, but the weighted squared-error criterion has changed because the weights changed. It may choose a different split and different leaf values.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+round2 <- fit$history[[2]]
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main=sprintf("Round 2 stump (weighted error = %.3f)", round2$E[1]))
+lines(dat$x[order(dat$x)], round2$pred[order(dat$x)], type="s", lwd=3, col="#D55E00")
+segments(dat$x, dat$y, dat$x, round2$pred, col=adjustcolor("gray30",.55))
+legend("topleft", c("Observed response","Round 2 stump"), pch=c(19,NA),
+       lty=c(NA,1), lwd=c(NA,3), col=c("black","#D55E00"), bty="n")
+grid()
+```
+
+## Round 2: the weights have shifted
+
+Compare the observation weights before and after round 2. A point that was hard for the current learner tends to become more influential in the next round.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+w_before2 <- round2$weight
+w_after2 <- round2$new_weight
+mat <- rbind(w_before2, w_after2)
+bp <- barplot(mat, beside=TRUE, names.arg=dat$x, col=c("#56B4E9","#D55E00"),
+              xlab="Input x (observation)", ylab="Observation weight",
+              main="Round 2: weights before vs. after update", border=NA)
+legend("topright", c("Before round 2","After round 2"), fill=c("#56B4E9","#D55E00"), bty="n")
+```
+
+## Round 3: another correction
+
+A third stump is fitted using the round-2 weights. Each new stump is not necessarily better everywhere; the purpose of boosting is to combine their strengths.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+round3 <- fit$history[[3]]
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main=sprintf("Round 3 stump (weighted error = %.3f)", round3$E[1]))
+lines(dat$x[order(dat$x)], round3$pred[order(dat$x)], type="s", lwd=3, col="#009E73")
+segments(dat$x, dat$y, dat$x, round3$pred, col=adjustcolor("gray30",.55))
+legend("topleft", c("Observed response","Round 3 stump"), pch=c(19,NA),
+       lty=c(NA,1), lwd=c(NA,3), col=c("black","#009E73"), bty="n")
+grid()
+```
+
+## Compare the three weak learners
+
+Each stump is a coarse approximation. Their split locations and predictions reflect the observation weights available at that round.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 5
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main="Three stumps fitted sequentially")
+cols <- c("#2878B5", "#D55E00", "#009E73")
+for (m in 1:3) lines(dat$x[order(dat$x)], fit$history[[m]]$pred[order(dat$x)], type="s", lwd=2.5, col=cols[m])
+legend("topleft", c("Observed","Stump 1","Stump 2","Stump 3"),
+       pch=c(19,NA,NA,NA), lty=c(NA,1,1,1), lwd=c(NA,2.5,2.5,2.5),
+       col=c("black",cols), bty="n")
+grid()
+```
+
+## Combining learners in AdaBoost.R2
+
+The classic AdaBoost.R2 prediction combines the learners using a **weighted median**, with learner weights \(\alpha_m=\log(1/\beta_m)\). A weighted median is the first prediction value where the cumulative learner weight reaches at least half the total weight.
+
+```{r}
+weighted_median <- function(values, weights) {
+  o <- order(values); values <- values[o]; weights <- weights[o]
+  values[which(cumsum(weights) >= sum(weights)/2)[1]]
+}
+alpha <- sapply(fit$history, function(h) h$alpha[1])
+pred_mat <- sapply(fit$history, function(h) h$pred)
+ensemble_train <- apply(pred_mat, 1, weighted_median, weights=alpha)
+```
+
+## Final model: weighted median of stump predictions
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.8
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main="AdaBoost.R2 ensemble after three rounds")
+lines(dat$x[order(dat$x)], ensemble_train[order(dat$x)], type="s", lwd=4, col="#7B3294")
+legend("topleft", c("Observed response","Boosted prediction"), pch=c(19,NA),
+       lty=c(NA,1), lwd=c(NA,4), col=c("black","#7B3294"), bty="n")
+grid()
+```
+
+## Where does the ensemble improve?
+
+Compare the final predictions with the observed values. The vertical segments are residuals. A boosted model is not guaranteed to reduce every individual residual, but the sequence is designed to focus subsequent learners on observations that remain difficult.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+plot(dat$x, dat$y, pch=19, xlab="Input x", ylab="Response y",
+     main="Observed values and final ensemble residuals")
+segments(dat$x, dat$y, dat$x, ensemble_train, col="#7B3294", lwd=2)
+points(dat$x, ensemble_train, pch=17, col="#7B3294", cex=1.1)
+legend("topleft", c("Observed","Ensemble prediction","Residual"),
+       pch=c(19,17,NA), lty=c(NA,NA,1), lwd=c(NA,NA,2),
+       col=c("black","#7B3294","#7B3294"), bty="n")
+grid()
+```
+
+## Training error by round
+
+The plot below compares weighted normalized loss for each round with the ordinary mean absolute error of that round's stump on the training data.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+round_err <- data.frame(round=1:3,
+  weighted_normalized_loss=sapply(fit$history, function(h) h$E[1]),
+  training_MAE=sapply(fit$history, function(h) mean(abs(h$y-h$pred))))
+plot(round_err$round, round_err$weighted_normalized_loss, type="b", pch=19, lwd=2,
+     xaxt="n", xlab="Boosting round", ylab="Error",
+     main="Error of each weak learner (not the ensemble)", ylim=range(c(round_err$weighted_normalized_loss, round_err$training_MAE)))
+axis(1, at=1:3)
+lines(round_err$round, round_err$training_MAE, type="b", pch=17, lwd=2, col="#D55E00")
+legend("topright", c("Weighted normalized loss","Training MAE"),
+       col=c("black","#D55E00"), pch=c(19,17), lty=1, lwd=2, bty="n")
+grid()
+```
+
+## How learning rate changes boosting
+
+A learning-rate parameter \(\nu\in(0,1]\) can make boosting more conservative. Implementations differ in exactly how they apply this parameter in AdaBoost.R2, so the learner-weight formula and update rule should always be checked for the chosen software. In this hand-worked version, \(\nu=1\) is used for the canonical weight updates shown above.
+
+- Smaller learning rates usually require more rounds.
+- More rounds do not automatically mean better generalization.
+- Select the number of rounds and learning rate using validation or cross-validation.
+
+## Important cautions
+
+- AdaBoost.R2 has variants; software implementations can differ in loss, update, and aggregation details.
+- The formula here uses normalized absolute error and a weighted-median prediction, a classic AdaBoost.R2 formulation.
+- If a learner's weighted error is at least 0.5, the classic scheme does not assign it a useful positive learner weight; practical implementations handle this case explicitly.
+- Training plots alone do not measure performance on new data. Use a held-out test set or cross-validation.
+
+## Summary
+
+1. Begin with equal observation weights.
+2. Fit a regression stump using weighted squared error.
+3. Compute normalized absolute losses and the weighted error.
+4. Update observation weights so hard-to-predict observations matter more.
+5. Repeat, then combine stump predictions using learner weights.
+
+**Takeaway:** AdaBoost for regression is a sequential process: each weak learner is trained in the context created by the errors of previous learners.
+
+## Discussion questions
+
+1. Which observations received the largest weights after round 1, and why?
+2. Why can the second stump differ from the first even though the training data have not changed?
+3. What is the difference between a stump's weighted error and the ensemble's prediction error?
+4. Why should the number of boosting rounds be selected using validation data?

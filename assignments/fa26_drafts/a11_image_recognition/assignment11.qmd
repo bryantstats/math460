@@ -1,0 +1,67 @@
+---
+title: "Assignment 11: Image Recognition with CNNs and Transfer Learning"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+In Assignment 6 you recognized images with a random forest on raw pixel values. In this short assignment you will use the two ideas behind modern image recognition:
+
+-   **Part A, convolutional neural networks (CNNs):** build a small CNN in PyTorch, compare it with a fully connected network on Fashion-MNIST, and look inside its first layer.
+-   **Part B, transfer learning:** reuse ResNet-18, a large CNN already trained on 1.2 million photos, to recognize **your own categories of images** from only a few dozen examples per category.
+
+Part A is short and the same for everyone. **Part B is the main part**: most of the points are for explaining what happens with *your* images.
+
+## What to Submit
+
+Submit the following on Canvas:
+
+| Deliverable | Format |
+|---|---|
+| Notebook | The completed `assignment11_student.ipynb`, with all cells run |
+| Your images | A zip file of your image folder (or a link to it) |
+
+Be ready to show your results in class: in about 2 minutes, show your categories, your accuracy, and one mistake your model made.
+
+The easiest way to run the notebook is [Google Colab](https://colab.research.google.com), where PyTorch and torchvision are already installed (upload your image folder to Colab or to Google Drive). On your laptop, install them with `pip install torch torchvision`. Part A takes about 2–4 minutes on a laptop CPU.
+
+## Part A: CNNs on Fashion-MNIST (Questions 1–3, 35 points)
+
+| Question | Topic | Points |
+|---|---|:---:|
+| 1 | Build and train a CNN with two convolutional layers | 10 |
+| 2 | Compare it with a fully connected network (given); count the parameters of a convolutional layer **by hand** | 15 |
+| 3 | Look at the learned filters and feature maps, and describe two of **your** filters | 10 |
+
+## Part B: Transfer Learning on Your Own Images (Questions 4–7, 65 points)
+
+1.  Choose **2 or 3 categories** of images you want to recognize, for example dogs vs cats, kinds of food, cars vs trucks, or Bryant buildings. Pick categories you care about.
+2.  Collect **at least 30 images per category**. Search engines work well.
+3.  Put the images in one folder with **one subfolder per category**:
+
+```
+my_images/
+    category_1/   img1.jpg, img2.png, ...
+    category_2/   ...
+```
+
+The notebook reads `.jpg`, `.jpeg`, `.png`, `.jfif`, `.webp` and `.bmp` files. Images saved from Google are often `.jfif` or `.webp`.
+
+| Question | Topic | Points |
+|---|---|:---:|
+| 4 | Turn every image into 512 features with a pretrained ResNet-18 | 5 |
+| 5 | Train a classifier on the features; compare it with a random forest on raw pixels; explain the difference **for your categories** | 20 |
+| 6 | Explain 3 of your model's mistakes, and what you would change about your data to fix them | 20 |
+| 7 | Your own experiment (choose one): fewer images, your own phone photos, or a harder category | 20 |
+
+## How Answers Are Graded
+
+The code is the easy part. Most points are for **explanations that are specific to your results and your images**: what in *that* photo confused the model, why *your* categories are easy or hard to tell apart. An answer that would fit anyone's images gets little credit.
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot), including to write code. Your explanations must be your own and about your own results. Include a short statement describing how you used AI and anything it got wrong that you had to fix.

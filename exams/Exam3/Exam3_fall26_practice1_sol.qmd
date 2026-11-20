@@ -1,0 +1,237 @@
+---
+title: "Math 460: Exam 3 Practice 1 (Solution)"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    embed-resources: true
+    html-math-method: katex
+---
+
+**Notice:** *These are NOT the problems on Exam 3. They are SIMILAR to the problems on Exam 3.* Try the problems first on the [printable practice (PDF)](Exam3_fall26_practice1.pdf), then check your work here.
+
+**ReLU function:** $\text{ReLU}(z) = \max(0, z)$.
+
+# Problem 1. LASSO
+
+This is a **regression problem**: we want to predict a numeric target $y$ from two inputs, $x_1$ and $x_2$, using the data below.
+
+| $x_1$ | $x_2$ | $y$ |
+|:-----:|:-----:|:-----:|
+| 1 | 0 | -2 |
+| 2 | 1 | 0 |
+| 3 | -2 | -1 |
+| 4 | 3 | 1 |
+
+Consider these four models:
+
+$$
+\begin{aligned}
+\text{Model A:} \quad \hat{y} &= -2 + 0.5 x_1 + 0.25 x_2 \\
+\text{Model B:} \quad \hat{y} &= -1.25 + 0.25 x_1 + 0.25 x_2 \\
+\text{Model C:} \quad \hat{y} &= -0.5 + 0 x_1 + 0.25 x_2 \\
+\text{Model D:} \quad \hat{y} &= -0.5 + 0 x_1 + 0 x_2
+\end{aligned}
+$$
+
+Each model has the form $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$. Its total squared loss is $L(w_0, w_1, w_2) = \sum (\hat{y} - y)^2$. LASSO adds a penalty on the size of the slopes $w_1$ and $w_2$. The best model is the one with the smallest **objective**:
+
+$$\text{Objective} = L(w_0, w_1, w_2) + \alpha \left( |w_1| + |w_2| \right)$$
+
+The number $\alpha$ sets how strong the penalty is. The intercept $w_0$ is not penalized.
+
+a. Which of the four models is best when $\alpha = 0$? With $\alpha = 0$ there is no penalty, so this is the ordinary linear model.
+
+b. Which of the four models is best when $\alpha = 4$?
+
+c. Which of the four models is best when $\alpha = 7$?
+
+d. Which of the four models is best when $\alpha = 10$?
+
+e. As $\alpha$ increases, what happens to the slopes of the best model?
+
+::: {.callout-tip}
+## Solution
+
+**Start by calculating the loss of each model.** For Model A:
+
+| Row | $x_1$ | $x_2$ | $y$ | $\hat{y} = -2 + 0.5 x_1 + 0.25 x_2$ | $\hat{y} - y$ | $(\hat{y} - y)^2$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| 1 | 1 | 0 | -2 | $-2 + 0.5 + 0 = -1.5$ | 0.5 | 0.25 |
+| 2 | 2 | 1 | 0 | $-2 + 1 + 0.25 = -0.75$ | -0.75 | 0.5625 |
+| 3 | 3 | -2 | -1 | $-2 + 1.5 - 0.5 = -1$ | 0 | 0 |
+| 4 | 4 | 3 | 1 | $-2 + 2 + 0.75 = 0.75$ | -0.25 | 0.0625 |
+
+Adding the last column gives $L = 0.875$. The other models work the same way:
+
+| Model | $\hat{y}$, row 1 | $\hat{y}$, row 2 | $\hat{y}$, row 3 | $\hat{y}$, row 4 | $L$ | $\lvert w_1 \rvert + \lvert w_2 \rvert$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| A | -1.5 | -0.75 | -1 | 0.75 | $0.25 + 0.5625 + 0 + 0.0625 = 0.875$ | $0.5 + 0.25 = 0.75$ |
+| B | -1 | -0.5 | -1 | 0.5 | $1 + 0.25 + 0 + 0.25 = 1.5$ | $0.25 + 0.25 = 0.5$ |
+| C | -0.5 | -0.25 | -1 | 0.25 | $2.25 + 0.0625 + 0 + 0.5625 = 2.875$ | $0 + 0.25 = 0.25$ |
+| D | -0.5 | -0.5 | -0.5 | -0.5 | $2.25 + 0.25 + 0.25 + 2.25 = 5$ | $0 + 0 = 0$ |
+
+**Then calculate each objective,** $L + \alpha \times (\lvert w_1 \rvert + \lvert w_2 \rvert)$. The smallest in each column is in bold.
+
+| Model | $\alpha = 0$ | $\alpha = 4$ | $\alpha = 7$ | $\alpha = 10$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|
+| A | **0.875** | $0.875 + 4(0.75) = 3.875$ | $0.875 + 7(0.75) = 6.125$ | $0.875 + 10(0.75) = 8.375$ |
+| B | 1.5 | $1.5 + 4(0.5) =$ **3.5** | $1.5 + 7(0.5) = 5$ | $1.5 + 10(0.5) = 6.5$ |
+| C | 2.875 | $2.875 + 4(0.25) = 3.875$ | $2.875 + 7(0.25) =$ **4.625** | $2.875 + 10(0.25) = 5.375$ |
+| D | 5 | $5 + 4(0) = 5$ | $5 + 7(0) = 5$ | $5 + 10(0) =$ **5** |
+
+a. Model A is best at $\alpha = 0$, with objective 0.875. It has the smallest loss, and it uses both inputs.
+
+b. Model B is best at $\alpha = 4$, with objective 3.5. It uses both inputs, with a smaller slope on $x_1$ than Model A.
+
+c. Model C is best at $\alpha = 7$, with objective 4.625. It uses only $x_2$.
+
+d. Model D is best at $\alpha = 10$, with objective 5. It uses neither input and predicts $-0.5$, the mean of $y$, for every row.
+
+e. The slopes shrink toward 0, and they reach exactly 0.
+:::
+
+# Problem 2. Image Recognition (CNN)
+
+A CNN takes the $5 \times 5$ grayscale image $X$ and applies the $2 \times 2$ filter $K$ (bias 0, stride 1, no padding).
+
+$$
+X = \begin{bmatrix}
+1 & 0 & 3 & 3 & 0 \\
+0 & 1 & 3 & 2 & 0 \\
+0 & 0 & 2 & 3 & 1 \\
+1 & 0 & 3 & 3 & 0 \\
+0 & 0 & 1 & 2 & 0
+\end{bmatrix}
+\qquad
+K = \begin{bmatrix} -1 & 1 \\ -1 & 1 \end{bmatrix}
+$$
+
+The convolution gives the $4 \times 4$ feature map below. Its first row is missing.
+
+$$
+\text{Feature map} = \begin{bmatrix}
+\boxed{\ ?_1\ } & \boxed{\ ?_2\ } & \boxed{\ ?_3\ } & \boxed{\ ?_4\ } \\
+1 & 4 & 0 & -4 \\
+-1 & 5 & 1 & -5 \\
+-1 & 4 & 1 & -5
+\end{bmatrix}
+$$
+
+**Present your solution the way the sample solution does:** draw the grids of squares and the network, and write each calculation next to the drawing.
+
+a. Compute the first row of the feature map, $?_1$, $?_2$, $?_3$ and $?_4$. For each one, draw the image as a grid of squares and box the $2 \times 2$ window, then write out filter × window (multiply the matching numbers and add).
+
+b. Apply ReLU to the feature map, then $2 \times 2$ max pooling to get a $2 \times 2$ map. Draw the feature map, the map after ReLU, and the pooled map as grids of squares. Outline the four $2 \times 2$ pooling blocks and write the max of each block.
+
+c. Flatten the pooled map row by row into $\mathbf{a} = (a_1, a_2, a_3, a_4)$. Draw $\mathbf{a}$ as a row of 4 squares.
+
+d. Dense layer: $z_A = 0.2a_1 + 0.2a_3$ and $z_B = a_2 + a_4$ (biases 0). Draw the network: 4 input nodes $a_1, \dots, a_4$, 2 output nodes $z_A, z_B$, and a line from each input to each output labeled with its weight (dashed for weight 0). Compute both scores.
+
+e. Softmax: compute $p_A$ and $p_B$. Use $e^1 \approx 2.72$ and $e^2 \approx 7.39$. Add the softmax step to your network drawing: an arrow from each score to its probability node. Which class is predicted?
+
+**Solution:** [Step-by-step solution slides](Exam3_fall26_practice1_cnn_sol.html) (click through the first-row windows, ReLU, pooling, and the dense layer).
+
+# Problem 3. Recommendation System
+
+A podcast app gives every podcast a 2-number embedding (number 1: news and business, number 2: comedy and stories). **These podcast embeddings were learned beforehand** by the app's model from all users' listening data, so in this problem they are **known**. Only Sarah's embedding must be computed.
+
+| Podcast | Embedding (news, comedy) |
+|:---:|:---:|
+| Podcast A | (0.8, 0.2) |
+| Podcast B | (0.2, 0.9) |
+| Podcast C | (0.6, 0.6) |
+| Podcast D | (0.1, 0.4) |
+| Podcast E | (0.9, 0.8) |
+| Podcast F | (0.1, 1.2) |
+
+Last month **Sarah** listened to **Podcast E** and **Podcast F**.
+
+a. Compute **Sarah's embedding** as the **average** of the podcasts she listened to.
+
+b. Score every podcast with the **dot product**. Recommend the top 2 that Sarah has **not** heard.
+
+**One week later.** Sarah played **Podcast C** and **Podcast D**; she skipped Podcast B. Three **new** podcasts were also released this week (their embeddings were also learned beforehand):
+
+| New this week | Embedding (news, comedy) |
+|:---:|:---:|
+| Podcast G | (1.0, 0.5) |
+| Podcast H | (0.1, 1.0) |
+| Podcast I | (0.7, 0.9) |
+
+c. Recompute Sarah's embedding as a **weighted average** of her 4 plays: older plays (E, F) count **1**, this week's plays (C, D) count **2**. Score the 5 podcasts she has not heard (A, B, G, H, I) and recommend the top 2.
+
+d. Sarah also gave **feedback**: she **liked** Podcast D and tapped **"not interested"** on Podcast C. The app doubles the weight of a liked play and gives a "not interested" play weight **−1**. Recompute her embedding and her top 2.
+
+::: {.callout-tip}
+## Solution
+
+a. Average each number separately over the podcasts Sarah heard:
+
+$$
+\mathbf{u} = \left(\frac{0.9 + 0.1}{2},\ \frac{0.8 + 1.2}{2}\right) = (0.5,\ 1)
+$$
+
+Sarah leans toward comedy and stories, with some news.
+
+b. Score $= \mathbf{u} \cdot \mathbf{v} = 0.5 \times \text{news} + 1 \times \text{comedy}$, sorted from high to low:
+
+| Podcast | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| E | (0.9, 0.8) | $0.5(0.9) + 1(0.8) = 1.25$ | heard |
+| F | (0.1, 1.2) | $0.5(0.1) + 1(1.2) = 1.25$ | heard |
+| B | (0.2, 0.9) | $0.5(0.2) + 1(0.9) = 1$ | **recommend** |
+| C | (0.6, 0.6) | $0.5(0.6) + 1(0.6) = 0.9$ | **recommend** |
+| A | (0.8, 0.2) | $0.5(0.8) + 1(0.2) = 0.6$ | |
+| D | (0.1, 0.4) | $0.5(0.1) + 1(0.4) = 0.45$ | |
+
+**Recommend Podcast B (1) and Podcast C (0.9).** E and F score higher, but she has already heard them.
+
+c. **Weighted average** = (total of weight × value) ÷ (total weight).
+
+| Podcast | Embedding | Weight | weight × news | weight × comedy |
+|:---:|:---:|:---:|:---:|:---:|
+| E | (0.9, 0.8) | 1 (older) | 0.9 | 0.8 |
+| F | (0.1, 1.2) | 1 (older) | 0.1 | 1.2 |
+| C | (0.6, 0.6) | 2 (this week) | 1.2 | 1.2 |
+| D | (0.1, 0.4) | 2 (this week) | 0.2 | 0.8 |
+| **total** | | **6** | **2.4** | **4** |
+
+$$\mathbf{u} = \left(\frac{2.4}{6},\ \frac{4}{6}\right) = (0.4,\ 0.667)$$
+
+Her vector moved toward C and D, her newest plays. Scores ($0.4 \times \text{news} + 0.667 \times \text{comedy}$):
+
+| Podcast | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| I | (0.7, 0.9) | $0.4(0.7) + 0.667(0.9) = 0.88$ | **recommend** |
+| G | (1.0, 0.5) | $0.4(1.0) + 0.667(0.5) = 0.733$ | **recommend** |
+| H | (0.1, 1.0) | $0.4(0.1) + 0.667(1.0) = 0.707$ | |
+| B | (0.2, 0.9) | $0.4(0.2) + 0.667(0.9) = 0.68$ | |
+| A | (0.8, 0.2) | $0.4(0.8) + 0.667(0.2) = 0.453$ | |
+
+**Recommend Podcast I (0.88) and Podcast G (0.733).**
+
+d. A liked play counts double ($2 \times 2 = 4$ for D); a "not interested" play counts $-1$ (C).
+
+| Podcast | Embedding | Weight | weight × news | weight × comedy |
+|:---:|:---:|:---:|:---:|:---:|
+| E | (0.9, 0.8) | 1 (older) | 0.9 | 0.8 |
+| F | (0.1, 1.2) | 1 (older) | 0.1 | 1.2 |
+| C | (0.6, 0.6) | −1 (not interested) | −0.6 | −0.6 |
+| D | (0.1, 0.4) | 4 (this week, liked) | 0.4 | 1.6 |
+| **total** | | **5** | **0.8** | **3** |
+
+$$\mathbf{u} = \left(\frac{0.8}{5},\ \frac{3}{5}\right) = (0.16,\ 0.6)$$
+
+Scores ($0.16 \times \text{news} + 0.6 \times \text{comedy}$):
+
+| Podcast | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| I | (0.7, 0.9) | $0.16(0.7) + 0.6(0.9) = 0.652$ | **recommend** |
+| H | (0.1, 1.0) | $0.16(0.1) + 0.6(1.0) = 0.616$ | **recommend** |
+| B | (0.2, 0.9) | $0.16(0.2) + 0.6(0.9) = 0.572$ | |
+| G | (1.0, 0.5) | $0.16(1.0) + 0.6(0.5) = 0.46$ | |
+| A | (0.8, 0.2) | $0.16(0.8) + 0.6(0.2) = 0.248$ | |
+
+**Recommend Podcast I (0.652) and Podcast H (0.616).** Podcast G (news) drops out because Sarah rejected C, the play with the most news. Podcast H (stories, close to D) comes in because she liked D. Same plays with different feedback give different recommendations: feedback tells the system how much she valued each play.
+:::

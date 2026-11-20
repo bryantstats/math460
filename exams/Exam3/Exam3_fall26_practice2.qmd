@@ -1,0 +1,139 @@
+---
+title: "Math 460: Exam 3 Practice 2"
+format:
+  pdf:
+    documentclass: article
+    geometry:
+      - top=.5in
+      - bottom=.5in
+      - left=.6in
+      - right=.6in
+    header-includes:
+      - \pagestyle{empty}
+      - \pagenumbering{gobble}
+      - \usepackage{enumitem}
+      - \setlist{nosep}
+---
+
+**Notice:** *These are NOT the problems on Exam 3. They are SIMILAR to the problems on Exam 3.* The solution is posted on the class webpage.
+
+**Instructions (same as on the exam):**
+
+- Show all work. Full credit requires correct steps, not only the final answer.
+- Points are shown for each problem (100 points in total).
+- Formula sheet: permitted. Calculators: basic, non-graphing calculators allowed.
+- Round your answers to 3 decimal places.
+
+**ReLU function:** $\text{ReLU}(z) = \max(0, z)$.
+
+## Problem 1. LASSO (30 points)
+
+This is a **regression problem**: we want to predict a numeric target $y$ from two inputs, $x_1$ and $x_2$, using the data below.
+
+| $x_1$ | $x_2$ | $y$ |
+|:-----:|:-----:|:-----:|
+| 1 | 2 | 0 |
+| 2 | 0 | -2 |
+| 3 | 1 | 3 |
+| 4 | -1 | 3 |
+
+Consider these four models:
+
+$$
+\begin{aligned}
+\text{Model A:} \quad \hat{y} &= -7.5 + 3 x_1 + 2 x_2 \\
+\text{Model B:} \quad \hat{y} &= -3 + 1.5 x_1 + 0.5 x_2 \\
+\text{Model C:} \quad \hat{y} &= -1.5 + 1 x_1 + 0 x_2 \\
+\text{Model D:} \quad \hat{y} &= 1 + 0 x_1 + 0 x_2
+\end{aligned}
+$$
+
+Each model has the form $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$. Its total squared loss is $L(w_0, w_1, w_2) = \sum (\hat{y} - y)^2$. LASSO adds a penalty on the size of the slopes $w_1$ and $w_2$. The best model is the one with the smallest **objective**:
+
+$$\text{Objective} = L(w_0, w_1, w_2) + \alpha \left( |w_1| + |w_2| \right)$$
+
+The number $\alpha$ sets how strong the penalty is. The intercept $w_0$ is not penalized.
+
+a. (6 points) Which of the four models is best when $\alpha = 0$? With $\alpha = 0$ there is no penalty, so this is the ordinary linear model.
+
+b. (6 points) Which of the four models is best when $\alpha = 3$?
+
+c. (6 points) Which of the four models is best when $\alpha = 6$?
+
+d. (6 points) Which of the four models is best when $\alpha = 10$?
+
+e. (6 points) As $\alpha$ increases, what happens to the slopes of the best model? Which input is dropped first?
+
+\newpage
+
+## Problem 2. Image Recognition (CNN) (40 points)
+
+A CNN takes the $5 \times 5$ grayscale image $X$ and applies the $2 \times 2$ filter $K$ (bias 0, stride 1, no padding).
+
+$$
+X = \begin{bmatrix}
+1 & 2 & 0 & 1 & 1 \\
+2 & 0 & 2 & 0 & 3 \\
+1 & 0 & 1 & 0 & 2 \\
+1 & 0 & 1 & 1 & 1 \\
+1 & 2 & 0 & 0 & 1
+\end{bmatrix}
+\qquad
+K = \begin{bmatrix} 1 & -1 \\ -1 & 1 \end{bmatrix}
+$$
+
+The convolution gives the $4 \times 4$ feature map below. Its first row is missing.
+
+$$
+\text{Feature map} = \begin{bmatrix}
+\boxed{\ ?_1\ } & \boxed{\ ?_2\ } & \boxed{\ ?_3\ } & \boxed{\ ?_4\ } \\
+1 & -1 & 1 & -1 \\
+0 & 0 & 1 & -2 \\
+2 & -3 & 0 & 1
+\end{bmatrix}
+$$
+
+**Present your solution the way the sample solution does:** draw the grids of squares and the network, and write each calculation next to the drawing.
+
+a. (12 points) Compute the first row of the feature map, $?_1$, $?_2$, $?_3$ and $?_4$. For each one, draw the image as a grid of squares and box the $2 \times 2$ window, then write out filter $\times$ window (multiply the matching numbers and add).
+
+b. (10 points) Apply ReLU to the feature map, then $2 \times 2$ max pooling to get a $2 \times 2$ map. Draw the feature map, the map after ReLU, and the pooled map as grids of squares. Outline the four $2 \times 2$ pooling blocks and write the max of each block.
+
+c. (4 points) Flatten the pooled map row by row into $\mathbf{a} = (a_1, a_2, a_3, a_4)$. Draw $\mathbf{a}$ as a row of 4 squares.
+
+d. (8 points) Dense layer: $z_A = a_4$ and $z_B = 0.5a_2 + 0.5a_4$ (biases 0). Draw the network: 4 input nodes $a_1, \dots, a_4$, 2 output nodes $z_A, z_B$, and a line from each input to each output labeled with its weight (dashed for weight 0). Compute both scores.
+
+e. (6 points) Softmax: compute $p_A$ and $p_B$. Use $e^1 \approx 2.72$ and $e^2 \approx 7.39$. Add the softmax step to your network drawing: an arrow from each score to its probability node. Which class is predicted?
+
+\newpage
+
+## Problem 3. Recommendation System (30 points)
+
+A music app gives every song a 2-number embedding (number 1: upbeat and dance, number 2: acoustic and calm). **These song embeddings were learned beforehand** by the app's model from all users' listening data, so in this problem they are **known**. Only the user's embedding must be computed.
+
+| Song | Embedding (upbeat, acoustic) |
+|:---:|:---:|
+| Song A | (0.8, 0.2) |
+| Song B | (0.7, 0.8) |
+| Song C | (1.1, 0.5) |
+| Song D | (0.3, 0.9) |
+| Song E | (0.2, 0.2) |
+| Song F | (0.7, 0.2) |
+
+Last month **the user** played **Song E** and **Song F**.
+
+a. (6 points) Compute **the user's embedding** as the **average** of the songs they played.
+
+b. (6 points) Score every song with the **dot product**. Recommend the top 2 that the user has **not** played.
+
+**One week later.** The user played **Song C** (one of our picks) and **Song D** (which we did not recommend); they skipped Song B. Three **new** songs were also released this week (their embeddings were also learned beforehand):
+
+| New this week | Embedding (upbeat, acoustic) |
+|:---:|:---:|
+| Song G | (1.1, 0.4) |
+| Song H | (0.1, 1.2) |
+| Song I | (1.0, 0.6) |
+
+c. (9 points) Recompute the user's embedding as a **weighted average** of their 4 plays: older plays (E, F) count **1**, this week's plays (C, D) count **2**. Score the 5 songs they have not played (A, B, G, H, I) and recommend the top 2.
+
+d. (9 points) The user also gave **feedback**: they **liked** Song D and tapped **"not interested"** on Song C. The app doubles the weight of a liked play and gives a "not interested" play weight **$-1$**. Recompute their embedding and their top 2.

@@ -1,0 +1,52 @@
+---
+title: "SAS - Practice: Decision Tree"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+-------
+
+_**What to do:**_  Using Zoom or another software Make a tutorial video for beginners to address the follows. Submit the video link to Blackboard. If you not familiar with screen recording using Zoom, you can follow this instruction:
+
+
+_**Instruction**_:  A similar video solution to this assignment on the titanic dataset can be found in the links below.  The videos walk through all the questions of this assignments.
+
+
+-------
+
+1. Download and Import to SAS Miner the `Breast Cancer Wisconsin (Diagnostic) Data Set` at [this link](breast_cancer.csv). 
+
+2. Reject all the `text` variables.  Set `diagnosis` as the binary target. 
+
+3. Split the data 70:30:0 for Training: Validation: Test. Create the following decision trees.  
+
+    - a decision tree used `Gini Index` for splitting (Nominal Target Criterion)
+  
+    - a decision tree used `Entropy` for splitting (Nominal Target Criterion)
+  
+    - a decision tree used Chi-squared test for splitting (Nominal Target Criterion)
+  
+    - a decision tree with 4 leaves. 
+
+4. What is the best split with the highest logworth (-log(p))?  What is the logworth of that slit?
+
+5. Compare the trees in terms of misclassification rate and ROC-Index. 
+
+6. Show the confusion matrix (classification table) of the `Entropy` tree and compute its F1-Score on validation data.
+
+7. What is the best tree in term of misclassification.  In that tree, what is the most important variables? 
+
+8. How many leaves that tree in 7. have? Explain why the tree ended up with that number of leaves. (i.e., explain the `Subtree Assessment Plot`).
+
+
+
+
+
+

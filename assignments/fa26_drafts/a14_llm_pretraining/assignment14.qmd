@@ -1,0 +1,50 @@
+---
+title: "Assignment 14: Pre-training a Tiny LLM"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+Large language models like ChatGPT and Claude are built in three stages:
+
+| Stage | What the model learns | Assignment |
+|---|---|---|
+| 1. **Pre-training** | Predict the next token on a large amount of text → a **base model** | **14 (this one)** |
+| 2. **Instruction tuning** | Respond to a request instead of just continuing text | 15 |
+| 3. **Preference tuning** | Prefer good responses over bad ones | 16 |
+
+In this assignment you will build a small GPT-style model from scratch and pre-train it on **TinyStories**, a collection of short stories written with the vocabulary of a 3–4-year-old. It is the same recipe as the big models, only much smaller: about 480 thousand parameters instead of hundreds of billions.
+
+## What to Submit
+
+Submit the completed notebook `assignment14_student.ipynb` on Canvas, with all cells run. **Keep the file `base_model.pt`** that the notebook saves at the end: Assignment 15 starts from it.
+
+The notebook needs PyTorch. You can run it on your laptop (`pip install torch`) or on [Google Colab](https://colab.research.google.com). Training the GPT takes about **8–15 minutes** on a laptop CPU, so start early.
+
+## The Questions
+
+| Question | Topic |
+|---|---|
+| 1 | Character tokenizer: `encode` and `decode` |
+| 2 | Turn text into training examples ("predict the next character") |
+| 3 | The loss of random guessing |
+| 4 | Train a bigram model: the training loop |
+| 5 | Generate text by sampling, with a temperature |
+| 6 | Code one attention head (queries, keys, values, causal mask) |
+| 7 | The transformer block: residual connections and LayerNorm |
+| 8 | Count the parameters of the tiny GPT |
+| 9 | Pre-train the GPT; compare loss and perplexity with the bigram; try different temperatures |
+| 10 | Does the model use its context? Loss by position |
+| 11 | Ask the base model a question. Why doesn't it answer? |
+
+## Background
+
+The lecture notes [How an LLM Works](../../../llm/how_an_llm_works.html) and the class notebook *Tiny LLM from Scratch* explain each step. This assignment uses the same model, with a larger context (128 characters instead of 64) and a fixed character vocabulary shared by Assignments 14–16.
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

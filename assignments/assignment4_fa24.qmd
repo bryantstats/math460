@@ -1,0 +1,37 @@
+---
+title: "Assignment 4: SAS - Practice with Ensenble Models"
+format: html
+editor: visual
+---
+
+-------
+
+Make a presentation of you doing the follows. Using Zoom to record a video of the presentation and the link of the video or the video to Canvas. 
+
+-------
+
+[Video Instruction]()
+
+1. Create a SAS Library and into the library the following dataset
+
+[Breast Cancer Wisconsin](https://bryantstats.github.io/math460/data/breast_cancer.csv)
+
+2. Create a data source from the above dataset for model building. Reject all the `text` variables.  Set `diagnosis` as the binary target. 
+
+3. Split the data 70:30:0 for Training: Validation: Test. Train the following models.  
+
+    - A random forest of 100 trees maximum
+  
+    - A random forest of 200 trees maximum
+  
+    - A random forest that have 150 trees maximum and consider 3 variables at each split for the trees.
+  
+    - A gradient boosting with 200 iterations and the learning rate (shrinkage) of 0.05
+    
+    - A bagging model of 5 regression models
+    
+    - A boosting model of 5 regression models
+
+4. Out of the models in Question 3, what is the best model in term of misclassification? 
+
+5. Make an effort to find a better model than the model in Question 4

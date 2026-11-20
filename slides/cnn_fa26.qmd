@@ -1,0 +1,2471 @@
+---
+title: "🦇 Convolutional Neural Networks"
+subtitle: "From one sliding filter to the networks that changed computer vision"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    code-line-numbers: false
+    menu: true
+    footer: "Convolutional neural networks"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { font-size: 1.6em; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.6em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display { font-size: 0.85em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 600px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal .slides section .h520 img { max-height: 520px !important; }
+          .reveal .slides section .h440 img { max-height: 440px !important; }
+          .reveal .slides section .h400 img { max-height: 400px !important; }
+          .reveal .slides section .h360 img { max-height: 360px !important; }
+          .reveal .slides section .h300 img { max-height: 300px !important; }
+          .reveal .view { font-weight: bold; color: #B8621B; font-size: 0.72em; border-bottom: 3px solid #FAC18A; padding-bottom: 0.1em; margin-bottom: 0.4em; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .note { font-size: 0.48em; color: #555; margin-top: 0.4em; }
+          .reveal .note p { font-size: 1em; }
+          .reveal .r-stack img { background: #ffffff; }
+          .reveal .sources li { font-size: 0.5em; margin: 0.12em 0; }
+          .reveal pre { font-size: 0.47em; width: 100%; box-shadow: none; }
+          .reveal pre code { max-height: none; line-height: 1.3; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import base64, io
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, Polygon, FancyBboxPatch
+from IPython.display import display, HTML, Markdown
+from scipy.signal import correlate2d
+from sklearn.datasets import load_sample_image
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+FILL = {"in": "#dfe8ff", "hid": "#FDE3C8", "out": "#dcf3e2", "grey": "#eeeeee"}
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 13, "axes.edgecolor": "#999999",
+                     "xtick.color": "#555555", "ytick.color": "#555555"})
+
+R = np.load("cnn_fa26_assets/results.npz")   # made by cnn_fa26_assets/make_results.py
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def n(x, d=3):
+    """Format a number: trailing zeros off, and no negative zero."""
+    s = f"{x:.{d}f}"
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s in ("-0", "") else s
+
+
+def c(x):
+    """A whole number with thousands separators."""
+    return f"{int(x):,}"
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=150, facecolor="white")
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def show_fig(fig):
+    display(HTML(f'<img src="{png_uri(fig)}">'))
+
+
+def stack(figs):
+    """Layer figures on top of each other; each click reveals the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def steps(lines):
+    """Each line appears on its own click. Line 0 is always visible."""
+    out = [lines[0]]
+    out += [f'::: {{.fragment fragment-index="{i}"}}\n{l}\n:::' for i, l in enumerate(lines[1:], 1)]
+    md("\n\n".join(out))
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(x) for x in r) + " |" for r in rows)
+    md(s)
+
+
+def conv(x, w, b=0, mode="valid"):
+    """The sliding sum, with no flip of the filter (what deep learning libraries compute)."""
+    return b + correlate2d(np.asarray(x, float), np.asarray(w, float), mode=mode)
+
+
+def relu(z):
+    return np.maximum(0, z)
+
+
+def pool(a, s=2):
+    h, w = a.shape[0] // s, a.shape[1] // s
+    return a[:h * s, :w * s].reshape(h, s, w, s).max(axis=(1, 3))
+
+
+def out_size(n_, f, p=0, s=1):
+    return (n_ - f + 2 * p) // s + 1
+
+
+def conv_params(f, c_in, k, bias=True):
+    return (f * f * c_in + (1 if bias else 0)) * k
+
+
+def fc_params(m, k):
+    return (m + 1) * k
+
+
+# ------------------------------------------------------------------
+# Drawing helpers. Grids have their top-left corner at (x, y), one unit per cell.
+# ------------------------------------------------------------------
+def canvas(size, xlim, ylim):
+    fig, ax = plt.subplots(figsize=size)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.subplots_adjust(0, 0, 1, 1)
+    return fig, ax
+
+
+def cells(ax, A, x=0, y=0, cmap=None, vmin=None, vmax=None, fs=15, text=True, face="white", title=None, tfs=14, fmt=None, lw=1.0):
+    A = np.asarray(A, float)
+    cm = plt.get_cmap(cmap) if cmap else None
+    vmin = A.min() if vmin is None else vmin
+    vmax = A.max() if vmax is None else vmax
+    for r in range(A.shape[0]):
+        for k in range(A.shape[1]):
+            fc, tc = face, INK
+            if cm:
+                t = 0.5 if vmax == vmin else (A[r, k] - vmin) / (vmax - vmin)
+                fc = cm(t)
+                tc = "white" if 0.299 * fc[0] + 0.587 * fc[1] + 0.114 * fc[2] < 0.55 else INK
+            ax.add_patch(Rectangle((x + k, y - r - 1), 1, 1, fc=fc, ec="#999999", lw=lw, zorder=2))
+            if text:
+                label = fmt(A[r, k]) if fmt else n(A[r, k])
+                ax.text(x + k + 0.5, y - r - 0.5, label, ha="center", va="center", fontsize=fs, color=tc, zorder=3)
+    if title:
+        ax.text(x + A.shape[1] / 2, y + 0.35, title, ha="center", va="bottom", fontsize=tfs, fontweight="bold", color="#444444", linespacing=1.3)
+
+
+def frame(ax, x, y, h, w, color=ORANGE, lw=4):
+    """Highlight the block of h rows and w columns whose top-left corner is at (x, y)."""
+    ax.add_patch(Rectangle((x, y - h), w, h, fc="none", ec=color, lw=lw, zorder=5))
+
+
+def arrow(ax, x0, y0, x1, y1, color="#777777", lw=1.6, style="-|>", z=4):
+    ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle=style, color=color, lw=lw, shrinkA=0, shrinkB=0), zorder=z)
+
+
+def block(ax, x, y, w, h, d, fc="#dfe8ff", ec=BLUE, lw=1.5, z=3, ox=0.55, oy=0.4):
+    """A 3D box. Its front face has bottom-left corner (x, y); d is drawn up and to the right."""
+    dx, dy = d * ox, d * oy
+    ax.add_patch(Polygon([(x, y + h), (x + dx, y + h + dy), (x + w + dx, y + h + dy), (x + w, y + h)], fc=fc, ec=ec, lw=lw, zorder=z, alpha=0.85))
+    ax.add_patch(Polygon([(x + w, y), (x + w + dx, y + dy), (x + w + dx, y + h + dy), (x + w, y + h)], fc=fc, ec=ec, lw=lw, zorder=z, alpha=0.6))
+    ax.add_patch(Rectangle((x, y), w, h, fc=fc, ec=ec, lw=lw, zorder=z + 0.1))
+
+
+def activation_icon(ax, x, y, width, height, color, lw=2.2):
+    t = np.linspace(-1, 1, 60)
+    shape = np.where(t < 0, -0.75, -0.75 + 1.75 * t)
+    ax.plot(x + t * width / 2, y + shape * height / 2, color=color, lw=lw, solid_capstyle="round", zorder=7)
+
+
+# ------------------------------------------------------------------
+# Data used throughout: a real MNIST digit and two real photos
+# ------------------------------------------------------------------
+digit = R["sample_digit"]
+digits = R["mnist_examples"]
+order = R["shuffle_order"]
+china = load_sample_image("china.jpg")[::2, ::2].mean(axis=2) / 255.0
+flower = load_sample_image("flower.jpg")[::2, ::2] / 255.0
+
+V_EDGE = np.array([[-1, 0, 1]] * 3)
+H_EDGE = V_EDGE.T
+BLUR = np.ones((3, 3)) / 9
+SHARPEN = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+OUTLINE = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
+
+
+def shifted(a, dx=0, dy=0):
+    """Move an image; pixels moved in from outside are 0."""
+    out = np.zeros_like(a)
+    h, w = a.shape
+    out[max(dy, 0):h + min(dy, 0), max(dx, 0):w + min(dx, 0)] = a[max(-dy, 0):h + min(-dy, 0), max(-dx, 0):w + min(-dx, 0)]
+    return out
+```
+
+## Where We Are
+
+:::: {.columns}
+::: {.column width="52%"}
+**What we already know**
+
+-   Every node does two steps: it **adds** its weighted inputs, then applies an **activation function**.
+-   A layer of $k$ nodes after a layer of $m$ nodes has $(m + 1) \times k$ parameters.
+-   The framework: choose $f(x, w)$, define a loss, find $w$ by gradient descent.
+-   Deep learning deck: a **convolutional** network won ImageNet in 2012 and changed the field.
+:::
+
+::: {.column width="48%"}
+**Today's plan**
+
+-   **Part 1.** Why regular networks struggle with images
+-   **Part 2.** The 2D convolution: one filter on a grayscale image
+-   **Part 3.** From 2D to 3D: color, stacks of filters, video and scans
+-   **Part 4.** A whole CNN, with every number counted
+-   **Part 5.** Why it works so well on images: four experiments
+-   **Part 6.** How CNNs changed the field
+:::
+::::
+
+::: {.key}
+**The main message:** a CNN uses the same nodes as before, with two extra rules. Each node looks at a **small patch**, and all nodes **share the same weights**. Those two rules fit how images work.
+:::
+
+# Part 1. Why Not Use a Regular Network?
+
+## An Image Is a Grid of Numbers
+
+```{python}
+fig, ax = plt.subplots(1, 2, figsize=(12.6, 5.6), gridspec_kw=dict(width_ratios=[1, 1.02]))
+ax[0].imshow(digit, cmap="gray", vmin=0, vmax=1)
+r0, c0, size = 5, 8, 10
+ax[0].add_patch(Rectangle((c0 - 0.5, r0 - 0.5), size, size, fc="none", ec=ORANGE, lw=3))
+ax[0].set_title("A real MNIST digit: 28 × 28 pixels", fontsize=15, fontweight="bold", color="#444444")
+ax[0].axis("off")
+ax[1].set_xlim(-0.2, size + 0.2)
+ax[1].set_ylim(-size - 0.2, 0.2)
+ax[1].set_aspect("equal")
+ax[1].axis("off")
+cells(ax[1], digit[r0:r0 + size, c0:c0 + size], cmap="gray", vmin=0, vmax=1, fs=12.5, fmt=lambda v: f"{v:.1f}".replace("0.0", "0").replace("1.0", "1"))
+ax[1].set_title("The orange box, as the computer sees it", fontsize=15, fontweight="bold", color="#444444")
+fig.tight_layout()
+show_fig(fig)
+```
+
+Each pixel is one number, from 0 (black) to 1 (white). A grayscale image is a **2D array**: rows and columns of numbers. Those numbers are our inputs $x_1, x_2, \dots$
+
+## First Try: Flatten It and Use a Regular Network
+
+```{python}
+assert fc_params(784, 128) == 100480 and fc_params(150528, 1000) == 150529000 and fc_params(3000000, 1000) == 3000001000
+```
+
+:::: {.columns}
+::: {.column width="46%"}
+```{python}
+fig, ax = canvas((6.9, 5.3), (-0.6, 15.4), (-6.6, 5.7))
+small = digit[4:24:2, 4:24:2]
+cells(ax, small, x=-0.2, y=3.8, cmap="gray", vmin=0, vmax=1, text=False, lw=0.5)
+ax.text(4.8, 4.4, "28 × 28 image", ha="center", fontsize=14, fontweight="bold", color="#444444")
+arrow(ax, 10.0, -1.2, 11.0, -1.2)
+xs = np.linspace(4.9, -5.2, 9)
+for i, yy in enumerate(xs):
+    if i in (4,):
+        ax.text(11.6, yy, "⋮", ha="center", va="center", fontsize=17, color=INK)
+        continue
+    ax.add_patch(plt.Circle((11.6, yy), 0.42, fc=FILL["in"], ec=BLUE, lw=1.3, zorder=4))
+    for j, y2 in enumerate(np.linspace(3.7, -4.0, 5)):
+        ax.plot([11.6, 14.5], [yy, y2], color="#cccccc", lw=0.6, zorder=1)
+for y2 in np.linspace(3.7, -4.0, 5):
+    ax.add_patch(plt.Circle((14.5, y2), 0.42, fc=FILL["hid"], ec=ORANGE, lw=1.3, zorder=4))
+ax.text(11.6, -6.15, "784 inputs", ha="center", va="center", fontsize=13)
+ax.text(14.6, -6.15, "128", ha="center", va="center", fontsize=13)
+show_fig(fig)
+```
+:::
+
+::: {.column width="54%"}
+Stack the rows into one long list and use it as the input layer. It works for small images, but the cost grows quickly.
+
+**Problem 1: too many parameters.** Using $(m + 1) \times k$ for the **first layer alone**:
+
+```{python}
+table(["Image", "Inputs $m$", "Nodes $k$", "Parameters"], [
+    ["28 × 28, gray", "784", "128", c(fc_params(784, 128))],
+    ["224 × 224, color", "150,528", "1,000", c(fc_params(150528, 1000))],
+    ["1000 × 1000, color", "3,000,000", "1,000", c(fc_params(3000000, 1000))],
+])
+```
+
+A color image has 3 numbers per pixel, so $224 \times 224 \times 3 = 150{,}528$ inputs. More parameters need more data and memory, and they overfit more easily.
+:::
+::::
+
+## Problem 2: Flattening Throws Away the Map
+
+::: {.h360}
+```{python}
+fig, ax = plt.subplots(2, 6, figsize=(10.2, 3.95))
+for j in range(6):
+    ax[0, j].imshow(digits[j], cmap="gray", vmin=0, vmax=1)
+    ax[1, j].imshow(digits[j].ravel()[order].reshape(28, 28), cmap="gray", vmin=0, vmax=1)
+    ax[0, j].axis("off")
+    ax[1, j].axis("off")
+fig.text(0.5, 0.955, "Real digits", ha="center", fontsize=15, fontweight="bold", color="#444444")
+fig.text(0.5, 0.475, "The same digits, with the pixels moved around in one fixed random order", ha="center", fontsize=15, fontweight="bold", color="#444444")
+fig.subplots_adjust(left=0.02, right=0.98, top=0.94, bottom=0.01, hspace=0.3, wspace=0.05)
+show_fig(fig)
+```
+:::
+
+-   You cannot read the bottom row. A fully connected network has no such trouble: it has no idea which inputs are neighbors.
+-   Reorder the inputs and the weights can simply be reordered to match, so nothing is lost. We test this claim on real data in Part 5.
+
+::: {.key}
+A fully connected network treats a picture like a spreadsheet of unrelated columns. It ignores the most useful fact about images: **nearby pixels belong together**.
+:::
+
+## Problem 3: Same Digit, Different Inputs
+
+```{python}
+moved = shifted(digit, dx=2)
+lit, lit2 = digit > 0.5, moved > 0.5
+stay = (lit & lit2).sum() / lit.sum()
+overlay = np.dstack([1 - lit2 * 0.25 - lit * 0.85, 1 - lit * 0.55 - lit2 * 0.55, 1 - lit * 0.15 - lit2 * 0.85]).clip(0, 1)
+fig, ax = plt.subplots(1, 3, figsize=(11.6, 4.1))
+for a, img, t in [(ax[0], digit, "A digit"), (ax[1], moved, "Moved 2 pixels right")]:
+    a.imshow(img, cmap="gray", vmin=0, vmax=1)
+    a.set_title(t, fontsize=15, fontweight="bold", color="#444444")
+    a.axis("off")
+ax[2].imshow(overlay)
+ax[2].set_title("Pixels that are bright in each", fontsize=15, fontweight="bold", color="#444444")
+ax[2].axis("off")
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+md(f"-   To us, these are the same 3. To a fully connected network, they are very different inputs: only **{stay:.0%}** of the bright pixels stay bright. (In the right panel, blue is the digit, orange is the moved copy, and dark is where they agree.)\n"
+   "-   A weight is tied to one position. A network that learned a curve in one spot must learn it **again** for every other spot.")
+```
+
+## Three Facts About Images, Three Design Choices
+
+| What we know about images | So we design the network to... | Name |
+|:------------------:|:-----------------------:|:------:|
+| **Locality:** a pixel relates most to its neighbors | Let each node see only a small patch | Local connections |
+| **Repetition:** an edge looks the same anywhere in the image | Reuse the same weights at every position | Weight sharing |
+| **Hierarchy:** edges form shapes, shapes form parts, parts form objects | Stack layers, and shrink the image along the way | Deep layers and pooling |
+
+::: {.key}
+A convolutional neural network (**CNN**) is what you get when you build these three facts into the network. We start with the smallest piece: one filter on a grayscale image.
+:::
+
+# Part 2. The 2D Convolution
+
+## The Idea: A Small Filter That Slides
+
+:::: {.columns}
+::: {.column width="44%"}
+A **filter** (or **kernel**) is a small grid of weights. It works like a stencil you slide across the image:
+
+1.  Place the filter on a patch of the image.
+2.  Multiply each pixel by the weight on top of it.
+3.  Add the results. That one number goes in the output.
+4.  Move the filter over one pixel and repeat.
+
+The grid of outputs is called a **feature map**. It shows **where** in the image the filter found its pattern.
+:::
+
+::: {.column width="56%"}
+```{python}
+fig, ax = canvas((8.2, 4.8), (-0.3, 17.2), (-8.6, 1.4))
+img = np.array([[0, 0, 0, 1, 1, 1]] * 6)
+cells(ax, img, cmap="gray", vmin=0, vmax=1, title="Image: 6 × 6")
+for col, colr, ls in [(0, ORANGE, "-"), (1, ORANGE, ":"), (2, ORANGE, ":")]:
+    ax.add_patch(Rectangle((col, -3), 3, 3, fc="none", ec=colr, lw=3.4 if col == 0 else 1.8, ls=ls, zorder=5))
+arrow(ax, 0.3, -6.7, 5.6, -6.7, color=ORANGE, lw=2.6)
+ax.text(3, -7.25, "the filter moves right, then down", ha="center", va="top", fontsize=13.5, color="#444444")
+cells(ax, V_EDGE, x=8.6, y=-1.5, cmap="RdBu", vmin=-2.4, vmax=2.4, fs=16, title="Filter: 3 × 3")
+ax.text(10.1, -5.0, "our weights", ha="center", va="center", fontsize=13.5, color="#444444")
+out = conv(img, V_EDGE)
+cells(ax, out, x=13, y=-1, cmap="Oranges", vmin=0, vmax=5, fs=16, title="Feature map: 4 × 4")
+arrow(ax, 6.3, -3, 8.3, -3)
+arrow(ax, 11.9, -3, 12.8, -3)
+show_fig(fig)
+```
+:::
+::::
+
+::: {.key}
+A convolution is the same multiply-and-add from every node we have built. What is new is that it **repeats at every position** with the same weights.
+:::
+
+## Worked Example: Slide the Filter
+
+```{python}
+img = np.array([[0, 0, 0, 1, 1, 1]] * 6)
+OUT = conv(img, V_EDGE)
+assert OUT.shape == (4, 4) and (OUT == np.array([[0, 3, 3, 0]] * 4)).all()
+
+
+def term(w, x):
+    return f"({w})({x})"
+
+
+def slide_fig(pos, done):
+    """pos: (row, col) of the filter, or None. done: how many outputs are filled in."""
+    fig, ax = canvas((13.0, 6.6), (-0.3, 20.2), (-10.4, 0.95))
+    cells(ax, img, cmap="gray", vmin=0, vmax=1, fs=17, title="Image")
+    cells(ax, V_EDGE, x=8, y=-1.5, cmap="RdBu", vmin=-2.4, vmax=2.4, fs=18, title="Filter (weights)")
+    shown = np.full(OUT.shape, np.nan)
+    for i in range(done):
+        shown[i // 4, i % 4] = OUT[i // 4, i % 4]
+    for r in range(4):
+        for k in range(4):
+            v = shown[r, k]
+            ax.add_patch(Rectangle((14 + k, -1 - r - 1), 1, 1, fc="white" if np.isnan(v) else plt.get_cmap("Oranges")(v / 5), ec="#999999", zorder=2))
+            if not np.isnan(v):
+                ax.text(14.5 + k, -1 - r - 0.5, n(v), ha="center", va="center", fontsize=18, zorder=3)
+    ax.text(16, -0.65, "Feature map", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    ax.text(7, -3, "×", ha="center", va="center", fontsize=24, color="#555555")
+    ax.text(12.5, -3, "=", ha="center", va="center", fontsize=24, color="#555555")
+    if pos is not None:
+        r, k = pos
+        frame(ax, k, -r, 3, 3)
+        frame(ax, 14 + k, -1 - r, 1, 1)
+        patch = img[r:r + 3, k:k + 3]
+        terms = " + ".join(term(V_EDGE[i, j], patch[i, j]) for i in range(3) for j in range(3))
+        prods = " + ".join(n(V_EDGE[i, j] * patch[i, j]) for i in range(3) for j in range(3))
+        ax.text(-0.2, -6.75, f"Inner product of the filter and the highlighted patch  (output row {r + 1}, column {k + 1}):",
+                ha="left", va="center", fontsize=14, color="#444444")
+        ax.text(-0.2, -7.75, "z  =  " + terms, ha="left", va="center", fontsize=14, family="DejaVu Sans")
+        ax.text(-0.2, -8.75, "    =  " + prods, ha="left", va="center", fontsize=14, family="DejaVu Sans")
+        ax.text(-0.2, -9.75, f"    =  {n(OUT[r, k])}", ha="left", va="center", fontsize=15, fontweight="bold", color=RED)
+    return fig
+
+
+stack([slide_fig((p // 4, p % 4), p + 1) for p in range(16)])
+```
+
+Click to slide through all 16 positions. The left column of the filter subtracts and the right column adds, so the filter asks: **is it brighter on the right than on the left?** Once the filter reaches the end of a row, it drops down one pixel and starts again.
+
+## The Same Calculation on a Real Photo
+
+```{python}
+# Block-average a 384 x 384 crop of the photo down to 64 x 64 and store whole-number pixels 0-255.
+_g = load_sample_image("china.jpg").mean(axis=2)[0:384, 100:484]
+PHOTO = np.rint(_g.reshape(64, 6, 64, 6).mean(axis=(1, 3))).astype(int)
+assert PHOTO.shape == (64, 64) and PHOTO.min() >= 0 and PHOTO.max() <= 255
+
+PHOTO_FILTERS = [("Vertical edges", V_EDGE, True), ("Horizontal edges", H_EDGE, True), ("Blur", BLUR, False),
+                 ("Sharpen", SHARPEN, False), ("Outline", OUTLINE, True)]
+
+
+def wfmt(w):
+    return "1/9" if np.isclose(w, 1 / 9) else n(w)
+
+
+def photo_fig(name, w, use_abs, Z, pos, done=()):
+    """One frame: the photo, the zoomed patch, the filter, and the feature map showing only the pixels in done (pos None = finished)."""
+    m = Z.shape[0]
+    fig, ax = canvas((13.0, 6.9), (-0.3, 23.0), (-11.2, 1.0))
+    # Input photo, drawn 7 units wide
+    S = 7.0
+    ax.imshow(PHOTO, cmap="gray", vmin=0, vmax=255, extent=(0, S, -S, 0), zorder=1, interpolation="nearest")
+    ax.add_patch(Rectangle((0, -S), S, S, fc="none", ec="#999999", lw=1, zorder=2))
+    ax.text(S / 2, 0.35, f"Input photo: {PHOTO.shape[0]} × {PHOTO.shape[1]}", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    # Feature map, drawn the same size, showing only the pixels computed so far; the full map only at the end
+    D = np.abs(Z) if use_abs else np.clip(Z, 0, 255)
+    vmax = np.percentile(D, 99.5) if use_abs else 255
+    shown = np.ma.masked_all(Z.shape)
+    if pos is None:
+        shown = np.ma.array(D)
+    else:
+        for rr, kk in done:
+            shown[rr, kk] = D[rr, kk]
+    cm = plt.get_cmap("gray").copy()
+    cm.set_bad("#f3f3f3")
+    X0 = 15.7
+    ax.imshow(shown, cmap=cm, vmin=0, vmax=vmax, extent=(X0, X0 + S, -S, 0), zorder=1, interpolation="nearest")
+    if pos is not None:
+        q = S / m
+        for rr, kk in done:          # outline each computed pixel so bright and dark ones both show
+            ax.add_patch(Rectangle((X0 + kk * q, -(rr + 1) * q), q, q, fc="none", ec=BLUE, lw=0.9, zorder=3))
+    ax.add_patch(Rectangle((X0, -S), S, S, fc="none", ec="#999999", lw=1, zorder=2))
+    ax.text(X0 + S / 2, 0.35, f"Feature map: {m} × {m}", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    count = m * m if pos is None else len(done)
+    ax.text(X0 + S / 2, -S - 0.4, f"computed so far: {count:,} of {m * m:,} pixels", ha="center", va="top", fontsize=12.5, fontweight="bold", color=BLUE)
+    ax.text(X0 + S / 2, -S - 1.05, ("brightness = |z|" if use_abs else "brightness = z, clipped to 0–255"), ha="center", va="top", fontsize=12, color="#555555")
+    # Filter
+    lim = np.abs(w).max() * 2
+    cells(ax, w, x=11.55, y=-2.0, cmap="RdBu", vmin=-lim, vmax=lim, fs=15, fmt=wfmt, title=f"Filter: {name}", tfs=13)
+    ax.text(10.95, -3.5, "×", ha="center", va="center", fontsize=22, color="#555555")
+    ax.text(15.05, -3.5, "=", ha="center", va="center", fontsize=22, color="#555555")
+    if pos is None:
+        ax.text(-0.2, -8.6, f"Done: the filter visited all {m} × {m} = {m * m:,} positions, one inner product for each pixel of the feature map.",
+                ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+        ax.text(-0.2, -9.5, "Compare the feature map with the input photo to see what this filter picks out.", ha="left", va="center", fontsize=13.5, color="#444444")
+        return fig
+    r, k = pos
+    px = S / PHOTO.shape[0]
+    patch = PHOTO[r:r + 3, k:k + 3]
+    # Box on the photo, its zoomed copy, and the matching output pixel
+    ax.add_patch(Rectangle((k * px, -(r + 3) * px), 3 * px, 3 * px, fc="none", ec=ORANGE, lw=2.6, zorder=5))
+    cells(ax, patch, x=7.5, y=-2.0, cmap="gray", vmin=0, vmax=255, fs=13, title="Patch (zoomed)", tfs=13)
+    ax.add_patch(Rectangle((7.5, -5.0), 3, 3, fc="none", ec=ORANGE, lw=3, zorder=5))
+    for yy in (0, 3):
+        ax.plot([k * px + 3 * px, 7.5], [-(r + yy) * px, -2.0 - yy], color=ORANGE, lw=1.2, ls="--", zorder=4)
+    qm = S / m   # the feature map has its own pixel size
+    ax.add_patch(Rectangle((X0 + k * qm - 0.12, -(r + 1) * qm - 0.12), qm + 0.24, qm + 0.24, fc="none", ec=ORANGE, lw=2.6, zorder=5))
+    # The inner product, written out underneath
+    ws, xs = w.ravel(), patch.ravel()
+    groups = [" + ".join(f"({wfmt(ws[3 * i + j])})({xs[3 * i + j]})" for j in range(3)) for i in range(3)]
+    if np.allclose(ws, ws[0]):   # blur: every weight is 1/9, so factor it out
+        prods = f"(1/9)({' + '.join(str(v) for v in xs)})  =  (1/9)({xs.sum()})"
+    else:
+        vals = [a * b for a, b in zip(ws, xs)]
+        prods = ("−" if vals[0] < 0 else "") + n(abs(vals[0]), 1)
+        prods += "".join((" − " if v < 0 else " + ") + n(abs(v), 1) for v in vals[1:])
+    ax.text(-0.2, -8.25, f"Inner product of the filter and the patch at output row {r + 1}, column {k + 1}:", ha="left", va="center", fontsize=13.5, color="#444444")
+    ax.text(-0.2, -9.1, "z  =  " + groups[0] + "  +  " + groups[1] + "  +", ha="left", va="center", fontsize=13, family="DejaVu Sans")
+    ax.text(-0.2, -9.8, "       " + groups[2], ha="left", va="center", fontsize=13, family="DejaVu Sans")
+    ax.text(-0.2, -10.6, "    =  " + prods + "  =  ", ha="left", va="center", fontsize=13, family="DejaVu Sans")
+    t = ax.texts[-1]
+    fig.canvas.draw()
+    bb = t.get_window_extent().transformed(ax.transData.inverted())
+    ax.text(bb.x1, -10.6, n(Z[r, k], 1).replace("-", "−"), ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+    return fig
+
+
+# One filter (vertical edges, as on the last slide), sliding in reading order and stopping at 90 positions.
+# Each stop works out one inner product, and only the pixels computed so far appear; the full feature map appears at the end.
+name, w, use_abs = PHOTO_FILTERS[0]
+Z = conv(PHOTO, w)
+assert Z.shape == (62, 62)
+
+
+def row_stops(r, strong=3, spread=2):
+    """Columns to stop at on row r: the strongest edges (kept apart) plus a few evenly spaced ones, left to right."""
+    cols = []
+    for k in np.argsort(-np.abs(Z[r])):
+        if len(cols) == strong:
+            break
+        if all(abs(k - c) >= 7 for c in cols):
+            cols.append(int(k))
+    for k in np.linspace(3, 58, spread + 2)[1:-1].astype(int):
+        if all(abs(k - c) >= 5 for c in cols):
+            cols.append(int(k))
+    return sorted(cols)
+
+
+stops = [(int(r), k) for r in np.linspace(2, 58, 24).astype(int) for k in row_stops(int(r), strong=4)]
+stops = [stops[i] for i in np.unique(np.linspace(0, len(stops) - 1, 90).round().astype(int))]   # keep 90, spread over the photo
+assert len(stops) == 90
+frames, done = [], []
+for r, k in stops:
+    assert np.isclose(Z[r, k], (w * PHOTO[r:r + 3, k:k + 3]).sum())
+    done.append((r, k))
+    frames.append(photo_fig(name, w, use_abs, Z, (r, k), done))
+frames.append(photo_fig(name, w, use_abs, Z, None))
+
+
+stack(frames)
+```
+
+Click to slide the vertical-edge filter from slide 11 across a real photo: left to right, then down. Each click works out the inner product at one position, and only that pixel is added to the feature map. The last click shows the finished map, all 3,844 pixels: **bright exactly where the photo has vertical edges.**
+
+## The Same Calculation on a Gray Image: Blur
+
+```{python}
+# A 29 x 21 pixel-art sprite, read cell by cell from the example in 3Blue1Brown's "But what is a convolution?"
+SPRITE = """
+.....................
+.....................
+.........KKKK.KKK....
+.......KKRRRKKSSSK...
+......KRRRRRRKSSSK...
+.....KRRRKKKKKKSSK...
+....KRRRKKKKKKKKSK...
+....KRKKSSSSSSKKK....
+...KKKKSSSKSKSKRRK...
+...KSKKSSSKSKSKRRK...
+..KSSKKKSSSSSSSKRK...
+..KSSSKSSKSSSSSKRK...
+...KSSSSKKKKSSKKK....
+....KKSSSSKKKKKRK....
+.....KKKSSSSSKRRK....
+....KRRRKKKKKKRK.....
+...KRRRRRKKRRKK......
+..KRRRKKKBKRRRKK.....
+..KRRKSSSKBKRRRK.....
+..KRKSSSSSKBKKKKK....
+...KKSSSSSKWWBBKK....
+....KKSSSKBWWBKOOK...
+...KOOKKKBBBBKOOOK...
+..KKOKBBBBBBBKOOOK...
+..KOOKBBBBKKKKOOOK...
+..KOOKBKKK...KOOKK...
+..KOOKK.......KKK....
+...KK................
+.....................
+""".split()
+PALETTE = {".": (128, 128, 128), "K": (0, 0, 0), "S": (255, 231, 160), "R": (215, 20, 4),
+           "O": (186, 48, 11), "B": (46, 63, 169), "W": (255, 255, 255)}
+MARIO = np.array([[PALETTE[ch] for ch in row] for row in SPRITE])
+assert MARIO.shape == (29, 21, 3)
+
+
+def grid_image(ax, A, x0, y0, u, done=None):
+    """Draw an RGB grid with its top-left corner at (x0, y0) and cells of size u. If done is given, show only those cells."""
+    h, wd = A.shape[:2]
+    if done is None:
+        ax.imshow(np.clip(A, 0, 255).astype(np.uint8), extent=(x0, x0 + wd * u, y0 - h * u, y0), interpolation="nearest", zorder=1)
+    else:
+        ax.add_patch(Rectangle((x0, y0 - h * u), wd * u, h * u, fc="#f3f3f3", ec="none", zorder=0.5))
+        for rr, kk in done:
+            ax.add_patch(Rectangle((x0 + kk * u, y0 - (rr + 1) * u), u, u, fc=np.clip(A[rr, kk], 0, 255) / 255, ec=BLUE, lw=0.9, zorder=3))
+    for i in range(h + 1):
+        ax.plot([x0, x0 + wd * u], [y0 - i * u] * 2, color="#d0d0d0", lw=0.5, zorder=2)
+    for j in range(wd + 1):
+        ax.plot([x0 + j * u] * 2, [y0, y0 - h * u], color="#d0d0d0", lw=0.5, zorder=2)
+
+
+GRAY = np.rint(MARIO.mean(axis=2)).astype(int)    # one number per pixel: the average of R, G, B
+GBLUR = conv(GRAY, BLUR)
+assert GRAY.shape == (29, 21) and GBLUR.shape == (27, 19)
+
+
+def as_rgb(G):
+    """A gray grid as an RGB grid, so grid_image can draw it."""
+    return np.stack([G] * 3, axis=2)
+
+
+def gray_fig(pos, done):
+    """One frame: the gray sprite, the zoomed patch, the blur filter, and the feature map showing only the cells in done (pos None = finished)."""
+    fig, ax = canvas((13.0, 7.7), (-0.3, 23.0), (-12.9, 1.0))
+    u = 8.2 / 29
+    grid_image(ax, as_rgb(GRAY), 0, 0, u)
+    ax.text(21 * u / 2, 0.35, "Input image: 29 × 21 (gray)", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    X0 = 17.2
+    grid_image(ax, as_rgb(GBLUR), X0, -u, u, None if pos is None else done)
+    ax.text(X0 + 19 * u / 2, 0.35, "Feature map: 27 × 19", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    cnt = 27 * 19 if pos is None else len(done)
+    ax.text(X0 + 19 * u / 2, -28 * u - 0.15, f"computed so far: {cnt} of {27 * 19} pixels", ha="center", va="top", fontsize=12.5, fontweight="bold", color=BLUE)
+    cells(ax, BLUR, x=11.35, y=-2.0, cmap="RdBu", vmin=-2 / 9, vmax=2 / 9, fs=15, fmt=lambda v: "1/9", title="Filter: Blur", tfs=13)
+    ax.text(10.75, -3.5, "×", ha="center", va="center", fontsize=22, color="#555555")
+    ax.text(15.6, -3.5, "=", ha="center", va="center", fontsize=22, color="#555555")
+    if pos is None:
+        ax.text(-0.2, -9.6, f"Done: the filter visited all 27 × 19 = {27 * 19} positions, one inner product at each one.",
+                ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+        ax.text(-0.2, -10.5, "Each output pixel is the average of the 3 × 3 block around it, so sharp edges turn into soft ones.",
+                ha="left", va="center", fontsize=13.5, color="#444444")
+        return fig
+    r, k = pos
+    patch = GRAY[r:r + 3, k:k + 3]
+    ax.add_patch(Rectangle((k * u, -(r + 3) * u), 3 * u, 3 * u, fc="none", ec=ORANGE, lw=2.8, zorder=5))
+    cells(ax, patch, x=7.3, y=-2.0, cmap="gray", vmin=0, vmax=255, fs=13, title="Patch (zoomed)", tfs=13)
+    ax.add_patch(Rectangle((7.3, -5.0), 3, 3, fc="none", ec=ORANGE, lw=3, zorder=5))
+    for yy in (0, 3):
+        ax.plot([(k + 3) * u, 7.3], [-(r + yy) * u, -2.0 - yy], color=ORANGE, lw=1.2, ls="--", zorder=4)
+    ax.add_patch(Rectangle((X0 + k * u - 0.06, -u - (r + 1) * u - 0.06), u + 0.12, u + 0.12, fc="none", ec=ORANGE, lw=2.8, zorder=5))
+    vals = patch.ravel()
+    ax.text(-0.2, -9.1, f"Inner product of the filter and the patch (output row {r + 1}, column {k + 1}):",
+            ha="left", va="center", fontsize=13.5, color="#444444")
+    ax.text(-0.2, -9.9, f"z  =  (1/9)({' + '.join(str(v) for v in vals)})  =  (1/9)({vals.sum()})  =  {n(GBLUR[r, k], 1)}",
+            ha="left", va="center", fontsize=13, family="DejaVu Sans")
+    out = int(np.rint(GBLUR[r, k]))
+    ax.text(-0.2, -10.9, f"Output pixel = {out}", ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+    ax.add_patch(Rectangle((3.6, -11.25), 0.7, 0.7, fc=str(np.clip(GBLUR[r, k], 0, 255) / 255), ec="#555555", lw=1, zorder=3))
+    return fig
+
+
+def gray_stops():
+    """90 positions in reading order: rows 0, 2, ..., 26 (7 stops on the first six, 6 on the rest), favoring patches with the most change."""
+    var = np.array([[GRAY[r:r + 3, k:k + 3].astype(float).std() for k in range(19)] for r in range(27)])
+    out = []
+    for r, per in zip(range(0, 27, 2), [7] * 6 + [6] * 8):
+        cols = []
+        for k in np.argsort(-var[r], kind="stable"):
+            if len(cols) == per:
+                break
+            if all(abs(int(k) - c) >= 2 for c in cols):
+                cols.append(int(k))
+        for k in range(19):          # if spacing ran out of room, fill with the remaining columns
+            if len(cols) == per:
+                break
+            if k not in cols:
+                cols.append(k)
+        out += [(r, k) for k in sorted(cols)]
+    return out
+
+
+gstops = gray_stops()
+assert len(gstops) == 90
+gframes, gdone = [], []
+for r, k in gstops:
+    assert np.isclose(GBLUR[r, k], GRAY[r:r + 3, k:k + 3].mean())
+    gdone.append((r, k))
+    gframes.append(gray_fig((r, k), list(gdone)))
+gframes.append(gray_fig(None, gdone))
+stack(gframes)
+```
+
+Start simple: make the sprite **gray**. Each pixel becomes **one number**, the average of its red, green and blue values. The 1/9 blur filter from 3Blue1Brown's video *But what is a convolution?* is a single 3 × 3 grid of weights (a filter of **depth 1**), and each position takes **one** inner product: the average of the 3 × 3 block under it. Click through 90 positions; the last click shows the whole feature map.
+
+## The Same Calculation on a Color Image: Blur
+
+```{python}
+MBLUR = np.stack([conv(MARIO[:, :, ch], BLUR) for ch in range(3)], axis=2)    # blur each color channel separately
+assert MBLUR.shape == (27, 19, 3)
+
+
+def mario_fig(pos, done):
+    """One frame: the sprite, the zoomed patch, the blur filter, and the blurred image showing only the cells in done (pos None = finished)."""
+    fig, ax = canvas((13.0, 7.7), (-0.3, 23.0), (-12.9, 1.0))
+    u = 8.2 / 29
+    grid_image(ax, MARIO, 0, 0, u)
+    ax.text(21 * u / 2, 0.35, "Input image: 29 × 21 (RGB)", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    X0 = 17.2
+    grid_image(ax, MBLUR, X0, -u, u, None if pos is None else done)
+    ax.text(X0 + 19 * u / 2, 0.35, "Blurred image: 27 × 19 (RGB)", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    cnt = 27 * 19 if pos is None else len(done)
+    ax.text(X0 + 19 * u / 2, -28 * u - 0.15, f"computed so far: {cnt} of {27 * 19} pixels", ha="center", va="top", fontsize=12.5, fontweight="bold", color=BLUE)
+    cells(ax, BLUR, x=11.35, y=-2.0, cmap="RdBu", vmin=-2 / 9, vmax=2 / 9, fs=15, fmt=lambda v: "1/9", title="Filter: Blur", tfs=13)
+    ax.text(10.75, -3.5, "×", ha="center", va="center", fontsize=22, color="#555555")
+    ax.text(15.6, -3.5, "=", ha="center", va="center", fontsize=22, color="#555555")
+    if pos is None:
+        ax.text(-0.2, -9.6, f"Done: the filter visited all 27 × 19 = {27 * 19} positions, three inner products (R, G, B) at each one.",
+                ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+        ax.text(-0.2, -10.5, "Each output pixel is the average of the 3 × 3 block around it, so sharp edges turn into soft ones.",
+                ha="left", va="center", fontsize=13.5, color="#444444")
+        return fig
+    r, k = pos
+    patch = MARIO[r:r + 3, k:k + 3]
+    ax.add_patch(Rectangle((k * u, -(r + 3) * u), 3 * u, 3 * u, fc="none", ec=ORANGE, lw=2.8, zorder=5))
+    for i in range(3):
+        for j in range(3):
+            ax.add_patch(Rectangle((7.3 + j, -2.0 - i - 1), 1, 1, fc=patch[i, j] / 255, ec="#999999", lw=1, zorder=2))
+    ax.text(8.8, -1.65, "Patch (zoomed)", ha="center", va="bottom", fontsize=13, fontweight="bold", color="#444444")
+    ax.add_patch(Rectangle((7.3, -5.0), 3, 3, fc="none", ec=ORANGE, lw=3, zorder=5))
+    for yy in (0, 3):
+        ax.plot([(k + 3) * u, 7.3], [-(r + yy) * u, -2.0 - yy], color=ORANGE, lw=1.2, ls="--", zorder=4)
+    ax.add_patch(Rectangle((X0 + k * u - 0.06, -u - (r + 1) * u - 0.06), u + 0.12, u + 0.12, fc="none", ec=ORANGE, lw=2.8, zorder=5))
+    ax.text(-0.2, -9.1, f"Inner product of the filter with each color channel of the patch (output row {r + 1}, column {k + 1}):",
+            ha="left", va="center", fontsize=13.5, color="#444444")
+    for ch, (lab, col) in enumerate([("R", "#c0392b"), ("G", "#1a7f37"), ("B", "#1f4fd8")]):
+        vals = patch[:, :, ch].ravel()
+        ax.text(-0.2, -9.9 - 0.72 * ch, f"{lab}:", ha="left", va="center", fontsize=13, fontweight="bold", color=col)
+        ax.text(0.5, -9.9 - 0.72 * ch, f"(1/9)({' + '.join(str(v) for v in vals)})  =  (1/9)({vals.sum()})  =  {n(MBLUR[r, k, ch], 1)}",
+                ha="left", va="center", fontsize=13, family="DejaVu Sans")
+    out = np.rint(MBLUR[r, k]).astype(int)
+    ax.text(-0.2, -12.15, f"Output pixel = ({out[0]}, {out[1]}, {out[2]})", ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+    ax.add_patch(Rectangle((5.6, -12.5), 0.7, 0.7, fc=np.clip(MBLUR[r, k], 0, 255) / 255, ec="#555555", lw=1, zorder=3))
+    return fig
+
+
+def mario_stops():
+    """50 positions in reading order, favoring patches with the most color change, spread across each row."""
+    var = np.array([[MARIO[r:r + 3, k:k + 3].astype(float).std() for k in range(19)] for r in range(27)])
+    out = []
+    for r, per in zip(range(1, 27, 3), [6, 6, 6, 6, 6, 5, 5, 5, 5]):
+        cols = []
+        for k in np.argsort(-var[r]):
+            if len(cols) == per:
+                break
+            if all(abs(int(k) - c) >= 2 for c in cols):
+                cols.append(int(k))
+        out += [(r, k) for k in sorted(cols)]
+    return out
+
+
+mstops = mario_stops()
+assert len(mstops) == 50
+mframes, mdone = [], []
+for r, k in mstops:
+    assert np.allclose(MBLUR[r, k], MARIO[r:r + 3, k:k + 3].reshape(9, 3).mean(axis=0))
+    mdone.append((r, k))
+    mframes.append(mario_fig((r, k), list(mdone)))
+mframes.append(mario_fig(None, mdone))
+stack(mframes)
+```
+
+Now the same 1/9 blur filter on the color image. A color image has three channels (red, green, blue). Here the filter slides over **each channel separately**, so every position takes three inner products and the output is still a color image. Click through 50 positions; the last click shows the whole blurred image.
+
+## The Same Calculation on 1D Data: A Vertical Filter
+
+```{python}
+X1D = np.array([3, 4, 8, 6, 1, 5, 9, 7, 2, 0])      # 10 inputs, lined up like the input layer of a regular network
+W1D = np.array([1, 1, 1]) / 3                        # a vertical 3 x 1 filter: the 1D version of the blur
+Z1D = np.array([W1D @ X1D[i:i + 3] for i in range(len(X1D) - 2)])
+assert len(Z1D) == 8 and np.allclose(Z1D, np.round(Z1D))
+
+
+def oned_fig(pos, done):
+    """One frame: the input column, the vertical filter, and the output column showing only the nodes in done (pos None = finished)."""
+    fig, ax = canvas((13.0, 7.7), (-0.3, 23.0), (-12.9, 1.0))
+    gap, rad = 1.15, 0.42
+    xin, xout = 2.4, 9.2
+    yin = [-0.8 - gap * i for i in range(10)]
+    yout = [(yin[i] + yin[i + 2]) / 2 for i in range(8)]       # each output sits beside the middle of its 3 inputs
+    ax.text(xin, 0.35, "Input layer: 10 numbers", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    ax.text(xout, 0.35, "Feature map: 8 numbers", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+    # Connections: earlier positions in light grey, the current one in orange with its weights
+    for i in done:
+        cur = pos is not None and i == pos
+        for j in range(3):
+            ax.plot([xin + rad, xout - rad], [yin[i + j], yout[i]], color=ORANGE if cur else "#d6d6d6",
+                    lw=2.4 if cur else 1.0, zorder=4 if cur else 1)
+    # Input nodes
+    for i, v in enumerate(X1D):
+        hot = pos is not None and pos <= i < pos + 3
+        ax.add_patch(plt.Circle((xin, yin[i]), rad, fc=FILL["in"], ec=ORANGE if hot else BLUE, lw=3 if hot else 1.5, zorder=5))
+        ax.text(xin, yin[i], str(v), ha="center", va="center", fontsize=16, zorder=6)
+        ax.text(xin - 0.62, yin[i], f"$x_{{{i + 1}}}$", ha="right", va="center", fontsize=14, color="#555555")
+    # Output nodes: only those computed so far are filled in
+    for i in range(8):
+        shown = pos is None or i in done
+        hot = pos is not None and i == pos
+        ax.add_patch(plt.Circle((xout, yout[i]), rad, fc=FILL["out"] if shown else "#f3f3f3",
+                                ec=ORANGE if hot else (GREEN if shown else "#bbbbbb"), lw=3 if hot else 1.5, zorder=5))
+        if shown:
+            ax.text(xout, yout[i], n(Z1D[i]), ha="center", va="center", fontsize=16, zorder=6)
+        ax.text(xout + 0.62, yout[i], f"$z_{{{i + 1}}}$", ha="left", va="center", fontsize=14, color="#555555")
+    cnt = 8 if pos is None else len(done)
+    ax.text(xout, yin[-1] - 0.75, f"computed so far: {cnt} of 8", ha="center", va="top", fontsize=12.5, fontweight="bold", color=BLUE)
+    # The filter, drawn as a vertical 3 x 1 grid
+    cells(ax, W1D.reshape(3, 1), x=13.0, y=-1.2, cmap="RdBu", vmin=-2 / 3, vmax=2 / 3, fs=15, fmt=lambda v: "1/3",
+          title="Filter: 3 × 1 (vertical)", tfs=13)
+    if pos is None:
+        ax.text(11.2, -6.0, "Done: the filter visited all 10 − 3 + 1 = 8 positions,", ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+        ax.text(11.2, -6.75, "one inner product at each one.", ha="left", va="center", fontsize=14, fontweight="bold", color=RED)
+        ax.text(11.2, -7.9, "Each output node is connected to only 3 neighboring inputs,", ha="left", va="center", fontsize=13.5, color="#444444")
+        ax.text(11.2, -8.6, "and every output node uses the same 3 weights.", ha="left", va="center", fontsize=13.5, color="#444444")
+        return fig
+    i = pos
+    xs = X1D[i:i + 3]
+    ax.add_patch(Rectangle((xin - rad - 0.12, yin[i + 2] - rad - 0.12), 2 * rad + 0.24, yin[i] - yin[i + 2] + 2 * rad + 0.24,
+                           fc="none", ec=ORANGE, lw=2.6, zorder=6))
+    ax.text(11.2, -6.0, f"Inner product of the filter and inputs $x_{{{i + 1}}}$, $x_{{{i + 2}}}$, $x_{{{i + 3}}}$  (output $z_{{{i + 1}}}$):",
+            ha="left", va="center", fontsize=13.5, color="#444444")
+    ax.text(11.2, -7.0, "z  =  " + " + ".join(f"(1/3)({v})" for v in xs), ha="left", va="center", fontsize=14, family="DejaVu Sans")
+    ax.text(11.2, -7.9, f"    =  (1/3)({' + '.join(str(v) for v in xs)})  =  (1/3)({xs.sum()})", ha="left", va="center", fontsize=14, family="DejaVu Sans")
+    ax.text(11.2, -8.9, f"    =  {n(Z1D[i])}", ha="left", va="center", fontsize=15, fontweight="bold", color=RED)
+    return fig
+
+
+oframes, odone = [], []
+for p in range(8):
+    assert np.isclose(Z1D[p], X1D[p:p + 3].mean())
+    odone.append(p)
+    oframes.append(oned_fig(p, list(odone)))
+oframes.append(oned_fig(None, odone))
+stack(oframes)
+```
+
+The same idea works for the 1D data of a regular network, where the input layer is a **vertical line** of numbers instead of a photo. The filter is now a **vertical 3 × 1** grid of weights, here the 1D blur (1/3, 1/3, 1/3). It slides **down** the column, one step at a time, and takes one inner product at each position. With 10 inputs and a filter of length 3, the feature map has 10 − 3 + 1 = 8 numbers. Click through all 8 positions.
+
+## Do CNNs Work Well on Tabular Data?
+
+**Usually not.** On ordinary tabular data (one row per customer, patient or house), tree-based models such as random forests, XGBoost and LightGBM usually beat CNNs.
+
+| The CNN assumes... | Images | Tabular data |
+|:------------------:|:------:|:------------:|
+| **Locality:** neighbors belong together | Nearby pixels are related | Column order is arbitrary: age next to income next to zip code means nothing |
+| **Repetition:** one filter is useful everywhere | An edge is an edge anywhere in the image | "$x_3 + x_4 + x_5$ is large" and "$x_7 + x_8 + x_9$ is large" mean different things |
+| **Order matters** | Shuffle the pixels and the picture is gone | Shuffle the columns and nothing about the data changes, but the CNN's answer does |
+
+-   Tabular data has other quirks that trees handle naturally: categorical and numeric features mixed together, skewed values, useless columns, and sharp cutoffs such as "income > 50K".
+-   **Exception:** some tables are really signals in disguise, such as readings over time, spectra, or positions along a gene. The column order then carries meaning, and a 1D CNN can work well.
+
+::: {.check}
+**Your turn.** Shuffle the 10 inputs on the last slide. Does the feature map still mean anything? Would a random forest change if we shuffled the columns of its data?
+:::
+
+::: {.key}
+A convolution helps only when **the order of the inputs carries information.** Images have it; most tables do not.
+:::
+
+::: {.note}
+Grinsztajn, Oyallon and Varoquaux (2022), *Why do tree-based models still outperform deep learning on tabular data?* Shwartz-Ziv and Armon (2022), *Tabular data: Deep learning is not all you need.*
+:::
+
+## Why Is It Called "Convolutional"?
+
+-   The name comes from a math operation called **convolution** (from the Latin *convolvere*, "to roll together"). It shows up in calculus, signal processing and probability.
+-   Discrete convolution of a list $x$ with a short filter $w$: **slide, multiply, add.**
+
+$$(x * w)_i = \sum_{k} x_{i-k}\, w_k \qquad\qquad (f * g)(t) = \int f(\tau)\, g(t - \tau)\, d\tau \;\;\text{(continuous version)}$$
+
+-   You already know one use from probability: the distribution of the sum of two dice. With $X$ and $Y$ independent,
+
+$$P(X + Y = s) = \sum_{k} P(X = k)\, P(Y = s - k)$$
+
+-   A CNN layer does the same slide, multiply and add. With the 3 × 1 filter $(w_1, w_2, w_3)$ from the 1D slide:
+
+| | Output at position $i$ |
+|:--:|:--:|
+| **What a CNN computes** | $z_i = w_1 x_i + w_2 x_{i+1} + w_3 x_{i+2}$ |
+| **Textbook convolution** | $z_i = w_3 x_i + w_2 x_{i+1} + w_1 x_{i+2}$ (the filter is **flipped**) |
+
+-   Strictly, the CNN version is called **cross-correlation**. The flip makes no difference in practice: the weights are learned, so the network would simply learn the flipped filter. The name "convolution" stuck.
+
+::: {.key}
+A **convolutional** neural network is a network whose layers are built from convolutions: **one small set of weights slides across the input**, and at every position it takes the same multiply-and-add we have used since the linear model.
+:::
+
+## What the Filter Is Really Doing: Matching a Pattern
+
+:::: {.columns}
+::: {.column width="56%"}
+```{python}
+patches = [("Dark to light", np.array([[0, 0, 1]] * 3)), ("Flat", np.array([[1, 1, 1]] * 3)), ("Light to dark", np.array([[1, 0, 0]] * 3)), ("Horizontal edge", np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1]]))]
+scores = [float((p * V_EDGE).sum()) for _, p in patches]
+assert scores == [3.0, 0.0, -3.0, 0.0]
+fig, ax = canvas((8.3, 3.15), (-0.2, 20.2), (-5.7, 1.5))
+for i, ((nm, p), s) in enumerate(zip(patches, scores)):
+    x = i * 5.2
+    cells(ax, p, x=x, cmap="gray", vmin=0, vmax=1, fs=14, title=nm, tfs=11.5)
+    ax.text(x + 1.5, -4.2, f"z = {n(s)}", ha="center", va="center", fontsize=17, fontweight="bold", color=RED if s > 0 else INK)
+show_fig(fig)
+```
+
+The output is large when the patch looks like the filter. Mathematically it is a dot product: it measures how well two grids of numbers line up.
+:::
+
+::: {.column width="44%"}
+| Patch vs. filter | $z$ |
+|:---------:|:---:|
+| Same pattern | large and positive |
+| No pattern | near 0 |
+| Opposite pattern | large and negative |
+
+-   So **a filter is a pattern detector**, and the feature map is a map of where the pattern occurs.
+-   ReLU then keeps only the positive matches: $\max(0, z)$.
+:::
+::::
+
+::: {.key}
+Look back at the feature map: columns of 0, 3, 3, 0. It lights up only along the edge in the image. One filter with **9 weights** found the edge, wherever it was.
+:::
+
+## It Is Still Our Same Node
+
+:::: {.columns}
+::: {.column width="58%"}
+```{python}
+vals = img[0:3, 2:5].ravel()
+wts = V_EDGE.ravel()
+fig, ax = canvas((8.8, 5.6), (-4.8, 4.25), (-3.0, 2.75))
+ys = np.linspace(2.2, -2.6, 10)
+labels = ["1"] + [n(v) for v in vals]
+weights = ["$b$"] + [f"${n(w)}$" for w in wts]
+Rn, split = 1.05, 0.12
+for y, lab, wtxt, i in zip(ys, labels, weights, range(10)):
+    ax.add_patch(plt.Circle((-3.8, y), 0.22, fc=FILL["grey"] if i == 0 else FILL["in"], ec=GREY if i == 0 else BLUE, lw=1.6, zorder=5))
+    ax.text(-3.8, y, lab, ha="center", va="center", fontsize=13.5, zorder=6)
+    d = np.hypot(3.8, y)
+    arrow(ax, -3.8 + 0.22 * 3.8 / d, y - 0.22 * y / d, -Rn * 3.8 / d, Rn * y / d, lw=1.2)
+    ax.text(-2.75, y * 0.72, wtxt, ha="center", va="center", fontsize=13, zorder=6, bbox=dict(boxstyle="round,pad=0.08", fc="white", ec="none"))
+ax.add_patch(plt.Circle((0, 0), Rn, fc=FILL["hid"], ec=ORANGE, lw=2.4, zorder=3))
+half = np.sqrt(Rn ** 2 - split ** 2)
+ax.plot([split, split], [-half, half], color=ORANGE, lw=2.4, zorder=4)
+ax.text(-0.42, 0, r"$\Sigma$", ha="center", va="center", fontsize=25, zorder=5)
+activation_icon(ax, 0.6, 0, 0.62, 0.85, ORANGE, lw=2.6)
+arrow(ax, Rn, 0, 2.1, 0)
+ax.text(2.2, 0, "$h_{ij}$", ha="left", va="center", fontsize=19)
+ax.text(-3.8, 2.6, "patch", ha="center", fontsize=13, fontweight="bold", color="#444444")
+ax.text(-2.75, 2.6, "weights", ha="center", fontsize=13, fontweight="bold", color="#444444")
+ax.text(0, 1.3, "add, then ReLU", ha="center", fontsize=13, fontweight="bold", color="#444444")
+show_fig(fig)
+```
+:::
+
+::: {.column width="42%"}
+Each output is one node, with 9 pixels as its inputs, a bias $b$, and a ReLU activation.
+
+$$z_{ij} = b + \sum_{k=1}^{3} \sum_{l=1}^{3} w_{kl}\, x_{i+k-1,\ j+l-1}$$
+
+$$h_{ij} = \max(0,\ z_{ij})$$
+
+Here $x_{ij}$ is the pixel in row $i$ and column $j$, and $h_{ij}$ is the output for the patch starting there.
+
+The **only** subscripts on $w$ are the positions inside the filter. There is no $i$ or $j$ on $w$: every position uses the same weights.
+:::
+::::
+
+::: {.note}
+Strictly, this operation is called cross-correlation, because mathematical convolution also flips the filter. Deep learning uses the name "convolution" anyway. The worked examples in this deck set $b = 0$ unless stated.
+:::
+
+## From Fully Connected to Convolution, in Two Steps
+
+```{python}
+def wiring(ax, mode, title, count):
+    n_in, n_out = 7, 5
+    xin = np.arange(n_in) * 1.0
+    xout = 1 + np.arange(n_out) * 1.0
+    colors = [BLUE, ORANGE, GREEN]
+    for j, xo in enumerate(xout):
+        for i, xi in enumerate(xin):
+            near = j <= i <= j + 2
+            if mode == "full":
+                ax.plot([xi, xo], [0, 2.3], color="#999999", lw=1.0, zorder=1)
+            elif near:
+                col = colors[i - j] if mode == "shared" else "#777777"
+                ax.plot([xi, xo], [0, 2.3], color=col, lw=2.2, zorder=1)
+    ax.scatter(xin, [0] * n_in, s=190, fc=FILL["in"], ec=BLUE, lw=1.6, zorder=3)
+    ax.scatter(xout, [2.3] * n_out, s=190, fc=FILL["hid"], ec=ORANGE, lw=1.6, zorder=3)
+    ax.set_xlim(-0.6, 6.6)
+    ax.set_ylim(-0.75, 3.1)
+    ax.axis("off")
+    ax.set_title(title, fontsize=15.5, fontweight="bold", color="#444444")
+    ax.text(3, -0.55, count, ha="center", va="center", fontsize=14.5, color=INK)
+
+
+assert fc_params(7, 5) == 40 and fc_params(3, 5) == 20 and fc_params(3, 1) == 4
+fig, ax = plt.subplots(1, 3, figsize=(13.2, 3.75))
+wiring(ax[0], "full", "Fully connected", "(7 + 1) × 5 = 40 parameters")
+wiring(ax[1], "local", "Step 1: local connections", "(3 + 1) × 5 = 20 parameters")
+wiring(ax[2], "shared", "Step 2: and shared weights", "3 + 1 = 4 parameters")
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+assert fc_params(784, 676) == 530660 and (9 + 1) * 676 == 6760 and conv_params(3, 1, 1) == 10
+table(["28 × 28 image → 26 × 26 output", "Fully connected", "Local connections", "Local and shared (one 3 × 3 filter)"],
+      [["Parameters", "(784 + 1) × 676 = " + c(fc_params(784, 676)), "(9 + 1) × 676 = " + c(6760), "9 + 1 = **10**"]])
+```
+
+The picture shows one row of pixels, with bias nodes not drawn. In the right panel, arrows of the same color share one weight.
+
+::: {.key}
+**A convolutional layer is a fully connected layer with rules:** most weights are forced to 0, and the rest are forced to be equal. Like LASSO, it limits the weights to fight overfitting. LASSO learns which weights to zero out. Here **we** decide, using what we know about images.
+:::
+
+## Your Turn: One Convolution by Hand
+
+::: {.h300}
+```{python}
+x_try = np.array([[1, 0, 2, 1], [3, 1, 0, 0], [0, 2, 1, 4], [1, 0, 2, 2]])
+w_try = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
+z_try = conv(x_try, w_try)
+assert (z_try == np.array([[1, 4], [-6, 4]])).all()
+fig, ax = canvas((8.2, 3.0), (-0.3, 13.8), (-4.4, 0.95))
+cells(ax, x_try, face="#f4f4f4", fs=17, title="Image")
+cells(ax, w_try, x=6.2, y=-0.5, cmap="RdBu", vmin=-6, vmax=6, fs=17, title="Filter")
+ax.text(5.1, -2, "×", ha="center", va="center", fontsize=23, color="#555555")
+ax.text(10.1, -2, "=", ha="center", va="center", fontsize=23, color="#555555")
+cells(ax, np.zeros((2, 2)), x=11, y=-1, face="white", fmt=lambda v: "?", fs=19, title="Output")
+show_fig(fig)
+```
+:::
+
+::: {.check}
+**Your turn:** compute the $2 \times 2$ output with $b = 0$, then apply ReLU. What does this filter respond to? (The center is $-4$, and its four neighbors are $+1$.)
+:::
+
+::: {.fragment}
+```{python}
+pos = lambda r, k: " + ".join(f"({w_try[r0, k0]})({x_try[r + r0, k + k0]})" for r0 in range(3) for k0 in range(3) if w_try[r0, k0] != 0)
+md(f"Top-left: ${pos(0, 0)} = {n(z_try[0, 0])}$. In the same way, the four outputs are $z = \\begin{{bmatrix}} {n(z_try[0, 0])} & {n(z_try[0, 1])} \\\\ {n(z_try[1, 0])} & {n(z_try[1, 1])} \\end{{bmatrix}}$, and after ReLU $h = \\begin{{bmatrix}} {n(relu(z_try)[0, 0])} & {n(relu(z_try)[0, 1])} \\\\ {n(relu(z_try)[1, 0])} & {n(relu(z_try)[1, 1])} \\end{{bmatrix}}$.\n\n"
+   "It compares a pixel with its neighbors: flat areas give 0, and the output is positive when a pixel is **darker** than the pixels around it.")
+```
+:::
+
+## Filters on a Real Photo
+
+```{python}
+panels = [("Original photo", None, china), ("Vertical edges", V_EDGE, np.abs(conv(china, V_EDGE, mode="same"))),
+          ("Horizontal edges", H_EDGE, np.abs(conv(china, H_EDGE, mode="same"))), ("Blur", BLUR, conv(china, BLUR, mode="same")),
+          ("Sharpen", SHARPEN, conv(china, SHARPEN, mode="same")), ("Outline", OUTLINE, np.abs(conv(china, OUTLINE, mode="same")))]
+fig, axes = plt.subplots(2, 3, figsize=(13.0, 6.1))
+for a, (title, w, im) in zip(axes.ravel(), panels):
+    crop = im[3:-3, 3:-3]
+    if w is None or title in ("Blur", "Sharpen"):
+        a.imshow(crop, cmap="gray", vmin=0, vmax=1)
+    else:
+        a.imshow(crop, cmap="gray", vmin=0, vmax=np.percentile(crop, 99.5))
+    a.set_title(title, fontsize=15, fontweight="bold", color="#444444")
+    a.axis("off")
+    if w is not None:
+        ins = a.inset_axes([0.0, 0.0, 0.2, 0.3])
+        ins.set_xlim(0, 3)
+        ins.set_ylim(-3, 0)
+        ins.axis("off")
+        lim = np.abs(w).max() * 2
+        cells(ins, w, cmap="RdBu", vmin=-lim, vmax=lim, fs=10, fmt=lambda v: "1/9" if np.isclose(v, 1 / 9) else n(v), lw=0.6)
+fig.tight_layout(h_pad=1.4)
+show_fig(fig)
+```
+
+Each result comes from a single $3 \times 3$ filter, shown in the corner of the panel. For the edge and outline panels, brighter means a stronger response (we plot $|z|$).
+
+## Key Point: Nobody Chooses the Filters
+
+```{python}
+rand, trained = R["cnn_filters_random"][:, 0], R["cnn_filters_trained"][:, 0]
+assert rand.shape == (16, 3, 3) and np.abs(trained).mean() > np.abs(rand).mean()
+fig, axes = plt.subplots(2, 9, figsize=(12.6, 3.25), gridspec_kw=dict(width_ratios=[1] * 8 + [1.6]))
+for a in axes.ravel():
+    a.axis("off")
+lim = max(np.abs(rand).max(), np.abs(trained).max())
+for i in range(8):
+    axes[0, i].imshow(rand[i], cmap="RdBu", vmin=-lim, vmax=lim)
+    axes[1, i].imshow(trained[i], cmap="RdBu", vmin=-lim, vmax=lim)
+axes[0, 8].text(0, 0.5, "Before training\n(random start)", ha="left", va="center", fontsize=14, fontweight="bold", color="#444444", transform=axes[0, 8].transAxes)
+axes[1, 8].text(0, 0.5, "After training\non real digits", ha="left", va="center", fontsize=14, fontweight="bold", color="#444444", transform=axes[1, 8].transAxes)
+fig.subplots_adjust(left=0.01, right=0.995, top=0.98, bottom=0.02, wspace=0.08, hspace=0.08)
+show_fig(fig)
+```
+
+-   Before about 2012, experts designed filters like the ones on the last slide by hand, then fed the results to a classifier.
+-   In a CNN, the numbers in a filter are simply **weights**. They start out random, and gradient descent changes them to lower the loss, exactly as in Step 3 of our framework.
+-   These are 8 of the 16 filters from a real CNN we trained on MNIST. Red is negative and blue is positive. Training has made their weights larger and given many of them a clearer pattern.
+
+::: {.key}
+The network **learns what to look for**. Its features are not designed by a person; they are found because they reduce the loss.
+:::
+
+## Two Settings: Padding and Stride
+
+```{python}
+assert out_size(5, 3) == 3 and out_size(5, 3, p=1) == 5 and out_size(5, 3, p=1, s=2) == 3
+assert out_size(28, 3) == 26 and out_size(28, 3, p=1) == 28 and out_size(32, 5) == 28 and out_size(224, 7, p=3, s=2) == 112
+
+
+def pad_panel(ax, title, sub, pad, frames, stride_note=None):
+    size = 5 + 2 * pad
+    ax.set_xlim(-0.4, 7.4)
+    ax.set_ylim(-8.1, 0.3)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    off = 1 - pad
+    for r in range(size):
+        for k in range(size):
+            inner = pad <= r < 5 + pad and pad <= k < 5 + pad
+            ax.add_patch(Rectangle((off + k, -off - r - 1), 1, 1, fc="#dfe8ff" if inner else "#f3f3f3", ec="#aaaaaa" if inner else "#cccccc", lw=1, ls="-" if inner else "--", zorder=1))
+            if not inner:
+                ax.text(off + k + 0.5, -off - r - 0.5, "0", ha="center", va="center", fontsize=11, color=GREY)
+    for (r, k), col, lw in frames:
+        ax.add_patch(Rectangle((off + k, -off - r - 3), 3, 3, fc="none", ec=col, lw=lw, zorder=4))
+    ax.set_title(title, fontsize=15.5, fontweight="bold", color="#444444")
+    ax.text(3.5, -7.65, sub, ha="center", va="center", fontsize=14)
+
+
+fig, axes = plt.subplots(1, 3, figsize=(11.6, 4.1))
+pad_panel(axes[0], "No padding, stride 1", "5 × 5 becomes 3 × 3", 0, [((0, 0), ORANGE, 3.5), ((0, 1), BLUE, 2.5)])
+pad_panel(axes[1], "Padding 1, stride 1", "5 × 5 stays 5 × 5", 1, [((0, 0), ORANGE, 3.5), ((0, 1), BLUE, 2.5)])
+pad_panel(axes[2], "Padding 1, stride 2", "5 × 5 becomes 3 × 3", 1, [((0, 0), ORANGE, 3.5), ((0, 2), BLUE, 2.5)])
+fig.tight_layout()
+show_fig(fig)
+```
+
+:::: {.columns}
+::: {.column width="55%"}
+-   **Padding $p$:** add a border of zeros, so the output does not shrink and the edges are not ignored.
+-   **Stride $s$:** how many pixels the filter jumps each time. A larger stride makes the output smaller.
+:::
+
+::: {.column width="45%"}
+For an $n \times n$ input and an $f \times f$ filter, the output size is
+
+$$\left\lfloor \frac{n - f + 2p}{s} \right\rfloor + 1$$
+:::
+::::
+
+## Your Turn: Output Sizes
+
+::: {.check}
+**Your turn:** use $\left\lfloor (n - f + 2p) / s \right\rfloor + 1$ to find the output size of each layer.
+:::
+
+```{python}
+table(["Input $n$", "Filter $f$", "Padding $p$", "Stride $s$"], [
+    ["32", "5", "0", "1"], ["28", "3", "1", "1"], ["224", "7", "3", "2"],
+])
+```
+
+::: {.fragment}
+```{python}
+table(["Calculation", "Output size"], [
+    [r"$(32 - 5 + 0) / 1 + 1$", f"**{out_size(32, 5)}**"],
+    [r"$(28 - 3 + 2) / 1 + 1$", f"**{out_size(28, 3, 1)}**, so a $3 \\times 3$ filter with padding 1 keeps the size"],
+    [r"$\lfloor (224 - 7 + 6) / 2 \rfloor + 1$", f"**{out_size(224, 7, 3, 2)}**, the first layer of ResNet: half the width and height"],
+])
+```
+:::
+
+## Max Pooling: Keep the Strongest Signal, Shrink the Map
+
+```{python}
+Mx = np.array([[1, 0, 2, 3], [4, 6, 1, 8], [3, 1, 0, 0], [1, 2, 2, 4]])
+assert (pool(Mx) == np.array([[6, 8], [3, 4]])).all()
+peak_a, peak_b = np.zeros((4, 4)), np.zeros((4, 4))
+peak_a[0, 0], peak_b[1, 1] = 9, 9
+peak_c = np.zeros((4, 4))
+peak_c[1, 2] = 9
+assert (pool(peak_a) == pool(peak_b)).all() and not (pool(peak_a) == pool(peak_c)).all()
+fig, ax = canvas((12.6, 3.45), (-0.3, 26.6), (-5.2, 1.6))
+tints = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [2, 2, 3, 3], [2, 2, 3, 3]])
+TINT = ["#dfe8ff", "#FDE3C8", "#dcf3e2", "#f3e5f7"]
+for r in range(4):
+    for k in range(4):
+        ax.add_patch(Rectangle((k, -r - 1), 1, 1, fc=TINT[tints[r, k]], ec="#999999", zorder=2))
+        ax.text(k + 0.5, -r - 0.5, n(Mx[r, k]), ha="center", va="center", fontsize=16, zorder=3)
+ax.text(2, 0.35, "Feature map: 4 × 4", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+arrow(ax, 4.3, -2, 6.0, -2)
+ax.text(5.15, -1.35, "max", ha="center", fontsize=13.5, color="#444444")
+for r in range(2):
+    for k in range(2):
+        ax.add_patch(Rectangle((6.3 + k, -1 - r - 1), 1, 1, fc=TINT[r * 2 + k], ec="#999999", zorder=2))
+        ax.text(6.8 + k, -1 - r - 0.5, n(pool(Mx)[r, k]), ha="center", va="center", fontsize=17, zorder=3)
+ax.text(7.3, -0.65, "2 × 2", ha="center", va="bottom", fontsize=14, fontweight="bold", color="#444444")
+ax.plot([10.6, 10.6], [-5.0, 1.3], color="#dddddd", lw=1.4)
+for x, m, t in [(11.6, peak_a, "A pattern here"), (18.8, peak_b, "Moved by one pixel")]:
+    cells(ax, m, x=x, cmap="Oranges", vmin=0, vmax=14, fs=14, text=False, title=t)
+    r_, k_ = np.argwhere(m == 9)[0]
+    ax.text(x + k_ + 0.5, -r_ - 0.5, "9", ha="center", va="center", fontsize=16, zorder=4)
+    arrow(ax, x + 4.1, -2, x + 4.8, -2)
+    cells(ax, pool(m), x=x + 4.9, y=-1, cmap="Oranges", vmin=0, vmax=14, fs=16)
+show_fig(fig)
+```
+
+-   **What it does:** in each $2 \times 2$ block, keep only the largest value. Width and height are cut in half.
+-   **No parameters:** pooling has no weights, so there is nothing to learn. It also makes later layers cheaper.
+-   **Tolerance:** a pattern can move a little and pooling gives the same answer, as on the right. This holds only while the pattern stays in the same block, so it helps with small shifts but does not remove the problem.
+
+::: {.key}
+A feature map says "there is an edge at this exact pixel." After pooling it says "there is an edge **around here**", and that is usually all we need.
+:::
+
+# Part 3. From 2D to 3D
+
+## How 3D Enters: Two Ways
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Way 1: from the filters
+:::
+
+One filter finds one pattern, but we need many: edges at every angle, spots, stripes. Each filter makes its own 2D feature map. Stack the maps, and the output has **height, width and depth**.
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Way 2: from the data
+:::
+
+A color image has three numbers per pixel: red, green, blue. So it already comes as a stack of three 2D grids: **height, width and depth**.
+:::
+::::
+
+```{python}
+filters4 = [("vertical\nedge", V_EDGE), ("horizontal\nedge", H_EDGE), ("diagonal\nedge", np.array([[0, 1, 1], [-1, 0, 1], [-1, -1, 0]])), ("spot", np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]]))]
+fig = plt.figure(figsize=(13.0, 3.55))
+ax = fig.add_axes([0, 0, 1, 1])
+ax.set_xlim(-0.5, 36.5)
+ax.set_ylim(-0.8, 9.1)
+ax.set_aspect("equal")
+ax.axis("off")
+ax.set_autoscale_on(False)
+ax.imshow(digit, cmap="gray", extent=(0, 6, 0.8, 6.8), vmin=0, vmax=1, zorder=2)
+ax.text(3, 7.2, "28 × 28 × 1", ha="center", fontsize=14, fontweight="bold", color="#444444")
+ax.text(3, -0.15, "gray image: depth 1", ha="center", fontsize=13, color="#444444")
+for i, (nm, w) in enumerate(filters4):
+    x = 8.5 + i * 3.45
+    m = relu(conv(digit, w, mode="same"))
+    ax.imshow(m, cmap="magma", extent=(x, x + 2.9, 2.2, 5.1), zorder=2)
+    ax.text(x + 1.45, 1.75, nm, ha="center", va="top", fontsize=12, color="#444444", linespacing=1.15)
+ax.text(8.5 + 1.5 * 3.45 + 1.45, 6.4, "4 filters give 4 feature maps", ha="center", fontsize=14, fontweight="bold", color="#444444")
+arrow(ax, 6.4, 3.7, 8.2, 3.7)
+arrow(ax, 22.4, 3.7, 24.0, 3.7)
+for i in range(3, -1, -1):
+    x, y = 24.4 + i * 1.05, 0.9 + i * 0.72
+    ax.imshow(relu(conv(digit, filters4[i][1], mode="same")), cmap="magma", extent=(x, x + 4.6, y, y + 4.6), zorder=3 + (3 - i))
+    ax.add_patch(Rectangle((x, y), 4.6, 4.6, fc="none", ec="#555555", lw=1.2, zorder=3 + (3 - i)))
+ax.text(29.3, 8.2, "stacked: 28 × 28 × 4", ha="center", fontsize=14, fontweight="bold", color="#444444")
+ax.text(29.3, -0.15, "height × width × depth", ha="center", fontsize=13, color="#444444")
+show_fig(fig)
+```
+
+::: {.key}
+From now on, data inside a CNN is a **3D array** (a tensor): $H \times W \times C$. The depth $C$ is the number of **channels**. Every layer takes in a 3D array and puts out a 3D array.
+:::
+
+## A Color Image Is a Stack of Three Grids
+
+```{python}
+fig = plt.figure(figsize=(13.2, 3.75))
+gs = fig.add_gridspec(1, 5, width_ratios=[1.25, 1, 1, 1, 1.15], wspace=0.08, left=0.01, right=0.99, top=0.9, bottom=0.02)
+a = fig.add_subplot(gs[0, 0])
+a.imshow(flower)
+a.set_title("The photo", fontsize=15, fontweight="bold", color="#444444")
+a.axis("off")
+for j, (nm, cm) in enumerate([("Red channel", None), ("Green channel", None), ("Blue channel", None)]):
+    a = fig.add_subplot(gs[0, j + 1])
+    a.imshow(flower[:, :, j], cmap="gray", vmin=0, vmax=1)
+    a.set_title(nm, fontsize=15, fontweight="bold", color="#444444")
+    a.axis("off")
+a = fig.add_subplot(gs[0, 4])
+a.set_xlim(0, 10)
+a.set_ylim(0, 8.6)
+a.set_aspect("equal")
+a.axis("off")
+for i, col in [(2, "#c9d8ff"), (1, "#c5ecd0"), (0, "#ffc9c4")]:
+    a.add_patch(Rectangle((1 + i * 1.2, 1 + i * 0.9), 5.6, 4.2, fc=col, ec="#555555", lw=1.3, zorder=3 - i))
+a.text(3.8, 3.1, "R", ha="center", va="center", fontsize=16, zorder=5)
+a.text(5.0, 5.55, "G", ha="center", va="center", fontsize=14, zorder=5)
+a.text(6.2, 6.45, "B", ha="center", va="center", fontsize=14, zorder=5)
+a.text(5, 0.25, "H × W × 3", ha="center", va="center", fontsize=15, fontweight="bold", color="#444444")
+show_fig(fig)
+```
+
+:::: {.columns}
+::: {.column width="48%"}
+Each channel is a grayscale grid: bright where that color is strong. The flower is bright in red, medium in green and dark in blue. In numbers, that is what "orange" means.
+:::
+
+::: {.column width="52%"}
+| Data | Shape $H \times W \times C$ |
+|:-----:|:------:|
+| A grayscale digit | $28 \times 28 \times 1$ |
+| A color photo | $224 \times 224 \times 3$ |
+| Feature maps inside a network | $56 \times 56 \times 64$ |
+:::
+::::
+
+## A Filter on 3D Data Has 3D Weights
+
+:::: {.columns}
+::: {.column width="55%"}
+```{python}
+fig, ax = canvas((8.4, 5.3), (-0.8, 15.8), (-1.6, 9.0))
+for i, (fc, ec) in reversed(list(enumerate([("#ffd9d6", RED), ("#d6f2dd", GREEN), ("#d9e4ff", BLUE)]))):
+    ox, oy = i * 0.65, i * 0.48
+    ax.add_patch(Rectangle((ox, oy), 6, 6, fc=fc, ec=ec, lw=1.5, zorder=3 - i))
+    for t in range(1, 6):
+        ax.plot([ox + t, ox + t], [oy, oy + 6], color=ec, lw=0.45, zorder=3 - i)
+        ax.plot([ox, ox + 6], [oy + t, oy + t], color=ec, lw=0.45, zorder=3 - i)
+block(ax, 1, 3, 3, 3, 2, fc=ORANGE, ec="#a8551c", lw=1.5, z=6, ox=0.65, oy=0.48)
+ax.text(2.5, 4.5, "3 × 3 × 3\nfilter", ha="center", va="center", fontsize=13, color="white", fontweight="bold", zorder=8)
+arrow(ax, 5.2, 4.5, 7.4, 4.5, color=INK, lw=2.5, z=9)
+arrow(ax, 2.5, 2.7, 2.5, 0.5, color=INK, lw=2.5, z=9)
+ax.text(3.5, 8.2, "Input: 6 × 6 × 3", ha="center", fontsize=14.5, fontweight="bold", color="#444444")
+ax.text(2.9, -0.55, "slides in 2 directions only", ha="center", fontsize=14, color=INK)
+arrow(ax, 8.7, 3.1, 10.3, 3.1)
+for t in range(5):
+    ax.plot([11 + t, 11 + t], [0.6, 4.6], color="#b26a35", lw=0.6, zorder=2)
+    ax.plot([11, 15], [0.6 + t, 0.6 + t], color="#b26a35", lw=0.6, zorder=2)
+ax.add_patch(Rectangle((11, 0.6), 4, 4, fc=FILL["hid"], ec=ORANGE, lw=1.6, zorder=1))
+ax.add_patch(Rectangle((12, 3.6), 1, 1, fc=ORANGE, ec="#a8551c", lw=1.5, zorder=3))
+ax.text(13, 5.4, "Output: 4 × 4\none filter, one map", ha="center", fontsize=14, fontweight="bold", color="#444444", linespacing=1.3)
+show_fig(fig)
+```
+:::
+
+::: {.column width="45%"}
+-   The filter's depth **always matches** the depth of its input. On a color image, it has one $3 \times 3$ grid of weights **per channel**: 27 weights.
+-   All 27 products are added to give **one number**, so one filter still gives one 2D map.
+-   It still slides in **2 directions** only: across and down. There is nowhere to slide in depth, because it already covers all of it.
+
+$$z_{ij} = b + \sum_{k} \sum_{l} \sum_{c=1}^{C} w_{klc}\, x_{i+k-1,\ j+l-1,\ c}$$
+
+The only change from 2D is one more sum, over the channels.
+:::
+::::
+
+## Worked Example: One Position on a Color Image
+
+```{python}
+PR, PG, PB = np.array([[3, 1], [2, 0]]), np.array([[1, 2], [0, 3]]), np.array([[1, 1], [2, 2]])
+WR, WG, WB = np.array([[1, -1], [1, -1]]), np.array([[-1, 1], [-1, 1]]), np.array([[1, 0], [0, -1]])
+b3 = -2
+sr, sg, sb = (PR * WR).sum(), (PG * WG).sum(), (PB * WB).sum()
+z3 = b3 + sr + sg + sb
+assert (sr, sg, sb, z3) == (4, 4, -1, 5) and conv_params(2, 3, 1) == 13
+
+
+def color_fig(done):
+    fig, ax = canvas((8.1, 5.6), (-2.2, 12.8), (-9.0, 1.2))
+    for i, (nm, p, w, s, tint) in enumerate([("Red", PR, WR, sr, "#ffd9d6"), ("Green", PG, WG, sg, "#d6f2dd"), ("Blue", PB, WB, sb, "#d9e4ff")]):
+        y = -i * 3.2
+        ax.text(-0.3, y - 1, nm, ha="right", va="center", fontsize=14.5, fontweight="bold", color="#444444")
+        cells(ax, p, x=0, y=y, face=tint, fs=16, title="patch" if i == 0 else None)
+        ax.text(3, y - 1, "×", ha="center", va="center", fontsize=20, color="#555555")
+        cells(ax, w, x=4, y=y, cmap="RdBu", vmin=-2.4, vmax=2.4, fs=16, title="weights" if i == 0 else None)
+        ax.text(7, y - 1, "=", ha="center", va="center", fontsize=20, color="#555555")
+        if i < done:
+            ax.text(7.7, y - 1, n(s), ha="left", va="center", fontsize=20, color=RED, fontweight="bold")
+    return fig
+
+```
+
+:::: {.columns}
+::: {.column width="47%"}
+```{python}
+stack([color_fig(i) for i in range(4)])
+```
+:::
+
+::: {.column width="53%"}
+```{python}
+steps([
+    r"A $2 \times 2 \times 3$ filter sits on one patch of a color image. It has 12 weights and a bias $b = -2$.",
+    rf"**Red:** $({WR[0,0]})({PR[0,0]}) + ({WR[0,1]})({PR[0,1]}) + ({WR[1,0]})({PR[1,0]}) + ({WR[1,1]})({PR[1,1]}) = {sr}$",
+    rf"**Green:** $({WG[0,0]})({PG[0,0]}) + ({WG[0,1]})({PG[0,1]}) + ({WG[1,0]})({PG[1,0]}) + ({WG[1,1]})({PG[1,1]}) = {sg}$",
+    rf"**Blue:** $({WB[0,0]})({PB[0,0]}) + ({WB[0,1]})({PB[0,1]}) + ({WB[1,0]})({PB[1,0]}) + ({WB[1,1]})({PB[1,1]}) = {sb}$",
+    rf"**Add, with the bias:** $z = {b3} + {sr} + {sg} + ({sb}) = {z3}$. **ReLU:** $h = \max(0, {z3}) = {z3}$.",
+    r"Three channels go in and **one number** comes out. This filter has $2 \times 2 \times 3 + 1 = 13$ parameters.",
+])
+```
+:::
+::::
+
+## What Color Filters Can See
+
+```{python}
+gray = flower.mean(axis=2)
+WC = np.stack([np.ones((3, 3)) / 9, -np.ones((3, 3)) / 9, np.zeros((3, 3))], axis=2)
+resp = sum(conv(flower[:, :, ch], WC[:, :, ch], mode="same") for ch in range(3))[2:-2, 2:-2]
+fig, ax = plt.subplots(1, 3, figsize=(13.0, 3.95))
+ax[0].imshow(flower)
+ax[1].imshow(gray, cmap="gray", vmin=0, vmax=1)
+ax[2].imshow(relu(resp), cmap="magma")
+for a, t in zip(ax, ["Color photo", "Grayscale: color is gone", "One 3 × 3 × 3 filter: red minus green"]):
+    a.set_title(t, fontsize=15, fontweight="bold", color="#444444")
+    a.axis("off")
+fig.tight_layout()
+show_fig(fig)
+```
+
+-   This filter has weights $+\tfrac{1}{9}$ on red, $-\tfrac{1}{9}$ on green and $0$ on blue, so its output is high where a patch is **more red than green**.
+-   A filter on a grayscale image could not do this: that image no longer records color at all.
+
+::: {.key}
+Weights across channels let a single filter combine **shape and color**, such as "a red-to-green edge."
+:::
+
+## Counting Parameters: The Same Rule as Before
+
+```{python}
+assert conv_params(3, 1, 16) == 160 and conv_params(3, 3, 64) == 1792 and conv_params(3, 16, 32) == 4640 and conv_params(11, 3, 96) == 34944
+```
+
+:::: {.columns}
+::: {.column width="37%"}
+A fully connected node sees $m$ inputs. A filter sees $f \times f \times C$ inputs:
+
+$$\underbrace{(m + 1) \times k}_{\text{fully connected}} \quad\Longrightarrow\quad \underbrace{(f \times f \times C + 1) \times k}_{\text{convolutional}}$$
+
+-   $f$: filter size
+-   $C$: depth of the **input**
+-   $k$: number of filters, which is the depth of the **output**
+-   The $+1$ is each filter's bias
+:::
+
+::: {.column width="63%"}
+```{python}
+table(["Input", "Layer", "Calculation", "Parameters"], [
+    [r"$28 \times 28 \times 1$", "16 filters, 3 × 3", r"$(3 \times 3 \times 1 + 1) \times 16$", "160"],
+    [r"$224 \times 224 \times 3$", "64 filters, 3 × 3", r"$(3 \times 3 \times 3 + 1) \times 64$", "1,792"],
+    [r"$14 \times 14 \times 16$", "32 filters, 3 × 3", r"$(3 \times 3 \times 16 + 1) \times 32$", "4,640"],
+    [r"$224 \times 224 \times 3$", "96 filters, 11 × 11", r"$(11 \times 11 \times 3 + 1) \times 96$", "34,944"],
+])
+```
+
+Compare the second row with the 150 million from Part 1 for the same image.
+:::
+::::
+
+::: {.key}
+**Height and width do not appear in the rule.** The same filter slides over any image size, so a bigger photo does not need more convolutional parameters.
+:::
+
+## Why Depth Matters: Layer 2 Reads Layer 1
+
+::: {.h400}
+```{python}
+sq = np.zeros((10, 10))
+sq[2:8, 2:8] = 1
+mv = relu(conv(sq, V_EDGE, mode="same"))
+mh = relu(conv(sq, H_EDGE, mode="same"))
+z_corner = mv + mh - 3
+corner = relu(z_corner)
+assert (corner > 0).sum() == 1 and corner[2, 2] == 1 and mv[2, 2] == 2 and mh[2, 2] == 2
+
+
+def corner_fig(stage):
+    fig, ax = canvas((13.4, 4.25), (-0.3, 45.2), (-11.3, 2.7))
+    cells(ax, sq, cmap="gray", vmin=0, vmax=1, text=False, title="Image: white square", lw=0.4, tfs=15)
+    arrow(ax, 10.2, -5, 11.3, -5)
+    if stage >= 1:
+        cells(ax, mv, x=11.6, cmap="Blues", vmin=0, vmax=5, fs=11, fmt=lambda v: n(v) if v else "", title="Layer 1: vertical edges", lw=0.4, tfs=15)
+    if stage >= 2:
+        cells(ax, mh, x=22.9, cmap="Oranges", vmin=0, vmax=5, fs=11, fmt=lambda v: n(v) if v else "", title="Layer 1: horizontal edges", lw=0.4, tfs=15)
+    if stage >= 3:
+        arrow(ax, 33.1, -5, 34.5, -5)
+        cells(ax, corner, x=34.8, cmap="Greens", vmin=0, vmax=1.6, fs=11, fmt=lambda v: n(v) if v else "", title="Layer 2: corner", lw=0.4, tfs=15)
+    return fig
+
+
+stack([corner_fig(0), corner_fig(1), corner_fig(2), corner_fig(3)])
+```
+:::
+
+-   Layer 1 has 2 filters, so its output is a stack of two maps, $10 \times 10 \times 2$. ReLU keeps positive responses only, so each map marks one side of the square.
+-   A layer 2 filter looks **through the stack**. Take a $1 \times 1 \times 2$ filter with weights $1, 1$ and bias $-3$: $\ z = v + h - 3$.
+-   At the top-left corner of the square, $z = 2 + 2 - 3 = 1$. Everywhere else, $z \le 0$, so ReLU gives 0. Only the corner fires.
+
+::: {.key}
+**This is hierarchy.** Layer 2 never sees pixels. It sees "edge here" signals, and it combines them into "corner here." Layer 3 can combine corners into shapes, and so on.
+:::
+
+## Real Learned Filters: ResNet-18
+
+:::: {.columns}
+::: {.column width="50%"}
+```{python}
+W1 = R["resnet_conv1"]
+assert W1.shape == (64, 3, 7, 7)
+lim = np.abs(W1).max()
+fig, axes = plt.subplots(8, 8, figsize=(6.0, 6.0))
+for a, w in zip(axes.ravel(), W1):
+    a.imshow((w.transpose(1, 2, 0) / lim + 1) / 2, interpolation="nearest")
+    a.axis("off")
+fig.subplots_adjust(0.005, 0.005, 0.995, 0.995, 0.06, 0.06)
+show_fig(fig)
+```
+:::
+
+::: {.column width="50%"}
+-   These are the **64 first-layer filters** of a ResNet-18, a real network trained on 1.2 million ImageNet photos. They are not retouched.
+-   Each is $7 \times 7 \times 3$. We can draw it as a tiny color picture because its three channels are red, green and blue.
+-   Nobody programmed them. Training found **edges at many angles**, **stripes** and **color contrasts**.
+-   Experts had been designing filters much like these by hand for decades. It is a striking result that gradient descent arrives at similar shapes from random numbers.
+:::
+::::
+
+::: {.key}
+Gray means a weight near 0. The first layer has $7 \times 7 \times 3 \times 64 = 9{,}408$ weights (this layer has no bias). The full network has about 11.7 million parameters.
+:::
+
+## Through the Layers: Real Feature Maps
+
+```{python}
+stage_names = ["conv1", "layer1", "layer2", "layer3", "layer4"]
+shapes = {s: tuple(int(v) for v in R[f"stage_{s}_shape"]) for s in stage_names}
+assert shapes["conv1"] == (64, 112, 112) and shapes["layer1"] == (64, 56, 56) and shapes["layer2"] == (128, 28, 28) and shapes["layer3"] == (256, 14, 14) and shapes["layer4"] == (512, 7, 7)
+assert int(R["resnet_params"]) == 11689512
+fig = plt.figure(figsize=(13.4, 4.1))
+gs = fig.add_gridspec(2, 11, width_ratios=[2.2] + [1] * 10, left=0.005, right=0.995, top=0.82, bottom=0.03, wspace=0.05, hspace=0.05)
+a = fig.add_subplot(gs[:, 0])
+a.imshow(R["resnet_photo"])
+a.axis("off")
+a.set_title("224 × 224 × 3", fontsize=13.5, fontweight="bold", color="#444444")
+for j, s in enumerate(stage_names):
+    maps = R[f"stage_{s}_maps"]
+    for i in range(4):
+        a = fig.add_subplot(gs[i // 2, 1 + 2 * j + i % 2])
+        a.imshow(maps[i], cmap="magma", interpolation="nearest")
+        a.axis("off")
+    c_, h_, w_ = shapes[s]
+    left = gs[0, 1 + 2 * j].get_position(fig).x0
+    right = gs[0, 2 + 2 * j].get_position(fig).x1
+    fig.text((left + right) / 2, 0.86, f"{h_} × {w_} × {c_}", ha="center", fontsize=13.5, fontweight="bold", color="#444444")
+show_fig(fig)
+```
+
+Left to right: a photo passing through a real ResNet-18. Each group shows the 4 most active feature maps at that stage, drawn at the same size so you can see the pixels get coarser.
+
+-   **Height and width shrink:** 224, 112, 56, 28, 14, 7. The network keeps less detail about *where*.
+-   **Depth grows:** 3, 64, 64, 128, 256, 512. It keeps more detail about *what*.
+-   Early maps still look like the photo. By the last stage, each of the $7 \times 7$ cells summarizes a large area of it.
+
+## True 3D Convolution: Video and Medical Scans
+
+::: {.h360}
+```{python}
+assert conv_params(3, 3, 1) == 28 and (3 * 3 * 3 * 1 + 1) == 28 and (3 * 3 * 3 * 1 + 1) * 16 == 448
+fig, axes = plt.subplots(1, 2, figsize=(13.2, 3.4))
+for ax in axes:
+    ax.set_xlim(-0.6, 18.0)
+    ax.set_ylim(-1.7, 8.2)
+    ax.set_aspect("equal")
+    ax.axis("off")
+ax = axes[0]
+for i, (fc, ec) in reversed(list(enumerate([("#ffd9d6", RED), ("#d6f2dd", GREEN), ("#d9e4ff", BLUE)]))):
+    ax.add_patch(Rectangle((i * 0.6, i * 0.45), 6, 6, fc=fc, ec=ec, lw=1.4, zorder=3 - i))
+block(ax, 1, 3, 3, 3, 2, fc=ORANGE, ec="#a8551c", z=6, ox=0.6, oy=0.45)
+arrow(ax, 5.1, 4.5, 7.2, 4.5, color=INK, lw=2.4, z=9)
+arrow(ax, 2.5, 2.7, 2.5, 0.6, color=INK, lw=2.4, z=9)
+arrow(ax, 8.9, 3, 10.7, 3)
+ax.add_patch(Rectangle((11.4, 1), 4, 4, fc=FILL["hid"], ec=ORANGE, lw=1.6))
+ax.text(13.4, 5.55, "2D map", ha="center", fontsize=14, fontweight="bold", color="#444444")
+ax.set_title("2D convolution on a color image", fontsize=14.5, fontweight="bold", color="#444444")
+ax.text(8.2, -1.05, "filter covers the full depth: moves across, down", ha="center", fontsize=13.5)
+ax = axes[1]
+for i in range(6, -1, -1):
+    ax.add_patch(Rectangle((i * 0.6, i * 0.45), 5, 5, fc="#eeeeee", ec="#777777", lw=1.0, zorder=8 - i))
+block(ax, 2.0, 2.0, 2.2, 2.2, 3.0, fc=ORANGE, ec="#a8551c", z=9, ox=0.6, oy=0.45)
+arrow(ax, 6.5, 4.0, 8.1, 4.0, color=INK, lw=2.4, z=11)
+arrow(ax, 3.0, 1.8, 3.0, 0.5, color=INK, lw=2.4, z=11)
+arrow(ax, 4.9, 5.7, 6.1, 6.6, color=INK, lw=2.4, z=11)
+arrow(ax, 9.3, 3, 10.9, 3)
+block(ax, 11.4, 1, 3.6, 3.6, 4.0, fc=FILL["hid"], ec=ORANGE, ox=0.6, oy=0.45)
+ax.text(14.2, 6.6, "3D map", ha="center", fontsize=14, fontweight="bold", color="#444444")
+ax.set_title("3D convolution on a scan", fontsize=14.5, fontweight="bold", color="#444444")
+ax.text(8.2, -1.05, "filter is shorter than the depth: moves across, down, through", ha="center", fontsize=13.5)
+fig.tight_layout()
+show_fig(fig)
+```
+:::
+
+-   Slices of a CT scan, or frames of a video, are related like neighboring pixels. An abnormal growth spans several slices, and a moving ball changes across frames, so we want the filter to **slide through the third direction too**.
+-   Each input slice can also have channels $C$, such as 3 for color video. **Parameters:** $(f \times f \times f \times C + 1) \times k$. For example, 16 filters of size $3 \times 3 \times 3$ on a one-channel scan: $(27 + 1) \times 16 = 448$.
+
+::: {.key}
+The same 27 weights can work in two different ways. **What differs is how the filter moves**: a 2D convolution gives a 2D map per filter, and a 3D convolution gives a 3D map per filter.
+:::
+
+## The Name Counts Directions, Not Data Dimensions
+
+| Layer | Filter slides along | Typical input | One filter's output | Example filter shape |
+|:---:|:-----:|:---------:|:----:|:----:|
+| **1D convolution** | time | Audio, sensor readings: $T \times C$ | a 1D list | $5 \times C$ |
+| **2D convolution** | height, width | Images: $H \times W \times C$ | a 2D map | $3 \times 3 \times C$ |
+| **3D convolution** | height, width, and depth or time | Video, CT and MRI scans: $T \times H \times W \times C$ | a 3D map | $3 \times 3 \times 3 \times C$ |
+
+-   In every row the filter also spans all $C$ channels, and every row uses the same two steps: multiply-and-add, then activation.
+-   So a color photo uses a **2D** convolution, though both the image and the filter are 3D arrays. This trips up many people.
+-   3D convolutions cost more: for a video, the amount of arithmetic grows with the number of frames too. That is one reason 2D is by far the more common.
+
+::: {.key}
+**The path from 2D to 3D:** start with one filter on one grid. Add channels and the filter gains depth. Stack many filters and the output gains depth. Slide through a third direction and you have a true 3D convolution.
+:::
+
+# Part 4. A Whole CNN
+
+## Typical Layers in a CNN
+
+**Feature finder:** repeat this block several times. Height and width shrink, and the number of channels grows.
+
+| Layer | What it does | Weights? |
+|:--|:--|:--:|
+| **Convolution** | Slides $k$ filters over the input and makes $k$ feature maps | Yes: $(f \times f \times C + 1) \times k$ |
+| **Batch normalization** | Rescales each channel to mean about 0 and SD about 1 during training, so deep networks train faster and more stably | Yes: 2 per channel |
+| **ReLU** | Sets negative values to 0: the nonlinearity | No |
+| **Pooling** (max or average) | Shrinks height and width, usually by half | No |
+
+**Decision maker:** turn the final stack into a prediction.
+
+| Layer | What it does | Weights? |
+|:--|:--|:--:|
+| **Flatten** *or* **global average pooling** | Flatten lines up every number; global average pooling averages each channel to one number, so $7 \times 7 \times 512$ becomes just $512$ | No |
+| **Fully connected** | The layers we already know | Yes, often most of them |
+| **Dropout** | During training, randomly turns off nodes to fight overfitting | No |
+| **Output + softmax** | One node per class, giving probabilities | Yes |
+
+::: {.key}
+The common recipe: **[Conv → BatchNorm → ReLU] × a few → Pool**, repeated, then **Flatten or Global Average Pooling → Fully connected → Softmax**. Deep modern CNNs such as ResNet also add **skip connections**, which add a block's input back to its output.
+:::
+
+## A Complete CNN, Start to Finish
+
+::: {.h400}
+```{python}
+assert out_size(28, 3, 1) == 28 and 7 * 7 * 32 == 1568
+fig, ax = canvas((13.4, 4.15), (-0.5, 40.5), (-3.6, 9.4))
+s_ = 0.14
+items = [(0.0, 28, 1, "Input\n28 × 28 × 1", "in"), (6.3, 28, 16, "28 × 28 × 16", "hid"), (13.3, 14, 16, "14 × 14 × 16", "hid"),
+         (18.9, 14, 32, "14 × 14 × 32", "hid"), (25.9, 7, 32, "7 × 7 × 32", "hid")]
+color = {"in": ("#dfe8ff", BLUE), "hid": ("#FDE3C8", ORANGE)}
+for x, wh, d, label, kind in items:
+    side = wh * s_
+    block(ax, x, 1.6 - side / 2, side, side, d * 0.17 + 0.25, fc=color[kind][0], ec=color[kind][1])
+    ax.text(x + side / 2 + 0.7, -1.9, label, ha="center", va="top", fontsize=13.5, color=INK, linespacing=1.25)
+ops = [(5.0, "conv 3 × 3\n16 filters\nReLU"), (12.4, "max pool\n2 × 2"), (17.8, "conv 3 × 3\n32 filters\nReLU"), (24.8, "max pool\n2 × 2"), (31.2, "flatten")]
+for x, t in ops:
+    arrow(ax, x - 0.6, 1.6, x + 0.6, 1.6, color=INK, lw=2)
+    ax.plot([x, x], [1.9, 5.0], color="#bbbbbb", lw=1, ls=":", zorder=1)
+    ax.text(x, 5.05, t, ha="center", va="bottom", fontsize=12.5, color="#444444", linespacing=1.2, zorder=8)
+for i, y in enumerate(np.linspace(5, -1.4, 7)):
+    if i == 3:
+        ax.text(33.1, y, "⋮", ha="center", va="center", fontsize=16)
+        continue
+    ax.add_patch(plt.Circle((33.1, y), 0.42, fc=FILL["hid"], ec=ORANGE, lw=1.3, zorder=3))
+    for y2 in np.linspace(3.7, -0.1, 4):
+        ax.plot([33.1, 37.1], [y, y2], color="#cccccc", lw=0.6, zorder=1)
+for y2 in np.linspace(3.7, -0.1, 4):
+    ax.add_patch(plt.Circle((37.1, y2), 0.42, fc=FILL["out"], ec=GREEN, lw=1.3, zorder=3))
+ax.text(33.1, -1.9, "1,568", ha="center", va="top", fontsize=13.5)
+ax.text(37.5, -1.9, "10 outputs\nsoftmax", ha="center", va="top", fontsize=13.5, linespacing=1.25)
+ax.text(15.0, 8.6, "Part 1: finds features", ha="center", fontsize=15, fontweight="bold", color=ORANGE)
+ax.plot([0, 30], [8.2, 8.2], color=ORANGE, lw=2.5)
+ax.text(35.3, 8.6, "Part 2: decides", ha="center", fontsize=15, fontweight="bold", color=GREEN)
+ax.plot([32.3, 38.4], [8.2, 8.2], color=GREEN, lw=2.5)
+show_fig(fig)
+```
+:::
+
+-   **Feature finder:** repeat convolution, ReLU and pooling. The image gets smaller and the stack gets deeper.
+-   **Decision maker:** flatten the final stack, then use the fully connected layers we already know. The output has one node per class, with **softmax** to give probabilities.
+
+::: {.key}
+A CNN is a learned feature maker attached to a familiar classifier. The last layer here is multi-class logistic regression, applied to features the network built for itself.
+:::
+
+## Trace the Shapes and Count the Parameters
+
+```{python}
+pc = [conv_params(3, 1, 16), conv_params(3, 16, 32), fc_params(1568, 10)]
+assert pc == [160, 4640, 15690] and sum(pc) == int(R["cnn_params"]) == 20490 and int(R["fc_params"]) == 101770
+table(["Layer", "Output shape", "How we get the shape", "Parameters", "How we get the parameters"], [
+    ["Input", r"$28 \times 28 \times 1$", "", "0", "Data, not weights"],
+    ["Conv, 16 filters", r"$28 \times 28 \times 16$", r"$(28 - 3 + 2) / 1 + 1 = 28$", c(pc[0]), r"$(3 \times 3 \times 1 + 1) \times 16$"],
+    ["Max pool", r"$14 \times 14 \times 16$", "Half the height and width", "0", "No weights"],
+    ["Conv, 32 filters", r"$14 \times 14 \times 32$", r"$(14 - 3 + 2) / 1 + 1 = 14$", c(pc[1]), r"$(3 \times 3 \times 16 + 1) \times 32$"],
+    ["Max pool", r"$7 \times 7 \times 32$", "Half the height and width", "0", "No weights"],
+    ["Flatten", "1,568", r"$7 \times 7 \times 32$", "0", "Only rearranges"],
+    ["Output", "10", "One node per digit", c(pc[2]), r"$(1568 + 1) \times 10$"],
+    ["**Total**", "", "", f"**{c(sum(pc))}**", ""],
+])
+```
+
+-   Three of the seven layers have parameters. ReLU and pooling add none.
+-   Our 784, 128, 10 fully connected network has **101,770** parameters, about 5 times as many.
+-   Three quarters of this CNN's parameters ($15{,}690$ of $20{,}490$) are in the single fully connected layer. Convolution is cheap; fully connected layers are not.
+
+## Training: Nothing New
+
+-   **Step 1: the model.** $\hat{y} = f(x, w)$ is the CNN, and $w$ is every filter weight and bias.
+-   **Step 2: the loss.** Softmax gives a probability for each class. With $K$ classes, we use **cross-entropy**, the multi-class version of our classification loss:
+
+$$\hat{y}_j = \frac{e^{z_j}}{\sum_{k=1}^{K} e^{z_k}}, \qquad l(\hat{y}, y) = -\log\left(\hat{y}_{\text{true class}}\right)$$
+
+-   **Step 3: find $w$.** Gradient descent, with the gradient computed by backpropagation.
+
+```{python}
+ex = -np.log(0.9), -np.log(0.1)
+md(f"**Example.** If the model gives the true digit probability 0.9, the loss is $-\\log(0.9) = {ex[0]:.3f}$. If it gives probability 0.1, the loss is $-\\log(0.1) = {ex[1]:.3f}$. Being wrong and confident costs far more.")
+```
+
+::: {.key}
+**One new detail:** a shared weight is used at every position in the image, so its gradient adds up the contributions from all those positions. Every position in every training image helps train the same filter.
+:::
+
+## The Same CNN in Python
+
+```python
+import torch.nn as nn
+
+class CNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, padding=1),   # 28 x 28 x 16,  160 parameters
+            nn.ReLU(),
+            nn.MaxPool2d(2),                                                       # 14 x 14 x 16
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1),  # 14 x 14 x 32,  4,640 parameters
+            nn.ReLU(),
+            nn.MaxPool2d(2),                                                       #  7 x  7 x 32
+        )
+        self.classifier = nn.Sequential(
+            nn.Flatten(),                                                          # 1,568 values
+            nn.Linear(1568, 10),                                                   # 10 outputs, 15,690 parameters
+        )
+
+    def forward(self, x):
+        return self.classifier(self.features(x))
+```
+
+-   `Conv2d` is named for its **2 sliding directions**. `in_channels` is the depth $C$ of the input; for color images it would be 3. `out_channels` is $k$, the number of filters.
+-   The softmax is built into PyTorch's loss function, `nn.CrossEntropyLoss`. For video or scans, use `Conv3d`. You will build a CNN like this in the assignment.
+
+## Inside Our Trained CNN
+
+```{python}
+m1, m2 = R["sample_maps1"], R["sample_maps2"]
+assert m1.shape == (16, 28, 28) and m2.shape == (32, 14, 14)
+idx1 = np.argsort(m1.mean(axis=(1, 2)))[::-1][:8]
+idx2 = np.argsort(m2.mean(axis=(1, 2)))[::-1][:8]
+fig = plt.figure(figsize=(13.2, 4.6))
+gs = fig.add_gridspec(2, 10, width_ratios=[2.7] + [1] * 8 + [0.02], left=0.005, right=0.995, top=0.92, bottom=0.01, wspace=0.07, hspace=0.32)
+a = fig.add_subplot(gs[:, 0])
+a.imshow(digit, cmap="gray")
+a.axis("off")
+a.set_title("Input digit", fontsize=14.5, fontweight="bold", color="#444444")
+for j in range(8):
+    a = fig.add_subplot(gs[0, j + 1])
+    a.imshow(m1[idx1[j]], cmap="magma")
+    a.axis("off")
+    a = fig.add_subplot(gs[1, j + 1])
+    a.imshow(m2[idx2[j]], cmap="magma", interpolation="nearest")
+    a.axis("off")
+p = gs[0, 1:9].get_position(fig)
+fig.text((p.x0 + p.x1) / 2, 0.945, "After the first convolution: 8 of 16 maps, each 28 × 28", ha="center", fontsize=14.5, fontweight="bold", color="#444444")
+p = gs[1, 1:9].get_position(fig)
+fig.text((p.x0 + p.x1) / 2, 0.463, "After the second convolution: 8 of 32 maps, each 14 × 14", ha="center", fontsize=14.5, fontweight="bold", color="#444444")
+show_fig(fig)
+```
+
+-   These are the actual outputs of our trained network for one test digit, with bright meaning a strong response.
+-   First-layer maps still look like the digit, with different edges highlighted. Second-layer maps are coarser and harder for us to read: they respond to larger parts of the shape.
+
+# Part 5. Why It Works So Well on Images
+
+## Four Reasons, and a Test of Each
+
+| The fact about images | How the CNN uses it | What it gives us | We test it by... |
+|:-------------:|:------------:|:----------:|:----------:|
+| Nearby pixels are related | Local filters | Fewer parameters | **Experiment 1:** comparing accuracy and size |
+| Patterns repeat everywhere | Shared weights | One filter gets trained by the whole image, so less data is needed | **Experiment 2:** using small training sets |
+| Objects can be anywhere | Sliding filters and pooling | Some tolerance to shifts | **Experiment 3:** moving the test digits |
+| All of the above | The whole design | Good only if the facts are true | **Experiment 4:** breaking the facts |
+
+```{python}
+acc = {m: R[f"{m}_by_size"].mean(axis=0) for m in ("fc", "cnn")}
+sizes = [int(v) for v in R["sizes"]]
+```
+
+**The setup:** real MNIST digits, trained on up to 60,000 images and tested on 10,000 others. Both networks have the same number of gradient descent steps, and every result is an average over 5 random starts.
+
+```{python}
+table(["Model", "Layers", "Parameters"], [
+    ["Fully connected", "784, 128, 10", c(R["fc_params"])],
+    ["CNN", "The network from Part 4", c(R["cnn_params"])],
+])
+```
+
+## Experiment 1: Better and Smaller
+
+```{python}
+afc, acn = acc["fc"][-1], acc["cnn"][-1]
+efc, ecn = (1 - afc) * 10000, (1 - acn) * 10000
+fig, ax = plt.subplots(1, 2, figsize=(11.0, 3.05))
+names = ["Fully connected", "CNN"]
+cols = [ORANGE, BLUE]
+ax[0].barh(names, [efc, ecn], color=cols, height=0.55)
+ax[0].set_title("Mistakes on 10,000 test digits", fontsize=15, fontweight="bold", color="#444444")
+ax[1].barh(names, [int(R["fc_params"]), int(R["cnn_params"])], color=cols, height=0.55)
+ax[1].set_title("Parameters", fontsize=15, fontweight="bold", color="#444444")
+for a, vals in [(ax[0], [efc, ecn]), (ax[1], [int(R["fc_params"]), int(R["cnn_params"])])]:
+    a.invert_yaxis()
+    a.set_xticks([])
+    a.spines[["top", "right", "bottom"]].set_visible(False)
+    a.tick_params(length=0, labelsize=14)
+    a.set_xlim(0, max(vals) * 1.22)
+    for i, v in enumerate(vals):
+        a.text(v + max(vals) * 0.015, i, f"{v:,.0f}", va="center", fontsize=15, color=INK)
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+assert acn > afc
+md(f"-   **Accuracy:** the fully connected network reaches {afc:.2%}, and the CNN {acn:.2%}. The fully connected network makes about **{efc / ecn:.1f} times as many** mistakes.\n"
+   f"-   **Size:** it also uses about **{int(R['fc_params']) / int(R['cnn_params']):.1f} times as many** parameters.")
+```
+
+::: {.key}
+Usually, fewer parameters means a less flexible model. Here the CNN has fewer **and** does better, because its parameters are spent on the kinds of patterns images actually contain.
+:::
+
+## Experiment 2: Less Data Needed
+
+:::: {.columns}
+::: {.column width="58%"}
+```{python}
+fig, ax = plt.subplots(figsize=(8.1, 4.8))
+ax.plot(sizes, acc["fc"] * 100, color=ORANGE, lw=2.4, marker="s", ms=8, label="Fully connected")
+ax.plot(sizes, acc["cnn"] * 100, color=BLUE, lw=2.4, marker="o", ms=8, label="CNN")
+ax.set_xscale("log")
+ax.set_xticks(sizes)
+ax.set_xticklabels([f"{v:,}" for v in sizes])
+ax.minorticks_off()
+ax.set_xlabel("Number of training images (log scale)", fontsize=13.5)
+ax.set_ylabel("Accuracy on 10,000 test digits (%)", fontsize=13.5)
+ax.yaxis.grid(True, color="#eeeeee")
+ax.set_axisbelow(True)
+ax.spines[["top", "right", "left"]].set_visible(False)
+ax.tick_params(length=0)
+ax.set_ylim(min(acc["fc"].min(), acc["cnn"].min()) * 100 - 4, 101)
+ax.legend(frameon=False, loc="lower right", fontsize=13.5)
+fig.tight_layout()
+show_fig(fig)
+```
+:::
+
+::: {.column width="42%"}
+```{python}
+gap = (acc["cnn"] - acc["fc"]) * 100
+table(["Training images", "Fully connected", "CNN"], [[c(s_), f"{a:.1%}", f"{b:.1%}"] for s_, a, b in zip(sizes, acc["fc"], acc["cnn"])])
+assert (gap > 0).all() and gap.argmax() == 1 and acc["fc"][1] < acc["cnn"][1] < acc["fc"][2]
+md(f"-   The CNN leads at every size. Its lead peaks at **{gap[1]:.1f} points** with {sizes[1]:,} images and shrinks to {gap[-1]:.1f} with {sizes[-1]:,}. With only {sizes[0]} images, both are weak.\n"
+   f"-   The CNN at {sizes[1]:,} images ({acc['cnn'][1]:.1%}) is close to the fully connected network at {sizes[2]:,} ({acc['fc'][2]:.1%}).\n"
+   "-   **Why:** one digit gives a fully connected network one training example, but it gives a filter hundreds of patches.")
+```
+:::
+::::
+
+::: {.key}
+Weight sharing acts a bit like having more data. Building a true fact about the problem into the model reduces what must be learned from examples.
+:::
+
+## Why Moving the Image Is Not a Disaster
+
+::: {.h300}
+```{python}
+Vd = V_EDGE
+md0 = conv(digit, Vd, mode="same")
+moved4 = shifted(digit, dx=4)
+md1 = conv(moved4, Vd, mode="same")
+assert np.allclose(shifted(md0, dx=4)[:, :-1], md1[:, :-1])   # the last column is the image border
+fig, ax = plt.subplots(1, 4, figsize=(13.0, 3.45))
+for a, m, t, cm in [(ax[0], digit, "Input", "gray"), (ax[1], relu(md0), "Its feature map", "magma"), (ax[2], moved4, "Input, moved 4 pixels", "gray"), (ax[3], relu(md1), "Same map, moved 4 pixels", "magma")]:
+    a.imshow(m, cmap=cm)
+    a.set_title(t, fontsize=14.5, fontweight="bold", color="#444444")
+    a.axis("off")
+fig.tight_layout()
+show_fig(fig)
+```
+:::
+
+-   **Convolution is shift-equivariant:** move the input and the feature map moves by the same amount. The pattern is detected, unchanged, in its new position. In symbols, $\text{conv}(\text{shift}(x)) = \text{shift}(\text{conv}(x))$, ignoring the borders. We checked this equality numerically for this image.
+-   **Invariance is a different property:** the output does *not* change at all when the input moves. That is what we want for "which digit is this?"
+-   Pooling adds a little invariance at each step. The final fully connected layer does not have it: its weights are still tied to positions in the last $7 \times 7$ map.
+
+::: {.key}
+So CNNs have **built-in tolerance** of small shifts, but they are not fully immune to shifts. The next experiment measures how much it helps.
+:::
+
+## Experiment 3: Moving the Test Digits
+
+```{python}
+dist = [int(v) for v in R["distances"]]
+sfc, scn = R["fc_by_shift"].mean(axis=0), R["cnn_by_shift"].mean(axis=0)
+fig, ax = plt.subplots(figsize=(10.4, 3.7))
+ax.plot(dist, sfc * 100, color=ORANGE, lw=2.4, marker="s", ms=8, label="Fully connected")
+ax.plot(dist, scn * 100, color=BLUE, lw=2.4, marker="o", ms=8, label="CNN")
+for i in (0, 2, 4):
+    ax.annotate(f"{scn[i]:.0%}", (dist[i], scn[i] * 100), xytext=(0, 11), textcoords="offset points", ha="center", fontsize=13)
+    ax.annotate(f"{sfc[i]:.0%}", (dist[i], sfc[i] * 100), xytext=(0, -21), textcoords="offset points", ha="center", fontsize=13)
+ax.set_xlabel("Pixels moved (up, down, left or right; training images were not moved)", fontsize=13.5)
+ax.set_ylabel("Test accuracy (%)", fontsize=13.5)
+ax.set_ylim(0, 108)
+ax.yaxis.grid(True, color="#eeeeee")
+ax.set_axisbelow(True)
+ax.spines[["top", "right", "left"]].set_visible(False)
+ax.tick_params(length=0)
+ax.legend(frameon=False, loc="upper right", fontsize=13.5)
+fig.tight_layout()
+show_fig(fig)
+```
+
+```{python}
+assert (scn > sfc).all() and scn[2] > 0.9 and sfc[2] < 0.85
+md(f"-   Move the digits by 2 pixels, a shift you can barely see, and the fully connected network falls to **{sfc[2]:.0%}** while the CNN stays at **{scn[2]:.0%}**.\n"
+   f"-   The CNN's tolerance has limits: at 4 pixels it is down to {scn[4]:.0%}. A larger shift moves patterns across the last $7 \\times 7$ map, where weights are tied to position.\n"
+   "-   The usual remedy is **data augmentation**: also train on randomly shifted, cropped and flipped copies of the images.")
+```
+
+## Experiment 4: Break the Assumption
+
+```{python}
+shf, shc = R["fc_shuffled"].mean(), R["cnn_shuffled"].mean()
+assert abs(shf - afc) < 0.002 and shc < shf < acn
+```
+
+:::: {.columns}
+::: {.column width="38%"}
+```{python}
+fig, ax = plt.subplots(2, 3, figsize=(5.4, 3.75))
+for j in range(3):
+    ax[0, j].imshow(digits[j + 6], cmap="gray")
+    ax[1, j].imshow(digits[j + 6].ravel()[order].reshape(28, 28), cmap="gray")
+    ax[0, j].axis("off")
+    ax[1, j].axis("off")
+fig.subplots_adjust(0.01, 0.01, 0.99, 0.99, 0.05, 0.05)
+show_fig(fig)
+```
+:::
+
+::: {.column width="62%"}
+Shuffle the pixels with one fixed random order, in training and test images alike. All the information is still there, but **neighbors are no longer neighbors**.
+
+```{python}
+table(["Test accuracy", "Real images", "Shuffled pixels"], [
+    ["Fully connected", f"{afc:.2%}", f"{shf:.2%}"],
+    ["CNN", f"{acn:.2%}", f"**{shc:.2%}**"],
+])
+md(f"-   The fully connected network barely notices, as predicted in Part 1.\n"
+   f"-   The CNN loses its lead: it goes from {(1 - acn) * 10000:,.0f} mistakes to **{(1 - shc) * 10000:,.0f}**, about {(1 - shc) / (1 - acn):.1f} times as many, and falls behind the fully connected network. It still works, but its advantage is gone.")
+```
+:::
+::::
+
+::: {.key}
+**This is the whole story.** CNNs have no general magic. They win because their assumptions match images. Break the match and the advantage disappears.
+:::
+
+This is also why trees and boosting remain strong on **spreadsheets**: rearranging a table's columns changes nothing, so columns have no "neighbors" for a filter to use.
+
+## Depth Lets a Small Filter See a Large Area
+
+::: {.h360}
+```{python}
+def receptive(layers):
+    """layers: (filter size, stride). Grows by (f - 1) x (product of the earlier strides)."""
+    r, j = 1, 1
+    for f, s_ in layers:
+        r += (f - 1) * j
+        j *= s_
+    return r
+
+
+assert [receptive([(3, 1)] * t) for t in (1, 2, 3)] == [3, 5, 7]
+assert receptive([(3, 1), (2, 2), (3, 1)]) == 8 and receptive([(3, 1), (2, 2), (3, 1), (2, 2)]) == 10
+fig, axes = plt.subplots(1, 3, figsize=(9.3, 3.6))
+for a, t, col in zip(axes, [1, 2, 3], [GREEN, BLUE, ORANGE]):
+    a.set_xlim(-0.1, 9.1)
+    a.set_ylim(-0.1, 9.1)
+    a.set_aspect("equal")
+    a.axis("off")
+    for i in range(9):
+        for k in range(9):
+            a.add_patch(Rectangle((i, k), 1, 1, fc="white", ec="#d0d0d0", lw=0.8))
+    side = 1 + 2 * t
+    st = (9 - side) / 2
+    a.add_patch(Rectangle((st, st), side, side, fc=col, alpha=0.25, ec=col, lw=2.8))
+    a.add_patch(Rectangle((4, 4), 1, 1, fc=INK, ec=INK))
+    a.set_title(f"{t} conv layer{'s' if t > 1 else ''}: sees {side} × {side}", fontsize=14, fontweight="bold", color="#444444")
+fig.tight_layout()
+show_fig(fig)
+```
+:::
+
+:::: {.columns}
+::: {.column width="54%"}
+-   The **receptive field** of a node is the patch of the *original image* that can affect it.
+-   Each $3 \times 3$ layer adds 2 pixels to its width. Pooling doubles the speed of growth after it.
+-   In our CNN: 3, then 4 after pooling, 8 after the next convolution, 10 after the last pooling. Deep networks can reach the entire image.
+:::
+
+::: {.column width="46%"}
+-   **Why stack small filters?** Two $3 \times 3$ layers see the same $5 \times 5$ area as one $5 \times 5$ layer.
+-   They need $9 + 9 = 18$ weights, not $25$ (for one channel in and out), and they add a second ReLU.
+-   VGG built a whole network on this idea in 2014.
+:::
+::::
+
+## A Biological Parallel, and Some Limits
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Inspired by vision
+:::
+
+Hubel and Wiesel studied the visual cortex of cats (1959, 1962; Nobel Prize 1981):
+
+| Brain | CNN |
+|:---------:|:-------:|
+| **Simple cells:** respond to an edge at one place and angle | Filters |
+| **Complex cells:** respond to that edge over nearby places | Pooling |
+| Each neuron responds to a small area | Local filters |
+| Later areas respond to more complex shapes | Deeper layers |
+
+The link is an analogy, not a model of the brain. For example, the brain does not share weights.
+:::
+
+::: {.column width="50%"}
+::: {.view}
+What a CNN does not get for free
+:::
+
+-   **Rotation and scale:** a filter trained on upright edges does not automatically handle rotated objects or objects at other sizes. Data augmentation helps.
+-   **The surrounding context:** a small filter sees little, so long-range relations need many layers.
+-   **Texture bias:** ImageNet-trained CNNs often lean on texture over shape.
+-   **Adversarial examples:** tiny, carefully chosen pixel changes can flip a prediction.
+-   **Labeled data:** large models still need many examples, or transfer learning.
+:::
+::::
+
+# Part 6. How CNNs Changed the Field
+
+## Before and After: Who Designs the Features?
+
+```{python}
+def pipe(ax, y, boxes, title, tcol):
+    ax.text(0.1, y + 1.5, title, ha="left", va="center", fontsize=15.5, fontweight="bold", color=tcol)
+    x = 0.1
+    for i, (txt, w, fc, ec) in enumerate(boxes):
+        ax.add_patch(FancyBboxPatch((x, y - 0.75), w, 1.5, boxstyle="round,pad=0.02,rounding_size=0.14", fc=fc, ec=ec, lw=1.8, zorder=2))
+        ax.text(x + w / 2, y, txt, ha="center", va="center", fontsize=13.5, linespacing=1.25, zorder=3)
+        if i < len(boxes) - 1:
+            arrow(ax, x + w + 0.08, y, x + w + 0.72, y, color=INK, lw=1.8)
+        x += w + 0.8
+
+
+fig, ax = canvas((13.2, 3.9), (0, 22.2), (-3.4, 3.2))
+LG, LO, LB = ("#eeeeee", GREY), ("#FDE3C8", ORANGE), ("#dfe8ff", BLUE)
+pipe(ax, 1.05, [("Image", 2.4, *LG), ("Hand-designed features\nSIFT, HOG, color histograms\n(chosen by experts)", 7.2, *LO), ("Trained classifier\nsuch as an SVM", 4.6, *LB), ("Label", 2.4, *LG)], "Before 2012: only the last step learns", ORANGE)
+pipe(ax, -2.25, [("Image", 2.4, *LG), ("CNN: feature layers and classifier, all trained together on the same loss", 12.6, *LB), ("Label", 2.4, *LG)], "After 2012: every step learns", BLUE)
+show_fig(fig)
+```
+
+-   Before: researchers spent careers on better features, and each new task could need new ones. Features for faces did not help with X-rays.
+-   After: one recipe works across tasks. Collect labeled data, choose an architecture, train. The question moved from "which features?" to "which architecture and what data?"
+
+::: {.key}
+**The real revolution is end-to-end learning.** It is the same shift we saw in the deep learning deck: companies replaced years of hand-built systems once learning won.
+:::
+
+## 2012: The Moment Everything Changed
+
+```{python}
+years = ["2010", "2011", "2012\nAlexNet", "2013", "2014\nGoogLeNet", "2015\nResNet", "2016", "2017", "Human\n(one test)"]
+err = [28.2, 25.8, 15.3, 11.7, 6.7, 3.57, 2.99, 2.25, 5.1]
+fig, ax = plt.subplots(figsize=(12.4, 4.0))
+colors = [GREY, GREY] + [BLUE] * 6 + [ORANGE]
+ax.bar(years, err, color=colors, width=0.62)
+for x, v in enumerate(err):
+    ax.text(x, v + 0.6, f"{v:g}%", ha="center", fontsize=13, color=INK)
+for x, txt in [(2, "8 layers"), (4, "22 layers"), (5, "152 layers")]:
+    ax.text(x, err[x] + 3.1, txt, ha="center", fontsize=12.5, color=BLUE, fontweight="bold")
+ax.set_ylabel("Top-5 error, winning entry")
+ax.set_ylim(0, 32)
+ax.set_yticks([0, 10, 20, 30])
+ax.yaxis.grid(True, color="#eeeeee")
+ax.set_axisbelow(True)
+ax.tick_params(length=0)
+ax.spines[["top", "right", "left"]].set_visible(False)
+fig.tight_layout()
+show_fig(fig)
+```
+
+-   In 2012 the runner-up, using hand-designed features, had **26.2%** error. AlexNet, a CNN, had **15.3%**. Yearly gains had been a couple of points; this was more than ten.
+-   Grey bars used hand-designed features. Every winner from 2012 on was a CNN.
+
+## AlexNet, Layer by Layer
+
+```{python}
+alex_conv = [conv_params(11, 3, 64), conv_params(5, 64, 192), conv_params(3, 192, 384), conv_params(3, 384, 256), conv_params(3, 256, 256)]
+alex_fc = [fc_params(6 * 6 * 256, 4096), fc_params(4096, 4096), fc_params(4096, 1000)]
+assert sum(alex_conv) == 2469696 and sum(alex_fc) == 58631144 and sum(alex_conv) + sum(alex_fc) == 61100840
+```
+
+:::: {.columns}
+::: {.column width="52%"}
+```{python}
+rows = [[f"Conv {i + 1}", s_, c(p)] for i, (s_, p) in enumerate(zip(["64 filters, 11 × 11 × 3", "192 filters, 5 × 5 × 64", "384 filters, 3 × 3 × 192", "256 filters, 3 × 3 × 384", "256 filters, 3 × 3 × 256"], alex_conv))]
+rows += [[f"Fully conn. {i + 6}", s_, c(p)] for i, (s_, p) in enumerate(zip(["9,216 → 4,096", "4,096 → 4,096", "4,096 → 1,000 classes"], alex_fc))]
+rows += [["**Total**", "", f"**{c(sum(alex_conv) + sum(alex_fc))}**"]]
+table(["Layer", "Size", "Parameters"], rows)
+```
+
+::: {.note}
+Counts are for the standard torchvision version (61.1 million), checked with our rule. The original paper used 96 and 256 filters in its first two layers, split across two GPUs, for about 60 million.
+:::
+:::
+
+::: {.column width="48%"}
+-   **Same ideas as LeNet-5 from 1998,** far larger: about 1,000 times the parameters.
+-   **What was new or newly affordable:**
+    -   **ReLU:** in the paper's test, training reached a target error about 6 times faster than with tanh
+    -   **Dropout** to reduce overfitting
+    -   **Data augmentation:** crops and flips of the images
+    -   **Two gaming GPUs:** 5 to 6 days of training
+```{python}
+md(f"-   **Where the parameters are:** the 5 conv layers have {c(sum(alex_conv))}. The 3 fully connected layers have {c(sum(alex_fc))}, or **{sum(alex_fc) / (sum(alex_conv) + sum(alex_fc)):.0%}** of the total.")
+```
+:::
+::::
+
+::: {.key}
+The convolution layers do the seeing with 4% of the parameters. Later networks removed most of that fully connected weight, which is how ResNet-50 got to be far deeper yet smaller: 25.6 million parameters.
+:::
+
+## Going Deeper: The Problem and the Fix
+
+:::: {.columns}
+::: {.column width="54%"}
+```{python}
+fig, ax = canvas((7.8, 4.5), (-1.5, 13.2), (-1.6, 6.5))
+ax.text(-0.3, 2.1, "$x$", ha="center", va="center", fontsize=23)
+arrow(ax, 0.2, 2.1, 1.2, 2.1, lw=2)
+for x, t in [(1.3, "conv\nReLU"), (5.0, "conv")]:
+    ax.add_patch(FancyBboxPatch((x, 1.15), 2.6, 1.9, boxstyle="round,pad=0.02,rounding_size=0.15", fc=FILL["hid"], ec=ORANGE, lw=2, zorder=2))
+    ax.text(x + 1.3, 2.1, t, ha="center", va="center", fontsize=15, linespacing=1.25, zorder=3)
+arrow(ax, 3.95, 2.1, 4.95, 2.1, lw=2)
+arrow(ax, 7.65, 2.1, 8.55, 2.1, lw=2)
+ax.add_patch(plt.Circle((9.0, 2.1), 0.42, fc="white", ec=INK, lw=2, zorder=3))
+ax.text(9.0, 2.1, "+", ha="center", va="center", fontsize=23, zorder=4)
+arrow(ax, 9.45, 2.1, 10.45, 2.1, lw=2)
+ax.text(11.5, 2.1, "$x + F(x)$", ha="center", va="center", fontsize=20)
+ax.plot([0.7, 0.7, 9.0], [2.1, 4.9, 4.9], color=BLUE, lw=2.6)
+arrow(ax, 9.0, 4.9, 9.0, 2.55, color=BLUE, lw=2.6)
+ax.text(4.8, 5.4, "shortcut: $x$ skips ahead unchanged", ha="center", fontsize=15, color=BLUE, fontweight="bold")
+ax.text(4.5, 0.45, "$F(x)$: what the layers add", ha="center", fontsize=15, color=ORANGE, fontweight="bold")
+show_fig(fig)
+```
+:::
+
+::: {.column width="46%"}
+**The puzzle:** more layers should never hurt, since extra layers could just pass their input along unchanged. In practice, a 56-layer network had **higher training error** than a 20-layer one. It was harder to optimize, and this was not overfitting.
+
+**The fix (ResNet, 2015):** add the input back. The layers only have to learn the *change*, $F(x)$. To do nothing, they just set $F(x) = 0$.
+
+Gradients can also flow straight along the shortcuts.
+:::
+::::
+
+| Network | Year | Weight layers | Parameters | Main idea |
+|:---:|:--:|:--:|:---:|:------:|
+| LeNet-5 | 1998 | 5 | about 60,000 | Conv + pool + fully connected |
+| AlexNet | 2012 | 8 | 61.1 million | Scale, ReLU, dropout, GPUs |
+| VGG-16 | 2014 | 16 | 138.4 million | Only $3 \times 3$ filters |
+| ResNet-50 | 2015 | 50 | 25.6 million | Shortcut connections |
+
+## Transfer Learning: Deep Learning for Everyone
+
+::: {.h300}
+```{python}
+fig, ax = canvas((10.6, 3.0), (-0.1, 20.5), (-1.7, 3.0))
+x = 0.2
+labels = [("Edges,\ncolors", 3.2), ("Textures,\ncorners", 3.2), ("Parts,\nshapes", 3.2)]
+for lab, w in labels:
+    ax.add_patch(FancyBboxPatch((x, -1.35), w, 2.7, boxstyle="round,pad=0.02,rounding_size=0.15", fc=FILL["in"], ec=BLUE, lw=1.8))
+    ax.text(x + w / 2, 0, lab, ha="center", va="center", fontsize=13.5, linespacing=1.25)
+    arrow(ax, x + w + 0.08, 0, x + w + 0.72, 0, color=INK, lw=1.8)
+    x += w + 0.8
+ax.add_patch(FancyBboxPatch((x, -1.35), 3.3, 2.7, boxstyle="round,pad=0.02,rounding_size=0.15", fc="#f3f3f3", ec=GREY, lw=1.8, ls="--"))
+ax.text(x + 1.65, 0, "1,000\nImageNet\nclasses", ha="center", va="center", fontsize=13, color=GREY, linespacing=1.2)
+ax.plot([x - 0.05, x + 3.35], [-1.4, 1.4], color=RED, lw=2.5)
+x2 = x + 4.2
+arrow(ax, x + 3.45, 0, x2 - 0.1, 0, color=INK, lw=1.8)
+ax.add_patch(FancyBboxPatch((x2, -1.35), 3.7, 2.7, boxstyle="round,pad=0.02,rounding_size=0.15", fc=FILL["out"], ec=GREEN, lw=2.2))
+ax.text(x2 + 1.85, 0, "New last layer:\nyour classes", ha="center", va="center", fontsize=13.5, linespacing=1.25)
+ax.text(6.0, 2.15, "Keep: already trained on millions of photos", ha="center", fontsize=14.5, fontweight="bold", color=BLUE)
+ax.text(x2 + 1.85, 2.15, "Train only this", ha="center", fontsize=14.5, fontweight="bold", color=GREEN)
+show_fig(fig)
+```
+:::
+
+-   Early layers learn edges and textures, which are useful for almost any image. So download a trained CNN, replace its last layer, and train only that (and perhaps fine-tune the rest).
+-   A task that once needed a million labeled images can often work with dozens or hundreds per class, on a laptop.
+-   **Example:** Esteva et al. (2017) reached dermatologist-level skin cancer classification by retraining a network that had first learned from ImageNet.
+
+::: {.key}
+This is why CNNs spread so quickly beyond big tech. You will reuse a ResNet-18 on your own images in the assignment.
+:::
+
+## CNNs Spread Far Beyond Labeling Photos
+
+| Field | Task | Landmark work |
+|:-----:|:----------:|:---------:|
+| **Object detection** | Draw a box around each object, in real time | R-CNN (2014), YOLO (2016) |
+| **Medical imaging** | Outline structures in scans, pixel by pixel | U-Net (2015) |
+| **Medicine** | Detect diabetic eye disease, skin cancer | Gulshan et al. (2016), Esteva et al. (2017) |
+| **Games** | Read the Go board as a $19 \times 19$ image with many channels | AlphaGo (2016) |
+| **Generating images** | Remove noise step by step, using a U-Net | Stable Diffusion (2022) |
+| **Audio** | Treat a spectrogram as an image, or generate raw sound with 1D convolutions | WaveNet (2016) |
+| **Video and 3D** | Recognize actions, read CT and MRI volumes | 3D convolutions |
+
+::: {.key}
+If you can arrange your data on a grid where neighbors are related, a CNN may work, even if it is not a photo. The Go board is the clearest example: the idea of a local pattern is what mattered.
+:::
+
+## The Road So Far
+
+| Year | Event | Why it matters |
+|:--:|:----------:|:------------:|
+| 1959–1962 | Hubel and Wiesel study the visual cortex | Simple and complex cells: the biological inspiration |
+| 1980 | Fukushima's Neocognitron | Stacked local feature layers, but no backpropagation |
+| 1989 | LeCun et al. train conv layers with backpropagation | Filters are **learned**, on handwritten zip codes |
+| 1998 | LeNet-5 | Commercial system reading several million checks per day |
+| 2009 | ImageNet | Enough data to train a large network, and a fair contest |
+| 2012 | AlexNet | Won ImageNet by a wide margin: the field switched almost at once |
+| 2014–2015 | VGG, GoogLeNet, ResNet | Depth grew from 8 layers to 152, and passed one human's test score |
+| 2020 | Vision Transformer | Split the image into patches and use attention: no convolutions |
+| 2022 | ConvNeXt | A modernized pure CNN keeps up with Transformer models |
+
+## Where CNNs Stand Today
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+The challenger: Vision Transformers
+:::
+
+-   Attention lets any patch relate to any other right from the first layer.
+-   They build in **fewer assumptions** about images, so they must learn more from data.
+-   Their 2020 paper found they beat CNNs when pre-trained on very large datasets, but fell below comparable ResNets on ImageNet alone without strong regularization.
+:::
+
+::: {.column width="50%"}
+::: {.view}
+The incumbent: CNNs
+:::
+
+-   They need less data, thanks to their built-in assumptions, as Experiment 2 showed.
+-   They are efficient, so they are a common choice on phones, in cameras, and for real-time work.
+-   Well-tuned modern CNNs such as ConvNeXt remain competitive on standard benchmarks.
+:::
+::::
+
+::: {.key}
+This is the **same trade-off** we saw today, and all through the course: build in assumptions and you need less data; if they are limiting, more flexible models can win when data is plentiful. Many modern systems combine both approaches.
+:::
+
+## Summary
+
+-   **Problem:** fully connected networks need too many parameters, ignore which pixels are neighbors, and must relearn a pattern at every position.
+-   **2D convolution:** a small filter slides across a grid. At each position it does what every node does: multiply, add, activate. Its weights are shared and learned.
+-   **To 3D:** channels give the data depth, and the filter depth to match. $k$ filters give an output of depth $k$. Parameters: $(f \times f \times C + 1) \times k$. A true 3D convolution also slides through a third direction, for video and scans.
+-   **A whole CNN:** convolution, ReLU, pooling, repeated, then a classifier. Each layer reads the last, moving from edges to parts to objects.
+-   **Why it works:** its assumptions (local patterns that can appear anywhere, built up in layers) are true of images. Our experiments show better accuracy with fewer parameters and less data, and they show that the advantage vanishes when we shuffle the pixels.
+-   **Why it mattered:** it replaced hand-designed features with end-to-end learning, and transfer learning put that within everyone's reach.
+
+## Problem: A CNN by Hand
+
+```{python}
+xp = np.array([[1, 2, 0, 1, 3], [0, 1, 3, 1, 0], [2, 0, 1, 0, 2], [1, 1, 0, 2, 1], [0, 2, 1, 3, 0]])
+wp = np.array([[1, 0], [0, -1]])
+bp = 1
+zp = conv(xp, wp, b=bp)
+hp = relu(zp)
+pp = pool(hp)
+assert zp.shape == (4, 4) and pp.shape == (2, 2)
+P = [conv_params(3, 3, 8), conv_params(3, 8, 16), fc_params(8 * 8 * 16, 10)]
+assert P == [224, 1168, 10250] and sum(P) == 11642 and out_size(32, 3, 1) == 32
+```
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Part A: one layer
+:::
+
+```{python}
+fig, ax = canvas((6.8, 3.0), (-0.3, 10.1), (-5.2, 1.0))
+cells(ax, xp, face="#f4f4f4", fs=16, title="Image")
+cells(ax, wp, x=7.2, y=-1.5, cmap="RdBu", vmin=-2.4, vmax=2.4, fs=17, title="Filter")
+ax.text(9.9, -2.5, "", ha="center")
+ax.text(8.2, -4.2, f"bias $b = {bp}$", ha="center", va="center", fontsize=15)
+show_fig(fig)
+```
+
+1.  Compute the $4 \times 4$ values of $z$, with stride 1 and no padding.
+2.  Apply ReLU.
+3.  Apply $2 \times 2$ max pooling.
+4.  How many parameters does this filter have?
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Part B: a whole network
+:::
+
+The input is a color image of $32 \times 32 \times 3$. The network has these layers:
+
+-   Conv: 8 filters, $3 \times 3$, padding 1, stride 1, ReLU
+-   Max pool: $2 \times 2$
+-   Conv: 16 filters, $3 \times 3$, padding 1, stride 1, ReLU
+-   Max pool: $2 \times 2$
+-   Flatten, then a fully connected output layer with 10 classes
+
+For each layer, find the output shape and the number of parameters. What is the total?
+:::
+::::
+
+## Problem: Solution
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Part A
+:::
+
+```{python}
+fig, ax = canvas((6.9, 2.5), (-0.3, 13.6), (-4.1, 1.3))
+cells(ax, zp, cmap="RdBu", vmin=-6, vmax=6, fs=15, title="$z$", tfs=17)
+cells(ax, hp, x=5.1, cmap="Oranges", vmin=0, vmax=7, fs=15, title="ReLU", tfs=15)
+cells(ax, pp, x=10.2, y=-1, cmap="Oranges", vmin=0, vmax=7, fs=16, title="Pool", tfs=15)
+arrow(ax, 4.15, -2, 4.95, -2)
+arrow(ax, 9.25, -2, 10.05, -2)
+show_fig(fig)
+```
+
+```{python}
+md(f"Top-left: $z = {bp} + (1)({xp[0, 0]}) + (0)({xp[0, 1]}) + (0)({xp[1, 0]}) + (-1)({xp[1, 1]}) = {n(zp[0, 0])}$.\n\n"
+   f"Next one over: $z = {bp} + (1)({xp[0, 1]}) + (0)({xp[0, 2]}) + (0)({xp[1, 1]}) + (-1)({xp[1, 2]}) = {n(zp[0, 1])}$.\n\n"
+   r"**Parameters:** $2 \times 2 \times 1 + 1 = 5$.")
+```
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Part B
+:::
+
+```{python}
+table(["Layer", "Output shape", "Parameters"], [
+    ["Conv, 8 filters", r"$32 \times 32 \times 8$", rf"$(3 \times 3 \times 3 + 1) \times 8 = {P[0]}$"],
+    ["Max pool", r"$16 \times 16 \times 8$", "0"],
+    ["Conv, 16 filters", r"$16 \times 16 \times 16$", rf"$(3 \times 3 \times 8 + 1) \times 16 = {c(P[1])}$".replace(",", "{,}")],
+    ["Max pool", r"$8 \times 8 \times 16$", "0"],
+    ["Flatten", "1,024", "0"],
+    ["Output", "10", r"$(1024 + 1) \times 10 = 10{,}250$"],
+    ["**Total**", "", f"**{c(sum(P))}**"],
+])
+```
+
+Padding 1 with a $3 \times 3$ filter keeps the height and width. The second layer's filter has depth 8 because its input has 8 channels.
+:::
+::::
+
+## Sources
+
+::: {.sources}
+-   Hubel and Wiesel (1959, 1962), *Receptive fields of single neurones in the cat's striate cortex*; *Receptive fields, binocular interaction and functional architecture in the cat's visual cortex*
+-   Fukushima (1980), *Neocognitron*
+-   LeCun et al. (1989), *Backpropagation Applied to Handwritten Zip Code Recognition*
+-   LeCun, Bottou, Bengio and Haffner (1998), *Gradient-Based Learning Applied to Document Recognition*: LeNet-5 and check reading
+-   Russakovsky et al. (2015), *ImageNet Large Scale Visual Recognition Challenge*: yearly winners and the human comparison
+-   Krizhevsky, Sutskever and Hinton (2012), *ImageNet Classification with Deep Convolutional Neural Networks*: AlexNet
+-   Simonyan and Zisserman (2014), *Very Deep Convolutional Networks for Large-Scale Image Recognition*: VGG
+-   Szegedy et al. (2015), *Going Deeper with Convolutions*: GoogLeNet
+-   He, Zhang, Ren and Sun (2016), *Deep Residual Learning for Image Recognition*: ResNet, and the 20-layer vs. 56-layer result
+-   Girshick et al. (2014), *Rich Feature Hierarchies*: R-CNN. Redmon et al. (2016), *You Only Look Once*: YOLO. Ronneberger et al. (2015), *U-Net*
+-   Gulshan et al. (2016), *JAMA*: diabetic retinopathy. Esteva et al. (2017), *Nature*: skin cancer
+-   Silver et al. (2016), *Nature*: AlphaGo. van den Oord et al. (2016): WaveNet. Rombach et al. (2022): Stable Diffusion
+-   Geirhos et al. (2019), *ImageNet-trained CNNs are biased towards texture*. Goodfellow, Shlens and Szegedy (2015), *Explaining and Harnessing Adversarial Examples*
+-   Dosovitskiy et al. (2020), *An Image Is Worth 16x16 Words*: Vision Transformer. Liu et al. (2022), *A ConvNet for the 2020s*: ConvNeXt
+-   **Experiments in this deck:** MNIST digits (LeCun et al.), trained in PyTorch with `cnn_fa26_assets/make_results.py`. ResNet-18 weights: torchvision's ImageNet checkpoint. Photos: scikit-learn's sample images.
+:::

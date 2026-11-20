@@ -1,0 +1,1875 @@
+---
+title: "🦇 Neural Networks"
+subtitle: "Starting from the linear model, the simplest neural network"
+author: "Son Nguyen"
+format:
+  revealjs:
+    theme: default
+    slide-number: true
+    transition: fade
+    center: false
+    width: 1600
+    height: 900
+    margin: 0.04
+    scrollable: true
+    embed-resources: true
+    html-math-method: katex
+    menu: true
+    footer: "Neural networks"
+    include-in-header:
+      text: |
+        <style>
+          #title-slide { background: #FAC18A; }
+          .reveal .slides section h2 {
+            background: #FAC18A; color: #ffffff;
+            padding: 0.25em 0.6em; margin-bottom: 0.5em; font-size: 1.2em;
+          }
+          .reveal h1 { font-size: 1.6em; }
+          .reveal p, .reveal li { font-size: 0.68em; margin: 0.3em 0; }
+          .reveal li p, .reveal li li { font-size: 1em; }
+          .reveal table { font-size: 0.6em; margin: 0.3em auto; }
+          .reveal table th, .reveal table td { padding: 3px 14px; text-align: center; }
+          .reveal .katex-display, .reveal mjx-container[display="true"] { font-size: 0.85em !important; margin: 0.35em 0 !important; }
+          .reveal .slides section img { max-height: 600px !important; width: auto !important; max-width: 100% !important; object-fit: contain; display: block; margin: 0 auto; }
+          .reveal .view { font-weight: bold; color: #B8621B; font-size: 0.72em; border-bottom: 3px solid #FAC18A; padding-bottom: 0.1em; margin-bottom: 0.4em; }
+          .reveal .key { background:#eaf7ee; border-left:6px solid #1a7f37; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .key p { font-size: 1em; }
+          .reveal .check { background:#eef3ff; border-left:6px solid #1f4fd8; padding:0.4em 0.8em; margin:0.5em 0; font-size:0.68em; }
+          .reveal .check p { font-size: 1em; }
+          .reveal .r-stack img { background: #ffffff; }
+          .reveal .tight .katex-display { font-size: 0.72em !important; }
+          .reveal .wall .katex-display { font-size: 0.66em !important; }
+          .reveal .wall4 .katex-display { font-size: 0.8em !important; }
+          .reveal .wall5 .katex-display { font-size: 0.6em !important; }
+        </style>
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| label: setup
+import base64, io
+import numpy as np
+import matplotlib.pyplot as plt
+from IPython.display import display, HTML, Markdown
+from sklearn.linear_model import LogisticRegression
+
+BLUE, ORANGE, GREEN, GREY, RED, INK = "#1f4fd8", "#E8833A", "#1a7f37", "#888888", "#b5302a", "#222222"
+FILL = {"bias": "#eeeeee", "in": "#dfe8ff", "hid": "#FDE3C8", "out": "#dcf3e2"}
+EDGE = {"bias": GREY, "in": BLUE, "hid": ORANGE, "out": GREEN}
+plt.rcParams.update({"mathtext.fontset": "cm", "font.size": 13})
+
+
+def md(s):
+    display(Markdown(s))
+
+
+def sigma(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def n(x, d=3):
+    """Format a number: trailing zeros off, and no negative zero."""
+    s = f"{x:.{d}f}"
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s in ("-0", "") else s
+
+
+def f3(x):
+    """Always three decimals, for values worked out through sigma."""
+    return f"{x:.3f}"
+
+
+def r3(x):
+    """Round each step to 3 decimals, so every line on a slide can be reproduced by hand."""
+    return round(float(x), 3)
+
+
+# ------------------------------------------------------------------
+# Network diagrams
+#   Inputs and bias nodes are plain circles. Every other node is split in
+#   two: the sum on the left, a picture of its activation on the right.
+#   layers:  list of layers, each a list of (id, label, kind)
+#   weights: {(from id, to id): label}. Every node connects to every
+#            non-bias node of the next layer.
+#   names:   one title per layer. "linear" or "sigmoid" in the title sets
+#            the activation drawn in that layer's nodes.
+#   before:  {id: value} in blue: the sum z going into the activation
+#   values:  {id: value} in red: what comes out of the activation
+#            (for input nodes, the value of the input, in black)
+# ------------------------------------------------------------------
+def draw_activation(ax, x, y, width, height, kind, color, lw=1.7, zorder=7):
+    """A small picture of the activation function, centered at (x, y)."""
+    t = np.linspace(-1, 1, 60)
+    if kind == "sigmoid":
+        shape = np.tanh(3.2 * t)
+    elif kind == "relu":
+        shape = np.where(t < 0, -0.75, -0.75 + 1.75 * t)
+    else:
+        shape = t
+    ax.plot(x + t * width / 2, y + shape * height / 2, color=color, lw=lw, solid_capstyle="round", zorder=zorder)
+
+
+def draw_split_node(ax, x, y, R, kind, activation, fs_sum=19, lw=2):
+    ax.add_patch(plt.Circle((x, y), R, fc=FILL[kind], ec=EDGE[kind], lw=lw, zorder=5))
+    split = x + 0.1 * R
+    half = np.sqrt(R ** 2 - (0.1 * R) ** 2)
+    ax.plot([split, split], [y - half, y + half], color=EDGE[kind], lw=lw, zorder=6)
+    ax.text(x - 0.42 * R, y, r"$\Sigma$", ha="center", va="center", fontsize=fs_sum, zorder=7)
+    draw_activation(ax, x + 0.52 * R, y, 0.62 * R, 0.8 * R, activation, EDGE[kind])
+
+
+def draw_net(layers, weights, values=None, names=None, size=(8.2, 5.2), t=0.3, stagger=0.0, gap=2.25, before=None, dy=1.12, layer_colors=None):
+    values, before = values or {}, before or {}
+    fig, ax = plt.subplots(figsize=size)
+    pos, kinds = {}, {}
+    RP, RN = 0.2, 0.3   # plain nodes, split nodes
+    for i, layer in enumerate(layers):
+        top = (len(layer) - 1) / 2
+        for j, (nid, _, kind) in enumerate(layer):
+            pos[nid], kinds[nid] = (i * gap, (top - j) * dy), kind
+    radius = lambda nid: RN if kinds[nid] in ("hid", "out") else RP
+    arrow = dict(arrowstyle="-|>", color="#777777", lw=1.3, shrinkA=0, shrinkB=0)
+    for i in range(len(layers) - 1):
+        targets = [b for b, _, kb in layers[i + 1] if kb != "bias"]
+        for a, _, _ in layers[i]:
+            for k, b in enumerate(targets):
+                (x0, y0), (x1, y1) = pos[a], pos[b]
+                dx_, dy_ = x1 - x0, y1 - y0
+                d = np.hypot(dx_, dy_)
+                ra, rb = radius(a), radius(b)
+                props = {**arrow, "color": layer_colors[i], "lw": 1.7} if layer_colors else arrow
+                ax.annotate("", xy=(x1 - dx_ / d * rb, y1 - dy_ / d * rb), xytext=(x0 + dx_ / d * ra, y0 + dy_ / d * ra), arrowprops=props)
+                lab = weights.get((a, b))
+                if lab:
+                    tt = t + stagger * k
+                    ax.text(x0 + dx_ * tt, y0 + dy_ * tt, lab, ha="center", va="center", fontsize=15, color=INK,
+                            bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none", alpha=0.95), zorder=4)
+    box = dict(boxstyle="round,pad=0.08", fc="white", ec="none", alpha=0.92)
+    for i, layer in enumerate(layers):
+        title = names[i] if names else ""
+        activation = "sigmoid" if "sigmoid" in title else "relu" if "ReLU" in title else "linear"
+        for nid, label, kind in layer:
+            x, y = pos[nid]
+            if kind in ("hid", "out"):
+                draw_split_node(ax, x, y, RN, kind, activation)
+            else:
+                ax.add_patch(plt.Circle((x, y), RP, fc=FILL[kind], ec=EDGE[kind], lw=2, zorder=5))
+                ax.text(x, y, label, ha="center", va="center", fontsize=19, zorder=6)
+            v, zv = values.get(nid), before.get(nid)
+            if kind == "in" and v:
+                ax.text(x - RP - 0.08, y, v, ha="right", va="center", fontsize=15.5, color=INK, fontweight="bold", zorder=7)
+            elif kind == "hid":
+                below = y < -0.01   # lower nodes have no arrows underneath them
+                sign, step, base_y = (-1, 0.29, y - RN - 0.05) if below else (1, 0.29, y + RN + 0.05)
+                va = "top" if below else "bottom"
+                lines = [(f"{label} = {v}", RED) if v else (label, INK)]
+                if zv:
+                    lines = [(f"$z$ = {zv}", BLUE)] + lines
+                for k, (text, color) in enumerate(lines if below else lines[::-1]):
+                    ax.text(x, base_y + sign * k * step, text, ha="center", va=va, fontsize=15.5, color=color, zorder=7, bbox=box)
+            elif kind == "out":
+                ax.annotate("", xy=(x + RN + 0.38, y), xytext=(x + RN, y), arrowprops=arrow)
+                text, color = (f"{label} = {v}", RED) if v else (label, INK)
+                ax.text(x + RN + 0.43, y, text, ha="left", va="center", fontsize=17, color=color, zorder=7)
+                if zv:
+                    ax.text(x, y - RN - 0.07, f"$z$ = {zv}", ha="center", va="top", fontsize=15.5, color=BLUE, zorder=7, bbox=box)
+    span = max(abs(y) for _, y in pos.values())
+    if names:
+        for i, nm in enumerate(names):
+            ax.text(i * gap, span + 0.78, nm, ha="center", va="center", fontsize=13.5, linespacing=1.35, color="#444444", fontweight="bold")
+    has_value = bool(values.get("o"))
+    ax.set_xlim(-0.75, (len(layers) - 1) * gap + (1.95 if has_value else 1.2))
+    ax.set_ylim(-span - 0.82, span + 1.15)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.tight_layout(pad=0.1)
+    return fig
+
+
+def draw_node(inputs, labels, sum_lines, activation, act_label, output, size=(10.5, 5.2), headers=True, invals=None):
+    """One large node with the inputs, weights, sum, activation and output spelled out."""
+    fig, ax = plt.subplots(figsize=size)
+    R, split = 1.25, 0.32
+    half = np.sqrt(R ** 2 - split ** 2)
+    ys = np.linspace(1.35, -1.35, len(inputs))
+    for k, (nm, y, lab) in enumerate(zip(inputs, ys, labels)):
+        if invals and invals[k]:
+            ax.text(-4.42, y, invals[k], ha="right", va="center", fontsize=17, color=RED, fontweight="bold", zorder=6)
+        bias = nm == "$1$"
+        ax.add_patch(plt.Circle((-4.0, y), 0.3, fc=FILL["bias" if bias else "in"], ec=EDGE["bias" if bias else "in"], lw=2, zorder=5))
+        ax.text(-4.0, y, nm, ha="center", va="center", fontsize=19, zorder=6)
+        d = np.hypot(4.0, y)
+        ax.annotate("", xy=(-R * 4.0 / d, R * y / d), xytext=(-4.0 + 0.3 * 4.0 / d, y - 0.3 * y / d),
+                    arrowprops=dict(arrowstyle="-|>", color="#777777", lw=1.5, shrinkA=0, shrinkB=0))
+        ax.text(-2.45, y * 0.62, lab, ha="center", va="center", fontsize=17, zorder=6,
+                bbox=dict(boxstyle="round,pad=0.14", fc="white", ec="none"))
+    ax.add_patch(plt.Circle((0, 0), R, fc=FILL["out"], ec=GREEN, lw=2.6, zorder=3))
+    ax.plot([split, split], [-half, half], color=GREEN, lw=2.6, zorder=4)
+    ax.text(-0.46, 0.0, sum_lines, ha="center", va="center", fontsize=17, linespacing=1.5, zorder=5)
+    draw_activation(ax, 0.72, 0.12, 0.6, 0.85, activation, GREEN, lw=2.6)
+    ax.text(0.68, -0.58, act_label, ha="center", va="center", fontsize=15.5, zorder=5)
+    ax.annotate("", xy=(2.25, 0), xytext=(R, 0), arrowprops=dict(arrowstyle="-|>", color="#777777", lw=1.5, shrinkA=0, shrinkB=0))
+    ax.text(2.35, 0, output, ha="left", va="center", fontsize=19)
+    if headers:
+        for x, text in [(-4.0, "Inputs"), (-2.45, "Weights"), (-0.46, "Step 1: add"), (1.2, "Step 2: activation"), (2.95, "Output")]:
+            ax.text(x, 2.05, text, ha="center", va="center", fontsize=14, color="#444444", fontweight="bold")
+        ax.plot([-0.46, -0.46], [1.88, 1.2], color=GREY, lw=1, ls=":", zorder=2)
+        ax.plot([0.72, 0.72], [1.88, 1.04], color=GREY, lw=1, ls=":", zorder=2)
+    ax.set_xlim(-5.0, 3.9)
+    ax.set_ylim(-1.95, 2.3)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.tight_layout(pad=0.1)
+    return fig
+
+
+def png_uri(fig):
+    b = io.BytesIO()
+    fig.savefig(b, format="png", dpi=170, facecolor="white")
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+
+
+def show_fig(fig):
+    display(HTML(f'<img src="{png_uri(fig)}">'))
+
+
+def stack(figs):
+    """Layer figures on top of each other; each click reveals the next one."""
+    imgs = [f'<img src="{png_uri(figs[0])}">']
+    imgs += [f'<img class="fragment" data-fragment-index="{i}" src="{png_uri(f)}">' for i, f in enumerate(figs[1:], 1)]
+    display(HTML('<div class="r-stack">' + "".join(imgs) + "</div>"))
+
+
+def steps(lines):
+    """Each line appears on its own click. Line 0 is always visible."""
+    out = [lines[0]]
+    out += [f'::: {{.fragment fragment-index="{i}"}}\n{l}\n:::' for i, l in enumerate(lines[1:], 1)]
+    md("\n\n".join(out))
+
+
+LEGEND = (f'[Blue]{{style="color:{BLUE};font-weight:bold"}}: the sum going **into** the activation. '
+          f'[Red]{{style="color:{RED};font-weight:bold"}}: the value coming **out** of it.')
+
+
+def blue(tex):
+    return rf"\textcolor{{{BLUE}}}{{{tex}}}"
+
+
+def red(tex):
+    return rf"\textcolor{{{RED}}}{{{tex}}}"
+
+
+def into(*rows):
+    """rows of (name of z, bias, [(weight, input), ...], sum)."""
+    out = []
+    for name, b, pairs, val in rows:
+        sum_txt = " + ".join([b] + [f"({w})({x})" for w, x in pairs])
+        out.append(blue(f"{name} = {sum_txt} = {val}"))
+    return "$$\\begin{gathered}" + " \\\\ ".join(out) + "\\end{gathered}$$"
+
+
+def outof(*rows):
+    """rows of (name of the output, activation, z value, output value).
+    Activation: "sigmoid", "linear", or "linear1" for the one-node linear model."""
+    out = []
+    for name, f, z, v in rows:
+        if f == "sigmoid":
+            exponent = f"-({z})" if z.startswith("-") else f"-{z}"
+            out.append(red(rf"{name} = \frac{{1}}{{1 + e^{{{exponent}}}}} = {v}"))
+        elif f == "relu":
+            out.append(red(rf"{name} = \max(0,\, {z}) = {v}"))
+        elif f == "linear1":
+            out.append(red(f"{name} = z = {v}"))
+        else:
+            out.append(red(f"{name} = z_{{{name}}} = {v}"))
+    return "$$\\begin{gathered}" + " \\\\ ".join(out) + "\\end{gathered}$$"
+
+
+def stages(base, *pairs):
+    """One figure per click. Each pair adds (before values, after values)."""
+    z, v, figs = {}, {}, [base({}, {})]
+    for zv, ov in pairs:
+        if zv:
+            z = {**z, **zv}
+            figs.append(base(z, v))
+        if ov:
+            v = {**v, **ov}
+            figs.append(base(z, v))
+    stack(figs)
+
+
+def wall(a, b):
+    """Write a network with hidden layers of size a and b as one formula, every activation written out."""
+    lines = [r"\hat{y} = {} & v_0"]
+    for j in range(1, b + 1):
+        inner = " + ".join(rf"\dfrac{{u_{{{j}{i}}}}}{{1 + e^{{-(w_{{{i}0}} + w_{{{i}1}} x_1 + w_{{{i}2}} x_2)}}}}" for i in range(1, a + 1))
+        lines.append(rf"& + \dfrac{{v_{{{j}}}}}{{1 + \exp\left(-\left(u_{{{j}0}} + {inner}\right)\right)}}")
+    return "$$\\begin{aligned}" + " \\\\[10pt] ".join(lines) + "\\end{aligned}$$"
+
+
+def wall3(a, b, c):
+    """One formula for three hidden layers of sizes a, b, c, every activation written out."""
+    def lowest(i):
+        return rf"1 + e^{{-(w_{{{i}0}} + w_{{{i}1}} x_1 + w_{{{i}2}} x_2)}}"
+
+    def middle(k):
+        inner = " + ".join(rf"\dfrac{{u_{{{k}{i}}}}}{{{lowest(i)}}}" for i in range(1, a + 1))
+        return rf"1 + \exp\left(-\left(u_{{{k}0}} + {inner}\right)\right)"
+
+    lines = [r"\hat{y} = {} & v_0"]
+    for j in range(1, c + 1):
+        inner = " + ".join(rf"\dfrac{{s_{{{j}{k}}}}}{{{middle(k)}}}" for k in range(1, b + 1))
+        lines.append(rf"& + \dfrac{{v_{{{j}}}}}{{1 + \exp\left(-\left(s_{{{j}0}} + {inner}\right)\right)}}")
+    return "$$\\begin{aligned}" + " \\\\[14pt] ".join(lines) + "\\end{aligned}$$"
+
+
+def n_sigmas(sizes, output_sigmoid=False):
+    """Sigmas in the fully written-out formula: each node is rewritten every time it is used."""
+    uses, total = 1, 1 if output_sigmoid else 0
+    for k in reversed(sizes[1:-1]):
+        uses *= k
+        total += uses
+    return total
+
+
+def x_uses(sizes):
+    """How many times x1 appears in the fully written-out formula."""
+    return int(np.prod([int(k) for k in sizes[1:-1]], dtype=object))
+
+
+def table(header, rows):
+    s = "| " + " | ".join(header) + " |\n|" + ":---:|" * len(header) + "\n"
+    s += "\n".join("| " + " | ".join(str(c) for c in r) + " |" for r in rows)
+    md(s)
+
+
+# ------------------------------------------------------------------
+# Data from the linear model and LASSO note
+# ------------------------------------------------------------------
+X = np.array([[1, 0], [2, 1], [3, -2], [4, 3]], dtype=float)
+y_reg = np.array([-2, 0, -1, 1], dtype=float)
+y_cls = np.array([1, 0, 0, 1])
+
+# ------------------------------------------------------------------
+# Weights used in the worked examples, picked by hand (not trained)
+# ------------------------------------------------------------------
+W = dict(w0=-1.0, w1=0.5, w2=0.5)
+A = dict(w10=-1.0, w11=0.5, w12=0.5, v0=-1.0, v1=2.0)                                   # 2-1-1
+B = dict(w10=6.0, w11=-4.0, w12=0.0, w20=-14.0, w21=4.0, w22=0.0, v0=-2.0, v1=4.0, v2=4.0)  # 2-2-1
+C = dict(w10=-1.0, w11=0.5, w12=0.5, w20=1.0, w21=-1.0, w22=0.5,
+         u10=-1.0, u11=2.0, u12=-1.0, u20=0.5, u21=-1.0, u22=1.0, v0=-1.0, v1=1.0, v2=2.0)  # 2-2-2-1
+
+
+def net_b(x1, x2):
+    h1 = sigma(B["w10"] + B["w11"] * x1 + B["w12"] * x2)
+    h2 = sigma(B["w20"] + B["w21"] * x1 + B["w22"] * x2)
+    z = B["v0"] + B["v1"] * h1 + B["v2"] * h2
+    return h1, h2, z, sigma(z)
+
+
+# Node lists
+IN = [("b", "$1$", "bias"), ("x1", "$x_1$", "in"), ("x2", "$x_2$", "in")]
+OUT = [("o", r"$\hat{y}$", "out")]
+H1 = [("hb", "$1$", "bias"), ("h", "$h$", "hid")]
+H2 = [("hb", "$1$", "bias"), ("h1", "$h_1$", "hid"), ("h2", "$h_2$", "hid")]
+G2 = [("gb", "$1$", "bias"), ("g1", "$g_1$", "hid"), ("g2", "$g_2$", "hid")]
+
+ONE = {("b", "o"): "$w_0$", ("x1", "o"): "$w_1$", ("x2", "o"): "$w_2$"}
+
+
+def one_num(w):
+    return {("b", "o"): n(w["w0"]), ("x1", "o"): n(w["w1"]), ("x2", "o"): n(w["w2"])}
+
+
+NET_A = {("b", "h"): "$w_{10}$", ("x1", "h"): "$w_{11}$", ("x2", "h"): "$w_{12}$", ("hb", "o"): "$v_0$", ("h", "o"): "$v_1$"}
+NET_B = {("b", "h1"): "$w_{10}$", ("x1", "h1"): "$w_{11}$", ("x2", "h1"): "$w_{12}$",
+         ("b", "h2"): "$w_{20}$", ("x1", "h2"): "$w_{21}$", ("x2", "h2"): "$w_{22}$",
+         ("hb", "o"): "$v_0$", ("h1", "o"): "$v_1$", ("h2", "o"): "$v_2$"}
+NET_C = {("b", "h1"): "$w_{10}$", ("x1", "h1"): "$w_{11}$", ("x2", "h1"): "$w_{12}$",
+         ("b", "h2"): "$w_{20}$", ("x1", "h2"): "$w_{21}$", ("x2", "h2"): "$w_{22}$",
+         ("hb", "g1"): "$u_{10}$", ("h1", "g1"): "$u_{11}$", ("h2", "g1"): "$u_{12}$",
+         ("hb", "g2"): "$u_{20}$", ("h1", "g2"): "$u_{21}$", ("h2", "g2"): "$u_{22}$",
+         ("gb", "o"): "$v_0$", ("g1", "o"): "$v_1$", ("g2", "o"): "$v_2$"}
+
+
+def num(labels, w):
+    """Swap weight names for their numbers."""
+    out = {}
+    for k, v in labels.items():
+        key = v.strip("$").replace("{", "").replace("}", "").replace("_", "")
+        out[k] = n(w[key])
+    return out
+
+
+LIN, SIG = "activation: linear", "activation: sigmoid"
+N_LM = ["Input layer", f"Output layer\n{LIN}"]
+N_LOG = ["Input layer", f"Output layer\n{SIG}"]
+N_NET1 = ["Input layer", f"Hidden layer\n{SIG}", f"Output layer\n{LIN}"]
+N_NET2 = ["Input layer", f"Hidden layer\n{SIG}", f"Output layer\n{SIG}"]
+N_NET3 = ["Input layer", f"Hidden layer 1\n{SIG}", f"Hidden layer 2\n{SIG}", f"Output layer\n{LIN}"]
+N_DEEP1 = ["Input layer", f"Hidden layer\n{LIN}", f"Output layer\n{LIN}"]
+N_DEEP2 = ["Input layer", "Hidden layer 1\nlinear", "Hidden layer 2\nlinear", "Output layer\nlinear"]
+N_NET5 = ["Input layer", f"Hidden layer 1\n{SIG}", f"Hidden layer 2\n{SIG}", f"Hidden layer 3\n{SIG}", f"Output layer\n{LIN}"]
+N_NET3_SHORT = ["Input layer", "Hidden layer 1\nsigmoid", "Hidden layer 2\nsigmoid", "Output layer\nlinear"]
+
+
+def params(sizes):
+    """Parameters per layer: each node has one weight per node before it, plus one bias."""
+    return [(m + 1) * k for m, k in zip(sizes[:-1], sizes[1:])]
+
+
+# Hidden layers with linear activation, chosen so they reduce to w0 = -1, w1 = 0.5, w2 = 0.5
+D1 = dict(w10=1.0, w11=1.0, w12=-0.5, w20=-1.0, w21=-0.5, w22=1.0, v0=-1.0, v1=1.0, v2=1.0)
+D2 = dict(D1, u10=1.0, u11=0.5, u12=0.5, u20=-1.0, u21=0.5, u22=0.5)
+
+
+def deep1(x1, x2):
+    h1 = D1["w10"] + D1["w11"] * x1 + D1["w12"] * x2
+    h2 = D1["w20"] + D1["w21"] * x1 + D1["w22"] * x2
+    return h1, h2, D1["v0"] + D1["v1"] * h1 + D1["v2"] * h2
+
+
+def deep2(x1, x2):
+    h1, h2, _ = deep1(x1, x2)
+    a = D2["u10"] + D2["u11"] * h1 + D2["u12"] * h2
+    b = D2["u20"] + D2["u21"] * h1 + D2["u22"] * h2
+    return h1, h2, a, b, D2["v0"] + D2["v1"] * a + D2["v2"] * b
+
+
+INV = lambda x1, x2: {"x1": n(x1), "x2": n(x2)}
+```
+
+## Review of Linear Model for Regression
+
+:::: {.columns}
+::: {.column width="35%"}
+Given the data
+
+| $x_1$ | $x_2$ | $y$ |
+|:-:|:-:|:-:|
+| 1 | 0 | -2 |
+| 2 | 1 | 0 |
+| 3 | -2 | -1 |
+| 4 | 3 | 1 |
+:::
+
+::: {.column width="65%"}
+-   Linear model predicts $y$ as a linear combination of $x_1, x_2$
+
+$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2$$
+
+-   To **train** a linear model is to find $w_0$, $w_1$ and $w_2$
+-   We find them by minimizing a total loss, such as
+
+$$L(w_0, w_1, w_2) = \sum (\hat{y} - y)^2$$
+:::
+::::
+
+::: {.key}
+**Today:** we write this same model as a picture. That picture is a neural network.
+:::
+
+## A General Framework
+
+-   **Problem:** Given the data of $x_1, x_2, \dots, x_d, y$, establish the *best* relation between $y$ and $x = [x_1, x_2, \dots, x_d]$.
+
+-   A solution framework:
+
+    -   **Step 1:** Assume the model function $\hat{y} = f(x, w)$, where $w$ is a parameter vector.
+    -   **Step 2:** Define the loss function $l(\hat{y}, y)$.
+    -   **Step 3:** Find $w$ that minimizes the total loss using gradient descent.
+
+::: {.key}
+A neural network is one more choice for $f(x, w)$ in Step 1. Steps 2 and 3 stay the same.
+:::
+
+# Part 1. Linear Model
+
+## Linear Model: Two Views
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Algebraic form
+:::
+
+$$z = w_0 + w_1 x_1 + w_2 x_2$$
+
+$$\hat{y} = z$$
+
+To compute $\hat{y}$:
+
+1.  Multiply each input by its weight.
+2.  Add the results to $w_0$ to get $z$.
+3.  Apply the **activation function**.
+
+Here it is the **linear activation**: it leaves $z$ unchanged, which gives $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$.
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, OUT], ONE, names=N_LM, size=(7.4, 4.9), t=0.42))
+```
+:::
+::::
+
+## Inside a Node
+
+```{python}
+show_fig(draw_node(["$1$", "$x_1$", "$x_2$"], ["$w_0$", "$w_1$", "$w_2$"],
+                   "$z = w_0$\n$+\\ w_1 x_1$\n$+\\ w_2 x_2$", "linear", "", r"$\hat{y} = z$", size=(10.2, 4.8)))
+```
+
+-   Every node after the input layer does the same two steps: it **adds** its weighted inputs to get $z$, then applies an **activation function** to $z$.
+-   In network diagrams, the circle is split in two: $\Sigma$ for the sum, and a small picture of the activation function.
+-   In the linear model, the activation leaves $z$ unchanged, $\hat{y} = z$, so the picture is a straight line.
+
+## The Same Model, in Two Vocabularies
+
+| Algebraic form | Network form |
+|:----------:|:----------:|
+| Predictors $x_1, x_2$ | Nodes in the **input layer** |
+| Coefficients $w_1, w_2$ | **Weights** on the arrows |
+| Intercept $w_0$ | **Bias**: the weight on an arrow from a node that always equals 1 |
+| Prediction $\hat{y}$ | Node in the **output layer** |
+| $\hat{y}$ is just the sum, $\hat{y} = z$ | **Linear activation** in the output node |
+| Training: find $w_0, w_1, w_2$ | Training: find all the weights |
+
+::: {.key}
+A linear model is a neural network with an input layer, an output layer, and nothing in between.
+:::
+
+## Linear Model: One Data Point
+
+```{python}
+x1, x2, yt = 2.0, 1.0, 0.0
+yh = W["w0"] + W["w1"] * x1 + W["w2"] * x2
+assert np.isclose(yh, 0.5)
+```
+
+:::: {.columns}
+::: {.column width="45%"}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    rf"Take the second row: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$, $y = {n(yt)}$. Suppose $w_0 = {n(W['w0'])}$, $w_1 = {n(W['w1'])}$, $w_2 = {n(W['w2'])}$. " + LEGEND,
+    "**Before the activation**" + into(("z", n(W["w0"]), [(n(W["w1"]), n(x1)), (n(W["w2"]), n(x2))], n(yh))),
+    "**After the linear activation**" + outof((r"\hat{y}", "linear1", n(yh), n(yh))) + "The linear activation leaves the value unchanged.",
+    rf"Squared loss for this point: $(\hat{{y}} - y)^2 = ({n(yh)} - {n(yt)})^2 = {n((yh - yt) ** 2)}$",
+])
+```
+:::
+
+::: {.column width="55%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_LM, size=(7.0, 4.9), t=0.42)
+base = lambda z, v: draw_net([IN, OUT], one_num(W), values={**INV(x1, x2), **v}, before=z, **kw)
+stages(base, ({"o": n(yh)}, {"o": n(yh)}))
+```
+:::
+::::
+
+## Your Turn: All Four Rows
+
+Use the same weights: $w_0 = -1$, $w_1 = 0.5$, $w_2 = 0.5$. Send each row through the network.
+
+::: {.fragment}
+```{python}
+yh_all = W["w0"] + X @ np.array([W["w1"], W["w2"]])
+L_val = ((yh_all - y_reg) ** 2).sum()
+assert np.isclose(L_val, 5.0)
+rows = [[n(a), n(b), n(t), n(p), n((p - t) ** 2)] for (a, b), t, p in zip(X, y_reg, yh_all)]
+table([r"$x_1$", r"$x_2$", r"$y$", r"$\hat{y} = w_0 + w_1x_1 + w_2x_2$", r"$(\hat{y} - y)^2$"], rows)
+md(rf"Total loss: $L({n(W['w0'])}, {n(W['w1'])}, {n(W['w2'])}) = {n(L_val)}$. Training searches for the weights that make $L$ as small as possible.")
+```
+:::
+
+## What If We Add a Layer? All Activations Linear
+
+```{python}
+assert params([2, 2, 1]) == [6, 3]
+```
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Algebraic form
+:::
+
+Hidden layer, linear activation:
+
+$$h_1 = w_{10} + w_{11} x_1 + w_{12} x_2$$
+
+$$h_2 = w_{20} + w_{21} x_1 + w_{22} x_2$$
+
+Output layer, linear activation:
+
+$$\hat{y} = v_0 + v_1 h_1 + v_2 h_2$$
+
+-   $w_{ij}$ is the weight into hidden node $i$ from input $j$. $w_{i0}$ is its bias.
+-   The model grows from **3** parameters to **9**.
+-   Is this a better model?
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H2, OUT], NET_B, names=N_DEEP1, size=(8.4, 5.1), t=0.2, stagger=0.2))
+```
+:::
+::::
+
+## One Linear Hidden Layer: One Data Point
+
+```{python}
+x1, x2, yt = 2.0, 1.0, 0.0
+h1, h2, yh = deep1(x1, x2)
+assert (h1, h2, yh) == (2.5, -1.0, 0.5)
+```
+
+:::: {.columns}
+::: {.column width="44%" .tight}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    rf"Same point as before: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$. " + LEGEND,
+    "**Hidden layer, before the activation**" + into(
+        ("z_{h_1}", n(D1["w10"]), [(n(D1["w11"]), n(x1)), (n(D1["w12"]), n(x2))], n(h1)),
+        ("z_{h_2}", n(D1["w20"]), [(n(D1["w21"]), n(x1)), (n(D1["w22"]), n(x2))], n(h2))),
+    "**Hidden layer, after the linear activation**" + outof(("h_1", "linear", n(h1), n(h1)), ("h_2", "linear", n(h2), n(h2))),
+    "**Output layer, before the activation**" + into((r"z_{\hat{y}}", n(D1["v0"]), [(n(D1["v1"]), n(h1)), (n(D1["v2"]), n(h2))], n(yh))),
+    "**Output layer, after the linear activation**" + outof((r"\hat{y}", "linear", n(yh), n(yh))),
+    rf"This is the same $\hat{{y}} = {n(yh)}$ we got from the linear model with $w_0 = -1$, $w_1 = 0.5$, $w_2 = 0.5$. Is that a coincidence?",
+])
+```
+:::
+
+::: {.column width="56%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_DEEP1, size=(7.8, 5.7), t=0.2, stagger=0.2, dy=1.45)
+lab = num(NET_B, D1)
+base = lambda z, v: draw_net([IN, H2, OUT], lab, values={**INV(x1, x2), **v}, before=z, **kw)
+stages(base, ({"h1": n(h1), "h2": n(h2)}, {"h1": n(h1), "h2": n(h2)}), ({"o": n(yh)}, {"o": n(yh)}))
+```
+:::
+::::
+
+## Why It Is Not a Coincidence
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+In symbols
+:::
+
+Substitute $h_1$ and $h_2$ into $\hat{y}$, then collect terms:
+
+$$\begin{aligned}\hat{y} = {} & (v_0 + v_1 w_{10} + v_2 w_{20}) \\ & + (v_1 w_{11} + v_2 w_{21}) x_1 \\ & + (v_1 w_{12} + v_2 w_{22}) x_2\end{aligned}$$
+
+Each bracket is a single number, so this is
+
+$$\hat{y} = w_0 + w_1 x_1 + w_2 x_2$$
+:::
+
+::: {.column width="50%"}
+::: {.view}
+In numbers
+:::
+
+```{python}
+c0 = D1["v0"] + D1["v1"] * D1["w10"] + D1["v2"] * D1["w20"]
+c1 = D1["v1"] * D1["w11"] + D1["v2"] * D1["w21"]
+c2 = D1["v1"] * D1["w12"] + D1["v2"] * D1["w22"]
+assert (c0, c1, c2) == (W["w0"], W["w1"], W["w2"])
+md(rf"""With the weights on the last slide:
+
+$$\begin{{aligned}}w_0 &= {n(D1['v0'])} + ({n(D1['v1'])})({n(D1['w10'])}) + ({n(D1['v2'])})({n(D1['w20'])}) = {n(c0)} \\ w_1 &= ({n(D1['v1'])})({n(D1['w11'])}) + ({n(D1['v2'])})({n(D1['w21'])}) = {n(c1)} \\ w_2 &= ({n(D1['v1'])})({n(D1['w12'])}) + ({n(D1['v2'])})({n(D1['w22'])}) = {n(c2)}\end{{aligned}}$$
+
+These are the weights of the linear model we started with.""")
+```
+:::
+::::
+
+::: {.key}
+A hidden layer with linear activation adds parameters but leaves us with a linear model.
+:::
+
+## A Few More Layers: Still All Linear
+
+```{python}
+x1, x2 = 2.0, 1.0
+h1, h2, a1, a2, yh = deep2(x1, x2)
+assert (h1, h2, a1, a2, yh) == (2.5, -1.0, 1.75, -0.25, 0.5)
+assert sum(params([2, 2, 2, 1])) == 15
+```
+
+:::: {.columns}
+::: {.column width="42%" .tight}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    r"Each layer takes linear functions and combines them linearly, so every node is still linear in $x_1, x_2$. " + LEGEND,
+    "**Hidden layer 1, before and after**" + into(
+        ("z_{h_1}", n(D1["w10"]), [(n(D1["w11"]), n(x1)), (n(D1["w12"]), n(x2))], n(h1)),
+        ("z_{h_2}", n(D1["w20"]), [(n(D1["w21"]), n(x1)), (n(D1["w22"]), n(x2))], n(h2))) + outof(("h_1", "linear", n(h1), n(h1)), ("h_2", "linear", n(h2), n(h2))),
+    "**Hidden layer 2, before and after**" + into(
+        ("z_{g_1}", n(D2["u10"]), [(n(D2["u11"]), n(h1)), (n(D2["u12"]), n(h2))], n(a1)),
+        ("z_{g_2}", n(D2["u20"]), [(n(D2["u21"]), n(h1)), (n(D2["u22"]), n(h2))], n(a2))) + outof(("g_1", "linear", n(a1), n(a1)), ("g_2", "linear", n(a2), n(a2))),
+    "**Output layer, before and after**" + into((r"z_{\hat{y}}", n(D2["v0"]), [(n(D2["v1"]), n(a1)), (n(D2["v2"]), n(a2))], n(yh))) + outof((r"\hat{y}", "linear", n(yh), n(yh))),
+])
+```
+:::
+
+::: {.column width="58%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_DEEP2, size=(8.6, 5.9), t=0.2, stagger=0.24, gap=2.15, dy=1.55)
+lab = num(NET_C, D2)
+base = lambda z, v: draw_net([IN, H2, G2, OUT], lab, values={**INV(x1, x2), **v}, before=z, **kw)
+L1, L2, L3 = {"h1": n(h1), "h2": n(h2)}, {"g1": n(a1), "g2": n(a2)}, {"o": n(yh)}
+figs = [base({}, {}), base(L1, L1), base({**L1, **L2}, {**L1, **L2}), base({**L1, **L2, **L3}, {**L1, **L2, **L3})]
+stack(figs)
+```
+:::
+::::
+
+## Three Networks, One Model
+
+```{python}
+p0 = W["w0"] + X @ np.array([W["w1"], W["w2"]])
+p1 = np.array([deep1(a, b)[2] for a, b in X])
+p2 = np.array([deep2(a, b)[4] for a, b in X])
+assert np.allclose(p0, p1) and np.allclose(p0, p2)
+rows = [[n(a), n(b), n(t), n(q0), n(q1), n(q2)] for (a, b), t, q0, q1, q2 in zip(X, y_reg, p0, p1, p2)]
+table([r"$x_1$", r"$x_2$", r"$y$", "No hidden layer<br>3 parameters", "1 linear hidden layer<br>9 parameters", "2 linear hidden layers<br>15 parameters"], rows)
+```
+
+-   The predictions match on every row, here because we chose the weights that way.
+-   The general fact: no matter how many linear layers we stack or which weights we pick, the result can always be written as $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$.
+-   So the extra layers cannot reach a smaller loss than the linear model's best fit.
+
+::: {.key}
+More layers help only if the activation functions are **nonlinear**. That leads to logistic regression's sigmoid and to the networks in Part 3.
+:::
+
+# Part 2. Logistic Regression
+
+## Review of Logistic Regression
+
+:::: {.columns}
+::: {.column width="30%"}
+| $x_1$ | $x_2$ | $y$ |
+|:-:|:-:|:-:|
+| 1 | 0 | 1 |
+| 2 | 1 | 0 |
+| 3 | -2 | 0 |
+| 4 | 3 | 1 |
+:::
+
+::: {.column width="70%"}
+-   Logistic Regression models $P(y = 1 \mid x) = \hat{y}$ as
+
+$$\hat{y} = \frac{1}{1 + e^{-(w_0 + w_1 x_1 + w_2 x_2)}}$$
+
+-   Break this into two steps: add the inputs, then apply an activation function.
+
+$$z = w_0 + w_1 x_1 + w_2 x_2, \qquad \hat{y} = \frac{1}{1 + e^{-z}}$$
+
+-   $\dfrac{1}{1 + e^{-z}}$ is the **sigmoid** activation function. It turns any number into a value between 0 and 1.
+:::
+::::
+
+## Logistic Regression: Two Views
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Algebraic form
+:::
+
+$$z = w_0 + w_1 x_1 + w_2 x_2$$
+
+$$\hat{y} = \frac{1}{1 + e^{-z}}$$
+
+To compute $\hat{y}$:
+
+1.  Multiply each input by its weight.
+2.  Add the results to $w_0$ to get $z$.
+3.  Apply the activation function: here the **sigmoid**.
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, OUT], ONE, names=N_LOG, size=(7.4, 4.9), t=0.42))
+```
+:::
+::::
+
+## Logistic Regression: One Data Point
+
+```{python}
+x1, x2, yt = 2.0, 1.0, 0.0
+z = W["w0"] + W["w1"] * x1 + W["w2"] * x2
+yh = sigma(z)
+loss = -yt * np.log(yh) - (1 - yt) * np.log(1 - yh)
+assert np.isclose(z, 0.5) and abs(yh - 0.622) < 1e-3
+```
+
+:::: {.columns}
+::: {.column width="45%"}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    rf"Same point and same weights as before: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$, and now $y = {n(yt)}$ is a class label. " + LEGEND,
+    "**Before the activation**" + into(("z", n(W["w0"]), [(n(W["w1"]), n(x1)), (n(W["w2"]), n(x2))], n(z))),
+    "**After the sigmoid activation**" + outof((r"\hat{y}", "sigmoid", n(z), f3(yh))),
+    rf"The model says $P(y = 1 \mid x) = {f3(yh)}$, so it predicts class 1. The true class is 0, so these weights get this point wrong and training has work to do.",
+])
+```
+:::
+
+::: {.column width="55%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_LOG, size=(7.0, 4.9), t=0.42)
+base = lambda zv, v: draw_net([IN, OUT], one_num(W), values={**INV(x1, x2), **v}, before=zv, **kw)
+stages(base, ({"o": n(z)}, {"o": f3(yh)}))
+```
+:::
+::::
+
+## Inside a Node: Linear vs. Sigmoid
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Linear activation
+:::
+
+```{python}
+show_fig(draw_node(["$1$", "$x_1$", "$x_2$"], ["$-1$", "$0.5$", "$0.5$"],
+                   "$z = 0.5$", "linear", "", r"$\hat{y} = 0.5$", size=(7.0, 3.5), headers=False, invals=[None, "2", "1"]))
+```
+
+$$\hat{y} = z = 0.5$$
+
+The linear activation leaves $z$ unchanged.
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Sigmoid activation
+:::
+
+```{python}
+show_fig(draw_node(["$1$", "$x_1$", "$x_2$"], ["$-1$", "$0.5$", "$0.5$"],
+                   "$z = 0.5$", "sigmoid", "", r"$\hat{y} = 0.622$", size=(7.0, 3.5), headers=False, invals=[None, "2", "1"]))
+```
+
+$$\hat{y} = \frac{1}{1 + e^{-0.5}} = 0.622$$
+
+The sigmoid squeezes $z$ into a value between 0 and 1.
+:::
+::::
+
+Both nodes receive the same inputs with the same weights, so the **sum is the same**. Only the **activation** differs.
+
+## Linear Model and Logistic Regression, Side by Side
+
+Both models start the same way: $z = w_0 + w_1 x_1 + w_2 x_2$. For $x_1 = 2$, $x_2 = 1$ and the same weights, $z = 0.5$.
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Linear model
+:::
+
+```{python}
+show_fig(draw_net([IN, OUT], ONE, names=N_LM, size=(6.2, 3.6), t=0.42))
+```
+
+**Activation: linear**
+
+$$\hat{y} = z = 0.5$$
+
+Loss: $l(\hat{y}, y) = (\hat{y} - y)^2$
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Logistic regression
+:::
+
+```{python}
+show_fig(draw_net([IN, OUT], ONE, names=N_LOG, size=(6.2, 3.6), t=0.42))
+```
+
+**Activation: sigmoid**
+
+$$\hat{y} = \frac{1}{1 + e^{-z}} = 0.622$$
+
+Loss: $l(\hat{y}, y) = -y \log(\hat{y}) - (1 - y) \log(1 - \hat{y})$
+:::
+::::
+
+# Part 3. Simple Neural Networks
+
+## Why Do We Need More Than This?
+
+```{python}
+clf = LogisticRegression(C=1e8, max_iter=100000).fit(X, y_cls)
+acc_lr = int((clf.predict(X) == y_cls).sum())
+assert acc_lr == 3
+# The three points on one line really are on one line
+assert all(np.isclose(b, a - 1) for a, b in X[[0, 1, 3]])
+```
+
+:::: {.columns}
+::: {.column width="52%"}
+```{python}
+fig, ax = plt.subplots(figsize=(6.6, 4.9))
+xs = np.array([0.2, 4.8])
+ax.plot(xs, xs - 1, "--", color=GREY, lw=1.3, label=r"$x_2 = x_1 - 1$")
+for c, col, mk, nm in [(1, BLUE, "o", "Class 1"), (0, RED, "s", "Class 0")]:
+    ax.scatter(*X[y_cls == c].T, s=170, c=col, marker=mk, label=nm, zorder=3)
+for a, b in X:
+    ax.annotate(f"({a:.0f}, {b:.0f})", (a, b), xytext=(11, -17), textcoords="offset points", fontsize=12)
+ax.set(xlabel="$x_1$", ylabel="$x_2$", xlim=(0, 5.2), ylim=(-3, 4.4))
+ax.spines[["top", "right"]].set_visible(False)
+ax.legend(frameon=False, loc="upper left")
+fig.tight_layout()
+show_fig(fig)
+```
+:::
+
+::: {.column width="48%"}
+-   Logistic regression separates the classes with a **straight line**.
+
+-   In our data, $(1, 0)$, $(2, 1)$ and $(4, 3)$ sit on one line, and along it the classes go 1, 0, 1.
+
+-   A straight boundary crosses that line only once, so it cannot get all three right.
+
+```{python}
+md(f"-   Fitted to this data, logistic regression gets {acc_lr} of the 4 points right.")
+```
+
+::: {.key}
+**The idea:** feed the inputs through a few logistic regressions first, then combine their outputs. Those in-between nodes form a **hidden layer**.
+:::
+:::
+::::
+
+## Network 1: One Hidden Neuron
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Algebraic form
+:::
+
+Hidden layer:
+
+$$h = \frac{1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}}$$
+
+Output layer:
+
+$$\hat{y} = v_0 + v_1 h$$
+
+-   $h$ is a logistic regression.
+-   $\hat{y}$ is a linear model whose only input is $h$.
+-   **Activations:** sigmoid in the hidden layer, linear in the output layer.
+-   This network has **5** parameters.
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H1, OUT], NET_A, names=N_NET1, size=(8.4, 4.9), t=0.4))
+```
+:::
+::::
+
+## Network 1: One Data Point
+
+```{python}
+x1, x2, yt = 2.0, 1.0, 0.0
+z = A["w10"] + A["w11"] * x1 + A["w12"] * x2
+h = r3(sigma(z))
+yh = r3(A["v0"] + A["v1"] * h)
+assert h == 0.622 and yh == 0.244
+```
+
+:::: {.columns}
+::: {.column width="42%"}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    rf"Input: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$, with true value $y = {n(yt)}$. Each step is rounded to 3 decimals. " + LEGEND,
+    "**Hidden layer, before the activation**" + into(("z_h", n(A["w10"]), [(n(A["w11"]), n(x1)), (n(A["w12"]), n(x2))], n(z))),
+    "**Hidden layer, after the sigmoid**" + outof(("h", "sigmoid", n(z), f3(h))),
+    "**Output layer, before the activation**" + into((r"z_{\hat{y}}", n(A["v0"]), [(n(A["v1"]), f3(h))], f3(yh))),
+    "**Output layer, after the linear activation**" + outof((r"\hat{y}", "linear", f3(yh), f3(yh))),
+])
+```
+:::
+
+::: {.column width="58%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_NET1, size=(8.2, 5.0), t=0.4)
+lab = num(NET_A, A)
+base = lambda zv, v: draw_net([IN, H1, OUT], lab, values={**INV(x1, x2), **v}, before=zv, **kw)
+stages(base, ({"h": n(z)}, {"h": f3(h)}), ({"o": f3(yh)}, {"o": f3(yh)}))
+```
+:::
+::::
+
+## Network 2: Two Hidden Neurons
+
+:::: {.columns}
+::: {.column width="40%"}
+::: {.view}
+Algebraic form
+:::
+
+Hidden layer:
+
+$$h_1 = \frac{1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}}$$
+
+$$h_2 = \frac{1}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}$$
+
+Output layer:
+
+$$\hat{y} = \frac{1}{1 + e^{-(v_0 + v_1 h_1 + v_2 h_2)}}$$
+
+-   $w_{ij}$ is the weight into hidden neuron $i$ from input $j$. $w_{i0}$ is its bias.
+-   **Activations:** sigmoid in the hidden layer, sigmoid in the output layer.
+-   This network has **9** parameters.
+:::
+
+::: {.column width="60%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H2, OUT], NET_B, names=N_NET2, size=(8.4, 5.1), t=0.2, stagger=0.2))
+```
+:::
+::::
+
+## Network 2: One Data Point
+
+```{python}
+x1, x2, yt = 1.0, 0.0, 1
+h1, h2 = r3(net_b(x1, x2)[0]), r3(net_b(x1, x2)[1])
+z = r3(B["v0"] + B["v1"] * h1 + B["v2"] * h2)
+yh = r3(sigma(z))
+assert h1 == 0.881 and h2 == 0.0 and z == 1.524 and yh == 0.821
+```
+
+:::: {.columns}
+::: {.column width="46%" .tight}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+zh1 = B["w10"] + B["w11"] * x1 + B["w12"] * x2
+zh2 = B["w20"] + B["w21"] * x1 + B["w22"] * x2
+steps([
+    rf"Take the first row: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$, $y = {yt}$. " + LEGEND,
+    "**Hidden layer, before the activation**" + into(
+        ("z_{h_1}", n(B["w10"]), [(n(B["w11"]), n(x1)), (n(B["w12"]), n(x2))], n(zh1)),
+        ("z_{h_2}", n(B["w20"]), [(n(B["w21"]), n(x1)), (n(B["w22"]), n(x2))], n(zh2))),
+    "**Hidden layer, after the sigmoid**" + outof(("h_1", "sigmoid", n(zh1), f3(h1)), ("h_2", "sigmoid", n(zh2), f3(h2))),
+    "**Output layer, before the activation**" + into((r"z_{\hat{y}}", n(B["v0"]), [(n(B["v1"]), f3(h1)), (n(B["v2"]), f3(h2))], f3(z))),
+    "**Output layer, after the sigmoid**" + outof((r"\hat{y}", "sigmoid", f3(z), f3(yh))),
+    rf"$\hat{{y}} = {f3(yh)} > 0.5$, so the network predicts class 1, which is correct.",
+])
+```
+:::
+
+::: {.column width="54%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_NET2, size=(7.8, 5.7), t=0.2, stagger=0.2, dy=1.45)
+lab = num(NET_B, B)
+base = lambda zv, v: draw_net([IN, H2, OUT], lab, values={**INV(x1, x2), **v}, before=zv, **kw)
+stages(base, ({"h1": n(zh1), "h2": n(zh2)}, {"h1": f3(h1), "h2": f3(h2)}), ({"o": f3(z)}, {"o": f3(yh)}))
+```
+:::
+::::
+
+## Network 2 vs. Logistic Regression
+
+```{python}
+res = np.array([net_b(a, b) for a, b in X])
+pred = (res[:, 3] > 0.5).astype(int)
+acc_nn = int((pred == y_cls).sum())
+assert acc_nn == 4
+g1, g2 = np.meshgrid(np.linspace(0, 5.2, 300), np.linspace(-3, 4.4, 300))
+P_lr = clf.predict_proba(np.c_[g1.ravel(), g2.ravel()])[:, 1].reshape(g1.shape)
+P_nn = net_b(g1, g2)[3]
+
+
+def surface(P, title):
+    fig, ax = plt.subplots(figsize=(6.2, 3.1))
+    im = ax.contourf(g1, g2, P, levels=np.linspace(0, 1, 21), cmap="RdBu")
+    ax.contour(g1, g2, P, levels=[0.5], colors="k", linewidths=1.2)
+    for c, mk in [(1, "o"), (0, "s")]:
+        ax.scatter(*X[y_cls == c].T, s=95, c=BLUE if c else RED, marker=mk, edgecolors="white", linewidths=1.5, zorder=3)
+    ax.set(xlabel="$x_1$", ylabel="$x_2$")
+    ax.set_title(title, fontsize=13)
+    fig.colorbar(im, ax=ax, label="$P(y = 1)$", ticks=[0, 0.25, 0.5, 0.75, 1])
+    fig.tight_layout()
+    return fig
+```
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Logistic regression (trained)
+:::
+
+```{python}
+show_fig(surface(P_lr, f"One straight boundary: {acc_lr} of 4 correct"))
+```
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Network 2 (weights picked by hand)
+:::
+
+```{python}
+show_fig(surface(P_nn, f"Two hidden neurons: {acc_nn} of 4 correct"))
+```
+:::
+::::
+
+```{python}
+rows = [[n(a), n(b), t, f3(r[0]), f3(r[1]), f3(r[3]), p] for (a, b), t, r, p in zip(X, y_cls, res, pred)]
+table([r"$x_1$", r"$x_2$", r"$y$", r"$h_1$", r"$h_2$", r"$\hat{y}$", "Predicted class"], rows)
+```
+
+## Network 3: Two Hidden Layers
+
+:::: {.columns}
+::: {.column width="34%"}
+::: {.view}
+Algebraic form
+:::
+
+Hidden layer 1:
+
+$$h_1 = \frac{1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}}$$
+
+$$h_2 = \frac{1}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}$$
+
+Hidden layer 2:
+
+$$g_1 = \frac{1}{1 + e^{-(u_{10} + u_{11} h_1 + u_{12} h_2)}}$$
+
+$$g_2 = \frac{1}{1 + e^{-(u_{20} + u_{21} h_1 + u_{22} h_2)}}$$
+
+Output layer:
+
+$$\hat{y} = v_0 + v_1 g_1 + v_2 g_2$$
+
+**Activations:** sigmoid in both hidden layers, linear in the output layer.
+
+This network has **15** parameters.
+:::
+
+::: {.column width="66%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H2, G2, OUT], NET_C, names=N_NET3, size=(9.0, 4.9), t=0.2, stagger=0.24))
+```
+:::
+::::
+
+## Network 3: One Data Point
+
+```{python}
+x1, x2, yt = 2.0, 1.0, 0.0
+zh1 = C["w10"] + C["w11"] * x1 + C["w12"] * x2
+zh2 = C["w20"] + C["w21"] * x1 + C["w22"] * x2
+h1, h2 = r3(sigma(zh1)), r3(sigma(zh2))
+zg1 = r3(C["u10"] + C["u11"] * h1 + C["u12"] * h2)
+zg2 = r3(C["u20"] + C["u21"] * h1 + C["u22"] * h2)
+g1v, g2v = r3(sigma(zg1)), r3(sigma(zg2))
+yh = r3(C["v0"] + C["v1"] * g1v + C["v2"] * g2v)
+assert (h1, h2, zg1, zg2, g1v, g2v, yh) == (0.622, 0.378, -0.134, 0.256, 0.467, 0.564, 0.595)
+```
+
+:::: {.columns}
+::: {.column width="43%" .tight}
+::: {.view}
+Algebraic form
+:::
+
+```{python}
+steps([
+    rf"Input: $x_1 = {n(x1)}$, $x_2 = {n(x2)}$, with true value $y = {n(yt)}$. " + LEGEND,
+    "**Hidden layer 1, before and after the sigmoid**" + into(
+        ("z_{h_1}", n(C["w10"]), [(n(C["w11"]), n(x1)), (n(C["w12"]), n(x2))], n(zh1)),
+        ("z_{h_2}", n(C["w20"]), [(n(C["w21"]), n(x1)), (n(C["w22"]), n(x2))], n(zh2))) + outof(("h_1", "sigmoid", n(zh1), f3(h1)), ("h_2", "sigmoid", n(zh2), f3(h2))),
+    "**Hidden layer 2, before and after the sigmoid**" + into(
+        ("z_{g_1}", n(C["u10"]), [(n(C["u11"]), f3(h1)), (n(C["u12"]), f3(h2))], f3(zg1)),
+        ("z_{g_2}", n(C["u20"]), [(n(C["u21"]), f3(h1)), (n(C["u22"]), f3(h2))], f3(zg2))) + outof(("g_1", "sigmoid", f3(zg1), f3(g1v)), ("g_2", "sigmoid", f3(zg2), f3(g2v))),
+    "**Output layer, before and after the linear activation**" + into((r"z_{\hat{y}}", n(C["v0"]), [(n(C["v1"]), f3(g1v)), (n(C["v2"]), f3(g2v))], f3(yh))) + outof((r"\hat{y}", "linear", f3(yh), f3(yh))),
+])
+```
+:::
+
+::: {.column width="57%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+kw = dict(names=N_NET3_SHORT, size=(8.6, 5.9), t=0.2, stagger=0.24, gap=2.15, dy=1.55)
+lab = num(NET_C, C)
+base = lambda zv, v: draw_net([IN, H2, G2, OUT], lab, values={**INV(x1, x2), **v}, before=zv, **kw)
+Z1, O1 = {"h1": n(zh1), "h2": n(zh2)}, {"h1": f3(h1), "h2": f3(h2)}
+Z2, O2 = {"g1": f3(zg1), "g2": f3(zg2)}, {"g1": f3(g1v), "g2": f3(g2v)}
+Z3, O3 = {"o": f3(yh)}, {"o": f3(yh)}
+stack([base({}, {}), base(Z1, O1), base({**Z1, **Z2}, {**O1, **O2}), base({**Z1, **Z2, **Z3}, {**O1, **O2, **O3})])
+```
+:::
+::::
+
+## A Simple Picture, a Long Formula: Network 2
+
+```{python}
+# The single formula must agree with the network, layer by layer
+def net_b_formula(x1, x2):
+    a = B["w10"] + B["w11"] * x1 + B["w12"] * x2
+    b = B["w20"] + B["w21"] * x1 + B["w22"] * x2
+    inner = B["v0"] + B["v1"] / (1 + np.exp(-a)) + B["v2"] / (1 + np.exp(-b))
+    return 1 / (1 + np.exp(-inner))
+assert all(np.isclose(net_b_formula(a, b), net_b(a, b)[3]) for a, b in X)
+```
+
+:::: {.columns}
+::: {.column width="44%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H2, OUT], NET_B, names=N_NET2, size=(7.4, 5.0), t=0.2, stagger=0.2))
+```
+:::
+
+::: {.column width="56%" .tight}
+::: {.view}
+Algebraic form
+:::
+
+Layer by layer:
+
+$$h_1 = \frac{1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}}$$
+
+$$h_2 = \frac{1}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}$$
+
+$$\hat{y} = \frac{1}{1 + e^{-(v_0 + v_1 h_1 + v_2 h_2)}}$$
+
+The same thing, as one formula in $x_1$ and $x_2$:
+
+::: {.wall}
+$$\hat{y} = \cfrac{1}{1 + \exp\left(-\left(v_0 + \cfrac{v_1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}} + \cfrac{v_2}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}\right)\right)}$$
+:::
+:::
+::::
+
+## A Simple Picture, a Long Formula: Network 3
+
+```{python}
+# The single formula must agree with the worked example on Network 3 (0.595 after rounding each step)
+def net_c_formula(x1, x2):
+    a = sigma(C["w10"] + C["w11"] * x1 + C["w12"] * x2)
+    b = sigma(C["w20"] + C["w21"] * x1 + C["w22"] * x2)
+    return (C["v0"] + C["v1"] * sigma(C["u10"] + C["u11"] * a + C["u12"] * b)
+            + C["v2"] * sigma(C["u20"] + C["u21"] * a + C["u22"] * b))
+assert abs(net_c_formula(2.0, 1.0) - 0.595) < 2e-3
+assert n_sigmas([2, 2, 2, 1]) == 6 and x_uses([2, 2, 2, 1]) == 4
+```
+
+:::: {.columns}
+::: {.column width="46%"}
+::: {.view}
+Network form
+:::
+
+```{python}
+show_fig(draw_net([IN, H2, G2, OUT], NET_C, names=N_NET3_SHORT, size=(8.6, 4.9), t=0.2, stagger=0.24, gap=2.15))
+```
+
+The picture has one node each for $h_1$ and $h_2$. The formula has to write each of them out **twice**, because both $g_1$ and $g_2$ use them.
+:::
+
+::: {.column width="54%" .wall}
+::: {.view}
+Algebraic form, as one formula
+:::
+
+```{python}
+md(wall(2, 2))
+```
+:::
+::::
+
+## A Simple Picture: Network 4
+
+```{python}
+H3 = [("hb", "$1$", "bias"), ("h1", "$h_1$", "hid"), ("h2", "$h_2$", "hid"), ("h3", "$h_3$", "hid")]
+G3 = [("gb", "$1$", "bias"), ("g1", "$g_1$", "hid"), ("g2", "$g_2$", "hid"), ("g3", "$g_3$", "hid")]
+NET_D = {}
+for a in (1, 2, 3):
+    for src, b in (("b", 0), ("x1", 1), ("x2", 2)):
+        NET_D[(src, f"h{a}")] = f"$w_{{{a}{b}}}$"
+    for src, b in (("hb", 0), ("h1", 1), ("h2", 2), ("h3", 3)):
+        NET_D[(src, f"g{a}")] = f"$u_{{{a}{b}}}$"
+for src, b in (("gb", 0), ("g1", 1), ("g2", 2), ("g3", 3)):
+    NET_D[(src, "o")] = f"$v_{b}$"
+assert len(NET_D) == 25 == sum(params([2, 3, 3, 1]))
+assert params([2, 3, 3, 1]) == [9, 12, 4] and n_sigmas([2, 3, 3, 1]) == 12 and x_uses([2, 3, 3, 1]) == 9
+assert wall(3, 3).count("e^{-(w") == x_uses([2, 3, 3, 1])
+show_fig(draw_net([IN, H3, G3, OUT], NET_D, names=N_NET3, size=(13.4, 5.5), gap=3.5, dy=1.05, t=0.15, stagger=0.2))
+```
+
+Network 3 with one more node in each hidden layer: **25** parameters.
+
+## A Long Formula: Network 4
+
+Layer by layer:
+
+:::: {.columns}
+::: {.column width="33%" .tight}
+$$h_i = \frac{1}{1 + e^{-(w_{i0} + w_{i1} x_1 + w_{i2} x_2)}}$$
+:::
+
+::: {.column width="34%" .tight}
+$$g_j = \frac{1}{1 + e^{-(u_{j0} + u_{j1} h_1 + u_{j2} h_2 + u_{j3} h_3)}}$$
+:::
+
+::: {.column width="33%" .tight}
+$$\hat{y} = v_0 + v_1 g_1 + v_2 g_2 + v_3 g_3$$
+:::
+::::
+
+Here $i$ and $j$ each take the values 1, 2 and 3. The same network, as one formula in $x_1$ and $x_2$:
+
+::: {.wall4}
+```{python}
+md(wall(3, 3))
+```
+:::
+
+## A Simple Picture: Network 5
+
+```{python}
+Q2 = [("qb", "$1$", "bias"), ("q1", "$q_1$", "hid"), ("q2", "$q_2$", "hid")]
+NET_E = {}
+for a in (1, 2):
+    for src, b in (("b", 0), ("x1", 1), ("x2", 2)):
+        NET_E[(src, f"h{a}")] = f"$w_{{{a}{b}}}$"
+    for src, b in (("hb", 0), ("h1", 1), ("h2", 2)):
+        NET_E[(src, f"g{a}")] = f"$u_{{{a}{b}}}$"
+    for src, b in (("gb", 0), ("g1", 1), ("g2", 2)):
+        NET_E[(src, f"q{a}")] = f"$s_{{{a}{b}}}$"
+for src, b in (("qb", 0), ("q1", 1), ("q2", 2)):
+    NET_E[(src, "o")] = f"$v_{b}$"
+assert len(NET_E) == 21 == sum(params([2, 2, 2, 2, 1]))
+assert params([2, 2, 2, 2, 1]) == [6, 6, 6, 3] and n_sigmas([2, 2, 2, 2, 1]) == 14 and x_uses([2, 2, 2, 2, 1]) == 8
+assert wall3(2, 2, 2).count("e^{-(w") == 8
+show_fig(draw_net([IN, H2, G2, Q2, OUT], NET_E, names=N_NET5, size=(13.6, 5.3), gap=2.85, dy=1.2, t=0.17, stagger=0.24))
+```
+
+Three hidden layers of two nodes: **21** parameters, and every layer has the same simple pattern.
+
+## A Long Formula: Network 5
+
+Layer by layer, where $i$ and $j$ each take the values 1 and 2:
+
+:::: {.columns}
+::: {.column width="30%" .tight}
+$$h_i = \frac{1}{1 + e^{-(w_{i0} + w_{i1} x_1 + w_{i2} x_2)}}$$
+:::
+
+::: {.column width="27%" .tight}
+$$g_j = \frac{1}{1 + e^{-(u_{j0} + u_{j1} h_1 + u_{j2} h_2)}}$$
+:::
+
+::: {.column width="27%" .tight}
+$$q_j = \frac{1}{1 + e^{-(s_{j0} + s_{j1} g_1 + s_{j2} g_2)}}$$
+:::
+
+::: {.column width="16%" .tight}
+$$\hat{y} = v_0 + v_1 q_1 + v_2 q_2$$
+:::
+::::
+
+The same network, as one formula in $x_1$ and $x_2$:
+
+::: {.wall5}
+```{python}
+md(wall3(2, 2, 2))
+```
+:::
+
+## The Picture Grows Slowly. The Formula Does Not.
+
+```{python}
+big = [2] + [100] * 10 + [1]
+rows = []
+for nm, sz, out_sig in [
+    ("Network 2", [2, 2, 1], True),
+    ("Network 3", [2, 2, 2, 1], False),
+    ("Network 4", [2, 3, 3, 1], False),
+    ("Network 5", [2, 2, 2, 2, 1], False),
+    ("Two hidden layers of 10", [2, 10, 10, 1], False),
+    ("Three hidden layers of 100", [2, 100, 100, 100, 1], False),
+    ("Ten hidden layers of 100", big, False),
+]:
+    uses = x_uses(sz)
+    uses_txt = f"{uses:,}" if uses < 10 ** 9 else f"$10^{{{len(str(uses)) - 1}}}$"
+    sig = n_sigmas(sz, out_sig)
+    sig_txt = f"{sig:,}" if sig < 10 ** 9 else rf"about $10^{{{len(str(sig)) - 1}}}$"
+    rows.append([nm, f"{sum(params(sz)):,}", sig_txt, uses_txt])
+assert sum(params(big)) == 91301 and x_uses(big) == 10 ** 20
+table(["Network", "Parameters<br>(numbers in the picture)", "Times the sigmoid appears<br>in the single formula", r"Times $x_1$ appears<br>in the single formula"], rows)
+```
+
+-   The picture needs each node drawn once, and each node reuses the layer before it. The written-out formula repeats that work every time a node is used.
+-   Ten hidden layers of 100 nodes have about 91,000 parameters, yet the written-out formula would mention $x_1$ $10^{20}$ times.
+
+::: {.key}
+A simple graph can stand for a function we could never write down in full, and the computer never has to: it works through the graph one layer at a time, exactly as in our worked examples.
+:::
+
+## What These Functions Look Like
+
+```{python}
+def random_net_output(sizes, seed, xy, scale=4.0):
+    """Sigmoid in every hidden layer, linear output, random weights.
+    Subtracting 0.5 from the hidden values is the same as using a different bias."""
+    rng = np.random.default_rng(seed)
+    out = xy
+    for i, (m, k) in enumerate(zip(sizes[:-1], sizes[1:])):
+        w, b = rng.normal(0, scale, (k, m)), rng.normal(0, scale, k)
+        if i > 0:
+            out = out - 0.5
+        out = out @ w.T + b
+        if i < len(sizes) - 2:
+            out = sigma(out)
+    return out[:, 0]
+
+
+def mini_graph(ax, sizes):
+    gapx = 1.0
+    pts = []
+    tall = max(sizes)
+    for i, k in enumerate(sizes):
+        pts.append([(i * gapx, (k - 1) / 2 - j) for j in range(k)])
+    for a, b in zip(pts[:-1], pts[1:]):
+        for p in a:
+            for q in b:
+                ax.plot([p[0], q[0]], [p[1], q[1]], color="#bbbbbb", lw=0.6, zorder=1)
+    for i, layer in enumerate(pts):
+        kind = "in" if i == 0 else "out" if i == len(pts) - 1 else "hid"
+        for x, y in layer:
+            ax.plot(x, y, "o", ms=6.5, mfc=FILL[kind], mec=EDGE[kind], mew=1.3, zorder=2)
+    ax.set_xlim(-0.3, (len(sizes) - 1) * gapx + 0.3)
+    ax.set_ylim(-(tall - 1) / 2 - 0.5, (tall - 1) / 2 + 0.5)
+    ax.axis("off")
+
+
+cases = [([2, 2, 1], 5), ([2, 4, 1], 6), ([2, 8, 8, 1], 5), ([2, 8, 8, 8, 8, 1], 2)]
+gx, gy = np.meshgrid(np.linspace(-3, 3, 400), np.linspace(-3, 3, 400))
+xy = np.c_[gx.ravel(), gy.ravel()]
+fig, axes = plt.subplots(2, 4, figsize=(13.2, 4.9), gridspec_kw=dict(height_ratios=[1, 1.45]))
+for c, (sz, seed) in enumerate(cases):
+    mini_graph(axes[0, c], sz)
+    axes[0, c].set_title(f"{sum(params(sz))} parameters", fontsize=14, fontweight="bold", color=INK)
+    P = random_net_output(sz, seed, xy).reshape(gx.shape)
+    axes[1, c].imshow(P, extent=(-3, 3, -3, 3), origin="lower", cmap="RdBu", aspect="equal")
+    axes[1, c].set(xticks=[-3, 0, 3], yticks=[-3, 0, 3])
+    axes[1, c].set_xlabel("$x_1$", fontsize=13)
+    axes[1, c].tick_params(labelsize=11, colors="#666666", length=0)
+    for sp in axes[1, c].spines.values():
+        sp.set_visible(False)
+axes[1, 0].set_ylabel("$x_2$", fontsize=13)
+fig.tight_layout()
+show_fig(fig)
+```
+
+-   Each panel colors every $(x_1, x_2)$ by the network's $\hat{y}$: red is low and blue is high, on each panel's own scale. Hidden layers use the sigmoid, and the output is linear. Bias nodes are not drawn, but they are counted.
+-   The weights are **random**, not trained, and these four were picked from a few random draws. They only show the kinds of shapes these graphs can produce.
+
+## Why Do Hidden Layers Need a Nonlinear Activation?
+
+:::: {.columns}
+::: {.column width="50%"}
+::: {.view}
+Linear activation in the hidden layer
+:::
+
+$$h_1 = w_{10} + w_{11} x_1 + w_{12} x_2$$
+
+$$h_2 = w_{20} + w_{21} x_1 + w_{22} x_2$$
+
+$$\hat{y} = v_0 + v_1 h_1 + v_2 h_2$$
+
+Substitute $h_1$ and $h_2$ and collect terms:
+
+$$\begin{aligned}\hat{y} = {} & (v_0 + v_1 w_{10} + v_2 w_{20}) \\ & + (v_1 w_{11} + v_2 w_{21}) x_1 \\ & + (v_1 w_{12} + v_2 w_{22}) x_2\end{aligned}$$
+
+This still has the form $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$. **It is a linear model again**, as we saw in Part 1.
+:::
+
+::: {.column width="50%"}
+::: {.view}
+Sigmoid activation in the hidden layer
+:::
+
+$$h_1 = \frac{1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}}$$
+
+$$h_2 = \frac{1}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}$$
+
+$$\hat{y} = v_0 + v_1 h_1 + v_2 h_2$$
+
+Substitute $h_1$ and $h_2$:
+
+$$\hat{y} = v_0 + \frac{v_1}{1 + e^{-(w_{10} + w_{11} x_1 + w_{12} x_2)}} + \frac{v_2}{1 + e^{-(w_{20} + w_{21} x_1 + w_{22} x_2)}}$$
+
+The terms cannot be collected. **The model is no longer linear in $x_1$ and $x_2$**, which is why Network 2 could classify all four points.
+:::
+::::
+
+## Counting Parameters from the Architecture
+
+```{python}
+assert params([2, 2, 2, 1]) == [6, 6, 3]
+LAYER_COLORS = [BLUE, ORANGE, GREEN]
+swatch = lambda c: f'[■]{{style="color:{c}"}}'
+```
+
+:::: {.columns}
+::: {.column width="46%"}
+```{python}
+show_fig(draw_net([IN, H2, G2, OUT], NET_C, names=N_NET3_SHORT, size=(8.2, 5.0), t=0.2, stagger=0.24, gap=2.15, layer_colors=LAYER_COLORS))
+```
+:::
+
+::: {.column width="54%"}
+**Every arrow is one parameter**, so we count arrows one layer at a time. Take Network 3, with layer sizes 2, 2, 2, 1.
+
+```{python}
+table(["Arrows into", "Arrows per node", "Nodes", "Parameters"], [
+    [f"{swatch(BLUE)} Hidden layer 1", "2 inputs + 1 bias = 3", "2", r"$3 \times 2 = 6$"],
+    [f"{swatch(ORANGE)} Hidden layer 2", "2 nodes + 1 bias = 3", "2", r"$3 \times 2 = 6$"],
+    [f"{swatch(GREEN)} Output layer", "2 nodes + 1 bias = 3", "1", r"$3 \times 1 = 3$"],
+    ["**Total**", "", "", r"$\mathbf{15}$"],
+])
+```
+
+For example, node $h_1$ has 3 parameters: $w_{10}$, $w_{11}$ and $w_{12}$.
+:::
+::::
+
+::: {.key}
+**The rule:** if a layer has $k$ nodes and the layer before it has $m$ nodes, not counting its bias node, then that layer has $(m + 1) \times k$ parameters. Add this up over every layer after the input layer.
+:::
+
+The input layer has no parameters: its values come from the data. Activation functions add none either: changing sigmoid to ReLU leaves the count the same.
+
+## Counting Parameters: More Examples
+
+```{python}
+def count_row(desc, sizes):
+    by = params(sizes)
+    work = " + ".join(rf"({m} + 1) \times {k}" for m, k in zip(sizes[:-1], sizes[1:]))
+    numbers = " + ".join(f"{b:,}".replace(",", "{,}") for b in by)
+    total = f"{sum(by):,}".replace(",", "{,}")
+    equals = rf"{numbers} = \mathbf{{{total}}}" if len(by) > 1 else rf"\mathbf{{{total}}}"
+    return [desc, ", ".join(map(str, sizes)), f"${work}$", f"${equals}$"]
+
+
+assert sum(params([2, 3, 3, 1])) == 25 and sum(params([2, 2, 2, 2, 1])) == 21
+assert sum(params([784, 128, 10])) == 101770 and sum(params([4, 5, 3, 1])) == 47
+table(["Network", "Layer sizes", "Parameters by layer", "Total"], [
+    count_row("Linear model", [2, 1]),
+    count_row("Network 4", [2, 3, 3, 1]),
+    count_row("Network 5", [2, 2, 2, 2, 1]),
+    count_row("Digit images", [784, 128, 10]),
+])
+```
+
+-   Network 4 has more parameters than Network 5, even though Network 5 has more layers. Parameters depend on the layer sizes as well as the number of layers.
+-   The size of the **previous** layer sets $m$, so wide layers are expensive. Digit images of 28 × 28 pixels give 784 inputs, and with 128 hidden nodes that first layer alone needs more than 100,000 parameters.
+
+## Counting Parameters: Your Turn
+
+::: {.check}
+**Your turn:** a network has layer sizes 4, 5, 3, 1. How many parameters does it have?
+:::
+
+::: {.fragment}
+```{python}
+table(["Layer", "Calculation", "Parameters"], [
+    ["Hidden layer 1", r"$(4 + 1) \times 5$", "25"],
+    ["Hidden layer 2", r"$(5 + 1) \times 3$", "18"],
+    ["Output layer", r"$(3 + 1) \times 1$", "4"],
+    ["**Total**", "", "**47**"],
+])
+```
+:::
+
+## Summary: Number of Parameters
+
+```{python}
+models = [
+    ("Linear model", [2, 1], "none", "linear"),
+    ("Logistic regression", [2, 1], "none", "sigmoid"),
+    ("Linear, 1 hidden layer", [2, 2, 1], "linear", "linear"),
+    ("Linear, 2 hidden layers", [2, 2, 2, 1], "linear", "linear"),
+    ("Network 1", [2, 1, 1], "sigmoid", "linear"),
+    ("Network 2", [2, 2, 1], "sigmoid", "sigmoid"),
+    ("Network 3", [2, 2, 2, 1], "sigmoid", "linear"),
+    ("Network 4", [2, 3, 3, 1], "sigmoid", "linear"),
+    ("Network 5", [2, 2, 2, 2, 1], "sigmoid", "linear"),
+]
+totals = {m[0]: sum(params(m[1])) for m in models}
+assert totals == {"Linear model": 3, "Logistic regression": 3, "Linear, 1 hidden layer": 9,
+                  "Linear, 2 hidden layers": 15, "Network 1": 5, "Network 2": 9, "Network 3": 15,
+                  "Network 4": 25, "Network 5": 21}
+rows = []
+for nm, sz, ah, ao in models:
+    by = params(sz)
+    rows.append([nm, ", ".join(map(str, sz)), ah, ao, " + ".join(map(str, by)) if len(by) > 1 else str(by[0]), f"**{sum(by)}**"])
+table(["Model", "Layer sizes", "Hidden activation", "Output activation", "Parameters by layer", "Total"], rows)
+```
+
+::: {.key}
+**Reminder:** a layer of $k$ nodes after a layer of $m$ nodes has $(m + 1) \times k$ parameters. For Network 2: $(2 + 1) \times 2 = 6$, then $(2 + 1) \times 1 = 3$, so $9$ in total.
+:::
+
+-   Parameter count alone does not tell you how flexible a network is. "Linear, 1 hidden layer" and Network 2 both have 9, but only Network 2 is nonlinear.
+-   The output activation follows the task: linear for regression, sigmoid for two-class classification.
+
+## Activation Functions in Well-Known Networks
+
+```{python}
+from scipy.stats import norm
+zs = np.linspace(-4, 4, 400)
+funcs = [("Linear", zs), ("Sigmoid", sigma(zs)), ("Tanh", np.tanh(zs)), ("ReLU", np.maximum(0, zs)), ("GELU", zs * norm.cdf(zs))]
+fig, axes = plt.subplots(1, 5, figsize=(13.2, 2.35), sharex=True, sharey=True)
+for ax, (nm, ys) in zip(axes, funcs):
+    ax.axhline(0, color="#d5d5d5", lw=1, zorder=1)
+    ax.axvline(0, color="#d5d5d5", lw=1, zorder=1)
+    ax.plot(zs, ys, color=BLUE, lw=2.2, zorder=2)
+    ax.set_title(nm, fontsize=14, fontweight="bold", color=INK)
+    ax.set(xlim=(-4, 4), ylim=(-1.5, 4), xticks=[-4, 0, 4], yticks=[-1, 0, 1, 4])
+    ax.set_xlabel("$z$", fontsize=13)
+    ax.tick_params(colors="#666666", labelsize=11, length=0)
+    ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
+axes[0].set_ylabel("output", fontsize=13)
+fig.tight_layout()
+show_fig(fig)
+```
+
+| Activation | Output for input $z$ | Typical use |
+|:---:|:---:|:---:|
+| Linear | $z$ | Output layer for regression |
+| Sigmoid | $1 / (1 + e^{-z})$ | Output layer for two classes |
+| Tanh | $(e^{z} - e^{-z}) / (e^{z} + e^{-z})$ | Hidden layers in early networks |
+| ReLU | $\max(0, z)$ | Hidden layers in image networks |
+| GELU | $z\,\Phi(z)$ | Hidden layers in language models |
+| Softmax | $\hat{y}_k = e^{z_k} / \sum_j e^{z_j}$ | Output layer for many classes |
+
+$\Phi$ is the standard normal CDF. Softmax acts on a whole layer at once, so it is not plotted.
+
+## Well-Known Neural Networks
+
+| Network | Year | Task | Parameters | Hidden activation | Output activation |
+|:----:|:--:|:----:|:----:|:----:|:----:|
+| LeNet-5 | 1998 | Reading handwritten digits | about 60,000 | scaled tanh | radial basis function units |
+| AlexNet | 2012 | Image classification | 61.1 million | ReLU | softmax |
+| VGG-16 | 2014 | Image classification | 138.4 million | ReLU | softmax |
+| ResNet-50 | 2015 | Image classification | 25.6 million | ReLU | softmax |
+| BERT (base) | 2018 | Language understanding | 109.5 million | GELU | depends on the task |
+| GPT-2 (largest) | 2019 | Text generation | 1.5 billion | GELU | softmax |
+| GPT-3 (largest) | 2020 | Text generation | 175 billion | not stated in its paper | softmax |
+
+::: {.key}
+Network 3 has 15 parameters. GPT-3 has 175 billion. The idea is the same: inputs pass through layers of weights and activation functions to an output.
+:::
+
+-   These networks are not fully connected throughout. Convolutional and attention layers reuse weights, so the $(m + 1) \times k$ rule applies only to their fully connected layers.
+-   Counts for AlexNet, VGG-16 and ResNet-50 are for the standard torchvision versions with 1,000 output classes. The AlexNet paper reports about 60 million.
+
+## Back to the Framework
+
+-   **Step 1:** Assume the model function $\hat{y} = f(x, w)$. This is what changed today: $f$ is now a network, and $w$ holds all of its parameters.
+-   **Step 2:** Define the loss function $l(\hat{y}, y)$. Same losses as before:
+
+$$l(\hat{y}, y) = (\hat{y} - y)^2 \quad \text{(regression)} \qquad l(\hat{y}, y) = -y \log(\hat{y}) - (1 - y) \log(1 - \hat{y}) \quad \text{(classification)}$$
+
+-   **Step 3:** Find $w$ that minimizes the total loss using gradient descent.
+
+::: {.key}
+The weights in today's worked examples were picked by hand. **Next:** how gradient descent finds them by itself.
+:::
+
+## Problem: Calculate the Output
+
+```{python}
+P = dict(w10=1.0, w11=-2.0, w12=1.0, w20=-1.0, w21=1.0, w22=-1.0,
+         u10=0.5, u11=1.0, u12=2.0, u20=-1.0, u21=2.0, u22=-1.0,
+         v0=0.5, v1=2.0, v2=-1.0)
+px1, px2 = 1.0, 2.0
+plab = num(NET_C, P)
+N_PROBLEM = ["Input layer", "Hidden layer 1\nactivation: ReLU", "Hidden layer 2\nactivation: sigmoid", "Output layer\nactivation: linear"]
+PKW = dict(names=N_PROBLEM, t=0.2, stagger=0.24, gap=2.15)
+
+# Work through the network, rounding each step to 3 decimals
+pz1 = P["w10"] + P["w11"] * px1 + P["w12"] * px2
+pz2 = P["w20"] + P["w21"] * px1 + P["w22"] * px2
+ph1, ph2 = max(0.0, pz1), max(0.0, pz2)
+pz3 = r3(P["u10"] + P["u11"] * ph1 + P["u12"] * ph2)
+pz4 = r3(P["u20"] + P["u21"] * ph1 + P["u22"] * ph2)
+pg1, pg2 = r3(sigma(pz3)), r3(sigma(pz4))
+pz5 = r3(P["v0"] + P["v1"] * pg1 + P["v2"] * pg2)
+pyh = pz5
+py = 2.0
+ploss = r3((pyh - py) ** 2)
+assert (pz1, pz2, ph1, ph2, pz3, pz4, pg1, pg2, pz5) == (1.0, -2.0, 1.0, 0.0, 1.5, 1.0, 0.818, 0.731, 1.405)
+assert ploss == 0.354
+assert sum(params([2, 2, 2, 1])) == 15
+```
+
+:::: {.columns}
+::: {.column width="62%"}
+```{python}
+show_fig(draw_net([IN, H2, G2, OUT], plab, values={**INV(px1, px2), "h1": "?", "h2": "?", "g1": "?", "g2": "?", "o": "?"},
+                  size=(8.8, 5.5), dy=1.3, **PKW))
+```
+:::
+
+::: {.column width="38%"}
+**Regression problem:** the target $y$ is a number, so the output layer is linear and we use the squared loss.
+
+$$l(\hat{y}, y) = (\hat{y} - y)^2$$
+
+One observation has $x_1 = 1$, $x_2 = 2$ and $y = 2$. The weights are on the arrows.
+
+**Activations:** ReLU gives $\max(0, z)$, sigmoid gives $1 / (1 + e^{-z})$, and linear gives $z$.
+
+1.  For every node, calculate the value going into the activation and the value coming out of it, ending with $\hat{y}$. Round each step to 3 decimals.
+2.  Calculate the loss for this observation.
+3.  How many parameters does this network have?
+:::
+::::
+
+## Problem: Solution
+
+:::: {.columns}
+::: {.column width="46%" .tight}
+```{python}
+md("\n\n".join([
+    LEGEND,
+    "**Hidden layer 1: ReLU**" + into(
+        ("z_{h_1}", n(P["w10"]), [(n(P["w11"]), n(px1)), (n(P["w12"]), n(px2))], n(pz1)),
+        ("z_{h_2}", n(P["w20"]), [(n(P["w21"]), n(px1)), (n(P["w22"]), n(px2))], n(pz2)))
+    + outof(("h_1", "relu", n(pz1), n(ph1)), ("h_2", "relu", n(pz2), n(ph2))),
+    "**Hidden layer 2: sigmoid**" + into(
+        ("z_{g_1}", n(P["u10"]), [(n(P["u11"]), n(ph1)), (n(P["u12"]), n(ph2))], n(pz3)),
+        ("z_{g_2}", n(P["u20"]), [(n(P["u21"]), n(ph1)), (n(P["u22"]), n(ph2))], n(pz4)))
+    + outof(("g_1", "sigmoid", n(pz3), f3(pg1)), ("g_2", "sigmoid", n(pz4), f3(pg2))),
+    "**Output layer: linear**" + into((r"z_{\hat{y}}", n(P["v0"]), [(n(P["v1"]), f3(pg1)), (n(P["v2"]), f3(pg2))], f3(pz5)))
+    + outof((r"\hat{y}", "linear", f3(pz5), f3(pyh))),
+    rf"**Loss:** $l(\hat{{y}}, y) = ({f3(pyh)} - {n(py)})^2 = {f3(ploss)}$.",
+]))
+```
+:::
+
+::: {.column width="54%"}
+```{python}
+show_fig(draw_net([IN, H2, G2, OUT], plab, values={**INV(px1, px2), "h1": n(ph1), "h2": n(ph2), "g1": f3(pg1), "g2": f3(pg2), "o": f3(pyh)},
+                  before={"h1": n(pz1), "h2": n(pz2), "g1": n(pz3), "g2": n(pz4), "o": f3(pz5)}, size=(9.4, 5.2), dy=1.4, **{**PKW, "gap": 2.5}))
+```
+
+ReLU turns the negative sum $z_{h_2} = -2$ into $h_2 = 0$.
+
+**Parameters:** count the arrows into each layer. The activations add none.
+
+```{python}
+table(["Arrows into", "Arrows per node", "Nodes", "Parameters"], [
+    ["Hidden layer 1", "2 inputs + 1 bias = 3", "2", r"$3 \times 2 = 6$"],
+    ["Hidden layer 2", "2 nodes + 1 bias = 3", "2", r"$3 \times 2 = 6$"],
+    ["Output layer", "2 nodes + 1 bias = 3", "1", r"$3 \times 1 = 3$"],
+    ["**Total**", "", "", r"$\mathbf{15}$"],
+])
+```
+:::
+::::

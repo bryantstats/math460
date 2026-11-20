@@ -1,0 +1,134 @@
+---
+title: "Deep Learning Project: Teach a CNN Everyday Objects"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+You will teach a computer to recognize everyday objects from **photos you take yourself**. Then you will try to break your best model.
+
+Along the way you will compare five models on the same photos:
+
+| Model | What it learns from |
+|---|---|
+| Random forest on pixels | Raw pixel values (as in Assignment 6) |
+| MLP on pixels | Raw pixel values (as in Assignment 9) |
+| CNN from scratch | Your photos only |
+| ResNet-18, frozen | Features learned from 1.2 million ImageNet photos; only a new last layer is trained |
+| ResNet-18, fine-tuned | The same, plus its last block adapts to your photos |
+
+The main question: **with only a few dozen photos per category, which approach works, and why?**
+
+Work in **groups of 2 to 4**. The project is worth **100 points** and runs for **3 weeks**, with two checkpoints.
+
+## Step 1: Choose your categories
+
+Choose **3 or 4 categories** of everyday objects that a person can tell apart at a glance. Some ideas:
+
+| Category set | Why it is interesting |
+|---|---|
+| Mug vs. water bottle vs. soda can | A good first choice |
+| Fork vs. spoon vs. knife | Similar shapes and the same material |
+| Pen vs. pencil vs. marker | Thin objects; the background fills most of each photo |
+| Sneaker vs. boot vs. sandal | Many different-looking shoes in each category |
+| Apple vs. orange vs. lemon | Color helps, but is it enough? |
+| Keys vs. earbuds case vs. wallet | Things you carry every day |
+| Your own idea | Check it with me first |
+
+## Step 2: Take your photos
+
+Use your phone. For each category:
+
+- **At least 50 training photos** and **at least 15 test photos**.
+- **At least 5 different objects.** Photograph 5 or more different mugs, not 50 photos of one mug. Borrow from roommates and friends. With only one mug, the model learns *that* mug, and your test accuracy measures memory, not learning.
+- **Vary everything:** background, angle, distance, lighting, and time of day. Shoot every category on the **same set of backgrounds** (mugs and bottles on the same desk, the same floor, the same shelf). Otherwise the model can learn the background instead of the object (Part 5C shows how).
+- **Take the test photos separately:** on another day, in another room, and ideally with objects not in the training set. Never move photos between `train` and `test` after you have looked at the results.
+- **Optional, for Part 5E:** 3–5 deliberately tricky photos per category (an odd angle, half out of frame, partly hidden, a cluttered background).
+- Do not include people's faces without their permission.
+
+Arrange the photos like this, with the same category names in every folder. The notebook reads `.jpg`, `.jpeg`, `.png`, `.jfif`, `.webp` and `.bmp` files, but **not `.heic`**. iPhones save `.heic` by default: change *Settings → Camera → Formats* to **Most Compatible** before shooting, or export the photos as JPEG.
+
+```
+my_objects/
+    train/   mug/  bottle/  can/
+    test/    mug/  bottle/  can/
+    hard/    mug/  bottle/  can/      (optional)
+```
+
+## Step 3: Run the notebook
+
+Use **Google Colab** with a GPU (*Runtime → Change runtime type → T4 GPU*):
+
+1. Upload the `my_objects` folder to your Google Drive.
+2. Open `project_student.ipynb` in Colab (*File → Upload notebook*).
+3. In the first code cell, uncomment the two `drive` lines and set `DATA_DIR`, for example `"/content/drive/MyDrive/my_objects"`.
+4. Fill in every `# TODO` and answer every question in the **Your answer** cells.
+
+The whole notebook runs in a few minutes on a Colab GPU. On a laptop CPU, Part 4 can take 5–15 minutes.
+
+## The parts
+
+| Part | Questions | Points | What you do |
+|---|---|---|---|
+| 1. Your data | 1 | 10 | Show and describe your photos |
+| 2. Baselines | 2 | 10 | Random forest and MLP on raw pixels |
+| 3. CNN from scratch | 3 | 15 | Write the training step and the CNN; overfitting; data augmentation |
+| 4. Transfer learning | 4–6 | 20 | Frozen and fine-tuned ResNet-18; compare all five models |
+| 5. Stress test | 7A–7E | 20 | **Choose at least two** (10 points each) |
+| 6. Explain the model | 8–10 | 15 | Confusion matrix, worst mistakes, Grad-CAM heat maps |
+| 7. Presentation | n/a | 10 | 5-minute recorded video |
+
+**Stress tests (Part 5), choose at least two:**
+
+- **5A. Learning curve:** how many photos per category does each model need?
+- **5B. Robustness:** how much blur, darkness or rotation can the model take?
+- **5C. The shortcut trap:** fake a "same red table" mistake and watch the model fall for it.
+- **5D. Frozen vs. fine-tuned:** when is fine-tuning worth it?
+- **5E. Your hardest photos:** how does the model handle your tricky photos?
+
+## Schedule
+
+| When | Due |
+|---|---|
+| End of week 1 | **Checkpoint 1:** your categories and the photo folder (zip or Drive link), plus the notebook run through Part 2 |
+| End of week 2 | **Checkpoint 2:** the notebook run through Part 4 |
+| End of week 3 | **Final:** the full notebook, the presentation video and the AI statement |
+
+The checkpoints are not graded separately, but missing one costs 5 points. Checkpoint 1 is where I catch problems with the photos while there is still time to retake them.
+
+## What to submit
+
+| Deliverable | Format |
+|---|---|
+| Notebook | The completed `project_student.ipynb` with **all cells run**: the `.ipynb` file or a Colab link that anyone at Bryant can view |
+| Photos | Your `my_objects` folder: a zip file or a Google Drive link |
+| Presentation | A 5-minute video (Panopto or a YouTube/Drive link). Every group member speaks. |
+| Group members | The names of everyone in the group, in the notebook's first cell |
+
+## The presentation (10 points)
+
+In 5 minutes, cover:
+
+1. Your categories and how you collected the photos, with a few examples
+2. The comparison table from Question 6
+3. Your two (or more) stress tests and what they showed
+4. The most surprising mistake, with its Grad-CAM map
+5. Would you trust your model in a real app? Under what conditions?
+
+## How the work is graded
+
+Within each part, roughly half of the points are for working code and correct output, and half for your explanations. Full credit for an explanation means:
+
+- It uses **your own numbers and photos**, not general statements that would fit any project.
+- It explains **why**, not only what happened: "the CNN overfits *because* it has about 36,000 weights and only 120 photos", not "the CNN overfits".
+- It is short: 2–5 sentences per question.
+
+Your accuracy itself is **not** graded. A careful project with 70% accuracy and good explanations earns more than a 100% project with weak ones. Hard categories make better projects.
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.

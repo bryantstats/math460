@@ -1,0 +1,237 @@
+---
+title: "Math 460: Exam 3 Practice 2 (Solution)"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    embed-resources: true
+    html-math-method: katex
+---
+
+**Notice:** *These are NOT the problems on Exam 3. They are SIMILAR to the problems on Exam 3.* Try the problems first on the [printable practice (PDF)](Exam3_fall26_practice2.pdf), then check your work here.
+
+**ReLU function:** $\text{ReLU}(z) = \max(0, z)$.
+
+# Problem 1. LASSO
+
+This is a **regression problem**: we want to predict a numeric target $y$ from two inputs, $x_1$ and $x_2$, using the data below.
+
+| $x_1$ | $x_2$ | $y$ |
+|:-----:|:-----:|:-----:|
+| 1 | 2 | 0 |
+| 2 | 0 | -2 |
+| 3 | 1 | 3 |
+| 4 | -1 | 3 |
+
+Consider these four models:
+
+$$
+\begin{aligned}
+\text{Model A:} \quad \hat{y} &= -7.5 + 3 x_1 + 2 x_2 \\
+\text{Model B:} \quad \hat{y} &= -3 + 1.5 x_1 + 0.5 x_2 \\
+\text{Model C:} \quad \hat{y} &= -1.5 + 1 x_1 + 0 x_2 \\
+\text{Model D:} \quad \hat{y} &= 1 + 0 x_1 + 0 x_2
+\end{aligned}
+$$
+
+Each model has the form $\hat{y} = w_0 + w_1 x_1 + w_2 x_2$. Its total squared loss is $L(w_0, w_1, w_2) = \sum (\hat{y} - y)^2$. LASSO adds a penalty on the size of the slopes $w_1$ and $w_2$. The best model is the one with the smallest **objective**:
+
+$$\text{Objective} = L(w_0, w_1, w_2) + \alpha \left( |w_1| + |w_2| \right)$$
+
+The number $\alpha$ sets how strong the penalty is. The intercept $w_0$ is not penalized.
+
+a. Which of the four models is best when $\alpha = 0$? With $\alpha = 0$ there is no penalty, so this is the ordinary linear model.
+
+b. Which of the four models is best when $\alpha = 3$?
+
+c. Which of the four models is best when $\alpha = 6$?
+
+d. Which of the four models is best when $\alpha = 10$?
+
+e. As $\alpha$ increases, what happens to the slopes of the best model? Which input is dropped first?
+
+::: {.callout-tip}
+## Solution
+
+**Start by calculating the loss of each model.** For Model A:
+
+| Row | $x_1$ | $x_2$ | $y$ | $\hat{y} = -7.5 + 3 x_1 + 2 x_2$ | $\hat{y} - y$ | $(\hat{y} - y)^2$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| 1 | 1 | 2 | 0 | $-7.5 + 3(1) + 2(2) = -0.5$ | -0.5 | 0.25 |
+| 2 | 2 | 0 | -2 | $-7.5 + 3(2) + 2(0) = -1.5$ | 0.5 | 0.25 |
+| 3 | 3 | 1 | 3 | $-7.5 + 3(3) + 2(1) = 3.5$ | 0.5 | 0.25 |
+| 4 | 4 | -1 | 3 | $-7.5 + 3(4) + 2(-1) = 2.5$ | -0.5 | 0.25 |
+
+Adding the last column gives $L = 1$. The other models work the same way:
+
+| Model | $\hat{y}$, row 1 | $\hat{y}$, row 2 | $\hat{y}$, row 3 | $\hat{y}$, row 4 | $L$ | $\lvert w_1 \rvert + \lvert w_2 \rvert$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| A | -0.5 | -1.5 | 3.5 | 2.5 | $0.25 + 0.25 + 0.25 + 0.25 = 1$ | $3 + 2 = 5$ |
+| B | -0.5 | 0 | 2 | 2.5 | $0.25 + 4 + 1 + 0.25 = 5.5$ | $1.5 + 0.5 = 2$ |
+| C | -0.5 | 0.5 | 1.5 | 2.5 | $0.25 + 6.25 + 2.25 + 0.25 = 9$ | $1 + 0 = 1$ |
+| D | 1 | 1 | 1 | 1 | $1 + 9 + 4 + 4 = 18$ | $0 + 0 = 0$ |
+
+**Then calculate each objective,** $L + \alpha \times (\lvert w_1 \rvert + \lvert w_2 \rvert)$. The smallest in each column is in bold.
+
+| Model | $\alpha = 0$ | $\alpha = 3$ | $\alpha = 6$ | $\alpha = 10$ |
+|:-----:|:-----:|:-----:|:-----:|:-----:|
+| A | **1** | $1 + 3(5) =$ 16 | $1 + 6(5) =$ 31 | $1 + 10(5) =$ 51 |
+| B | 5.5 | $5.5 + 3(2) =$ **11.5** | $5.5 + 6(2) =$ 17.5 | $5.5 + 10(2) =$ 25.5 |
+| C | 9 | $9 + 3(1) =$ 12 | $9 + 6(1) =$ **15** | $9 + 10(1) =$ 19 |
+| D | 18 | $18 + 3(0) =$ 18 | $18 + 6(0) =$ 18 | $18 + 10(0) =$ **18** |
+
+a. Model A is best at $\alpha = 0$, with objective 1. It has the smallest loss (it is the least-squares fit), and it uses both inputs.
+
+b. Model B is best at $\alpha = 3$, with objective 11.5. It still uses both inputs, with both slopes smaller than in Model A.
+
+c. Model C is best at $\alpha = 6$, with objective 15. It uses only $x_1$: the slope of $x_2$ is exactly 0.
+
+d. Model D is best at $\alpha = 10$, with objective 18. It uses neither input and predicts $1$, the mean of $y$, for every row.
+
+e. The slopes shrink toward 0, and they reach exactly 0. **$x_2$ is dropped first** (Model C), then $x_1$ (Model D).
+:::
+
+# Problem 2. Image Recognition (CNN)
+
+A CNN takes the $5 \times 5$ grayscale image $X$ and applies the $2 \times 2$ filter $K$ (bias 0, stride 1, no padding).
+
+$$
+X = \begin{bmatrix}
+1 & 2 & 0 & 1 & 1 \\
+2 & 0 & 2 & 0 & 3 \\
+1 & 0 & 1 & 0 & 2 \\
+1 & 0 & 1 & 1 & 1 \\
+1 & 2 & 0 & 0 & 1
+\end{bmatrix}
+\qquad
+K = \begin{bmatrix} 1 & -1 \\ -1 & 1 \end{bmatrix}
+$$
+
+The convolution gives the $4 \times 4$ feature map below. Its first row is missing.
+
+$$
+\text{Feature map} = \begin{bmatrix}
+\boxed{\ ?_1\ } & \boxed{\ ?_2\ } & \boxed{\ ?_3\ } & \boxed{\ ?_4\ } \\
+1 & -1 & 1 & -1 \\
+0 & 0 & 1 & -2 \\
+2 & -3 & 0 & 1
+\end{bmatrix}
+$$
+
+**Present your solution the way the sample solution does:** draw the grids of squares and the network, and write each calculation next to the drawing.
+
+a. Compute the first row of the feature map, $?_1$, $?_2$, $?_3$ and $?_4$. For each one, draw the image as a grid of squares and box the $2 \times 2$ window, then write out filter × window (multiply the matching numbers and add).
+
+b. Apply ReLU to the feature map, then $2 \times 2$ max pooling to get a $2 \times 2$ map. Draw the feature map, the map after ReLU, and the pooled map as grids of squares. Outline the four $2 \times 2$ pooling blocks and write the max of each block.
+
+c. Flatten the pooled map row by row into $\mathbf{a} = (a_1, a_2, a_3, a_4)$. Draw $\mathbf{a}$ as a row of 4 squares.
+
+d. Dense layer: $z_A = a_4$ and $z_B = 0.5a_2 + 0.5a_4$ (biases 0). Draw the network: 4 input nodes $a_1, \dots, a_4$, 2 output nodes $z_A, z_B$, and a line from each input to each output labeled with its weight (dashed for weight 0). Compute both scores.
+
+e. Softmax: compute $p_A$ and $p_B$. Use $e^1 \approx 2.72$ and $e^2 \approx 7.39$. Add the softmax step to your network drawing: an arrow from each score to its probability node. Which class is predicted?
+
+**Solution:** [Step-by-step solution slides](Exam3_fall26_practice2_cnn_sol.html) (click through the first-row windows, ReLU, pooling, and the dense layer).
+
+# Problem 3. Recommendation System
+
+A music app gives every song a 2-number embedding (number 1: upbeat and dance, number 2: acoustic and calm). **These song embeddings were learned beforehand** by the app's model from all users' listening data, so in this problem they are **known**. Only the user's embedding must be computed.
+
+| Song | Embedding (upbeat, acoustic) |
+|:---:|:---:|
+| Song A | (0.8, 0.2) |
+| Song B | (0.7, 0.8) |
+| Song C | (1.1, 0.5) |
+| Song D | (0.3, 0.9) |
+| Song E | (0.2, 0.2) |
+| Song F | (0.7, 0.2) |
+
+Last month **the user** played **Song E** and **Song F**.
+
+a. Compute **the user's embedding** as the **average** of the songs they played.
+
+b. Score every song with the **dot product**. Recommend the top 2 that the user has **not** played.
+
+**One week later.** The user played **Song C** (one of our picks) and **Song D** (which we did not recommend); they skipped Song B. Three **new** songs were also released this week (their embeddings were also learned beforehand):
+
+| New this week | Embedding (upbeat, acoustic) |
+|:---:|:---:|
+| Song G | (1.1, 0.4) |
+| Song H | (0.1, 1.2) |
+| Song I | (1.0, 0.6) |
+
+c. Recompute the user's embedding as a **weighted average** of their 4 plays: older plays (E, F) count **1**, this week's plays (C, D) count **2**. Score the 5 songs they have not played (A, B, G, H, I) and recommend the top 2.
+
+d. The user also gave **feedback**: they **liked** Song D and tapped **"not interested"** on Song C. The app doubles the weight of a liked play and gives a "not interested" play weight **−1**. Recompute their embedding and their top 2.
+
+::: {.callout-tip}
+## Solution
+
+a. Average each number separately over the songs the user played:
+
+$$
+\mathbf{u} = \left(\frac{0.2 + 0.7}{2},\ \frac{0.2 + 0.2}{2}\right) = (0.45,\ 0.2)
+$$
+
+The user leans toward upbeat songs.
+
+b. Score $= \mathbf{u} \cdot \mathbf{v} = 0.45 \times \text{upbeat} + 0.2 \times \text{acoustic}$, sorted from high to low:
+
+| Song | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| C | (1.1, 0.5) | $0.45(1.1) + 0.2(0.5) = 0.595$ | **recommend** |
+| B | (0.7, 0.8) | $0.45(0.7) + 0.2(0.8) = 0.475$ | **recommend** |
+| A | (0.8, 0.2) | $0.45(0.8) + 0.2(0.2) = 0.4$ |  |
+| F | (0.7, 0.2) | $0.45(0.7) + 0.2(0.2) = 0.355$ | played |
+| D | (0.3, 0.9) | $0.45(0.3) + 0.2(0.9) = 0.315$ |  |
+| E | (0.2, 0.2) | $0.45(0.2) + 0.2(0.2) = 0.13$ | played |
+
+**Recommend Song C (0.595) and Song B (0.475).** The songs the user already played are skipped, wherever they rank.
+
+c. **Weighted average** = (total of weight × value) ÷ (total weight).
+
+| Song | Embedding | Weight | weight × upbeat | weight × acoustic |
+|:---:|:---:|:---:|:---:|:---:|
+| E | (0.2, 0.2) | 1 (older) | 0.2 | 0.2 |
+| F | (0.7, 0.2) | 1 (older) | 0.7 | 0.2 |
+| C | (1.1, 0.5) | 2 (this week) | 2.2 | 1 |
+| D | (0.3, 0.9) | 2 (this week) | 0.6 | 1.8 |
+| **total** | | **6** | **3.7** | **3.2** |
+
+$$\mathbf{u} = \left(\frac{3.7}{6},\ \frac{3.2}{6}\right) = (0.617,\ 0.533)$$
+
+The user's vector moved toward C and D, their newest plays: it is now more balanced between upbeat and acoustic. Scores ($0.617 \times \text{upbeat} + 0.533 \times \text{acoustic}$):
+
+| Song | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| I | (1.0, 0.6) | $0.617(1) + 0.533(0.6) = 0.937$ | **recommend** |
+| G | (1.1, 0.4) | $0.617(1.1) + 0.533(0.4) = 0.892$ | **recommend** |
+| B | (0.7, 0.8) | $0.617(0.7) + 0.533(0.8) = 0.858$ | |
+| H | (0.1, 1.2) | $0.617(0.1) + 0.533(1.2) = 0.702$ | |
+| A | (0.8, 0.2) | $0.617(0.8) + 0.533(0.2) = 0.6$ | |
+
+**Recommend Song I (0.937) and Song G (0.892).** Both are new this week.
+
+d. A liked play counts double ($2 \times 2 = 4$ for D); a "not interested" play counts $-1$ (C).
+
+| Song | Embedding | Weight | weight × upbeat | weight × acoustic |
+|:---:|:---:|:---:|:---:|:---:|
+| E | (0.2, 0.2) | 1 (older) | 0.2 | 0.2 |
+| F | (0.7, 0.2) | 1 (older) | 0.7 | 0.2 |
+| C | (1.1, 0.5) | -1 (not interested) | -1.1 | -0.5 |
+| D | (0.3, 0.9) | 4 (this week, liked) | 1.2 | 3.6 |
+| **total** | | **5** | **1** | **3.5** |
+
+$$\mathbf{u} = \left(\frac{1}{5},\ \frac{3.5}{5}\right) = (0.2,\ 0.7)$$
+
+Scores ($0.2 \times \text{upbeat} + 0.7 \times \text{acoustic}$):
+
+| Song | Embedding | Score | |
+|:---:|:---:|:---|:---:|
+| H | (0.1, 1.2) | $0.2(0.1) + 0.7(1.2) = 0.86$ | **recommend** |
+| B | (0.7, 0.8) | $0.2(0.7) + 0.7(0.8) = 0.7$ | **recommend** |
+| I | (1.0, 0.6) | $0.2(1) + 0.7(0.6) = 0.62$ | |
+| G | (1.1, 0.4) | $0.2(1.1) + 0.7(0.4) = 0.5$ | |
+| A | (0.8, 0.2) | $0.2(0.8) + 0.7(0.2) = 0.3$ | |
+
+**Recommend Song H (0.86) and Song B (0.7).** The user rejected C, the most upbeat song they played, and liked D, an acoustic song. Their vector swung from upbeat to acoustic, so the upbeat new songs I and G drop out and the acoustic songs H and B come in. Same plays with different feedback give different recommendations: feedback tells the system how much the user valued each play.
+:::

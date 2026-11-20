@@ -1,0 +1,51 @@
+---
+title: "Assignment 16: Preference Tuning with DPO"
+format:
+  html:
+    toc: true
+    embed-resources: true
+editor: visual
+---
+
+## Overview
+
+Chat models are not finished after instruction tuning. In the last stage they learn from **comparisons**: given two responses to the same prompt, which one is better? This is how models learn to be more helpful and to avoid bad answers. Two common methods are RLHF (reinforcement learning from human feedback) and **DPO (Direct Preference Optimization)**.
+
+| Stage | Assignment |
+|---|---|
+| 1. Pre-training → base model | 14 |
+| 2. Instruction tuning → follows an instruction | 15 |
+| 3. **Preference tuning** → prefers better responses | **16 (this one)** |
+
+You will let your instruction-tuned model write several stories for each topic, use an automatic judge to pick a better and a worse story, and train the model with DPO to prefer the better ones. Then you will check what improved and what it cost.
+
+## What to Submit
+
+Submit the completed notebook `assignment16_student.ipynb` on Canvas, with all cells run.
+
+## Files You Need
+
+Put these files in the same folder as the notebook:
+
+| File | Where it comes from |
+|---|---|
+| `tiny_gpt.py` | Provided (same as in Assignment 15) |
+| `instruct_model.pt` | Yours from Assignment 15. If yours did not train well, use the one provided with this assignment. |
+| `tinystories.txt` | Saved by your Assignment 14 notebook |
+
+The whole notebook takes about **5–8 minutes** on a laptop CPU.
+
+## The Questions
+
+| Question | Topic |
+|---|---|
+| 1 | Collect preference pairs (chosen vs. rejected) with an automatic judge |
+| 2 | Write the DPO loss |
+| 3 | Train with DPO against a frozen reference model |
+| 4 | Compare the three stages: base, instruction-tuned, DPO |
+| 5 | What did it cost? Forgetting and reward hacking |
+| 6 | Reflection: our DPO vs. preference tuning of real chat models |
+
+## AI Policy
+
+You may use AI tools (e.g., ChatGPT, Claude, Copilot). Include a short statement describing how you used them and anything they got wrong that you had to fix.
